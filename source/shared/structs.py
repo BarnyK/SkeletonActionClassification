@@ -146,18 +146,18 @@ class SkeletonData:
     def get_points_shape(self):
         for body in [body for frame in self.frames for body in frame.bodies]:
             return body.poseXY.shape
-        raise ValueError
+        raise ValueError("No bodies found")
 
     def to_matrix(self) -> np.ndarray:
         tids = self.get_all_tids()
         M, T, (V, N) = len(tids), self.length, self.get_points_shape()
 
-        mat = np.zeros((M,T,V,N), dtype=float)
+        mat = np.zeros((M, T, V, N), dtype=float)
         for i, tid in enumerate(tids):
             tid_bodies = [body for frame in self.frames for body in frame.bodies]
             tid_bodies = [body for body in tid_bodies if body.tid == tid]
             if len(tid_bodies) != T:
-                raise ValueError()
+                raise ValueError(f"Missing bodies for tid:{tid}")
             mat[i, ...] = np.stack([body.poseXY for body in tid_bodies])
 
         return mat
@@ -166,4 +166,3 @@ class SkeletonData:
         if [body for frame in self.frames for body in frame.bodies]:
             return False
         return True
-
