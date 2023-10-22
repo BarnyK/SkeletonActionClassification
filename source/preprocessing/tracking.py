@@ -40,7 +40,7 @@ def calculate_movement_to_body_ratio(skeleton1: np.ndarray, skeleton2: np.ndarra
     return ratios
 
 
-def pose_track(frames: List[FrameData], threshold=60, width_ratio: float = 1.0, height_ratio: float = 0.5):
+def pose_track(frames: List[FrameData], threshold=60, width_ratio: float = 100.0, height_ratio: float = 50.0):
     tracks, num_tracks = [], 0
     num_joints = None
     for idx, frame in enumerate(frames):
@@ -70,7 +70,6 @@ def pose_track(frames: List[FrameData], threshold=60, width_ratio: float = 1.0, 
             move_ratios = calculate_movement_to_body_ratio(track_proposals[r]["data"][-1][1],
                                                            poses[c],
                                                            idx - track_proposals[r]["data"][-1][0])
-            print(move_ratios)
             if (move_ratios > np.array([width_ratio, height_ratio])).any():
                 # deny
                 additional_col.append(c)
@@ -134,4 +133,11 @@ def select_tracks_by_motion(data: SkeletonData, max_bodies: int = 2):
         frame.bodies = [body for body in frame.bodies if body.tid in selected_tids]
         # Sort tids by motion
         frame.bodies = sorted(frame.bodies, key=lambda x: selected_tids.index(x.tid))
+
+    # Reassign ids so that lowest has highest motion
+    map = {tid: i for i, tid in enumerate(selected_tids)}
+    all_bodies = [body for frame in data.frames for body in frame.bodies]
+    for body in all_bodies:
+        body.tid = map[body.tid]
+
     return selected_tids
