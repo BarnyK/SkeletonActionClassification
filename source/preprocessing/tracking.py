@@ -11,7 +11,36 @@ def skeleton_distance(skeleton1: np.ndarray, skeleton2: np.ndarray):
     return np.sum(distances)
 
 
-def pose_track(frames: List[FrameData], threshold=60):
+def skeleton_bbox(skeleton: np.ndarray):
+    min_x, max_x = np.min(skeleton[..., 0]), np.max(skeleton[..., 0])
+    min_y, max_y = np.min(skeleton[..., 1]), np.max(skeleton[..., 1])
+    return min_x, max_x, min_y, max_y
+
+
+def skeleton_middle(skeleton: np.ndarray):
+    min_x, max_x, min_y, max_y = skeleton_bbox(skeleton)
+    return np.array([min_x + (max_x - min_x) / 2, min_y + (max_y - min_y) / 2], dtype=float)
+
+
+def check_relative_body_distance(skeleton1: np.ndarray, skeleton2: np.ndarray):
+    mid1 = skeleton_middle(skeleton1)
+    mid2 = skeleton_middle(skeleton2)
+    return np.abs(mid2 - mid1)
+
+
+def calculate_movement_to_body_ratio(skeleton1: np.ndarray, skeleton2: np.ndarray, frames: int):
+    min_x, max_x, min_y, max_y = skeleton_bbox(skeleton1)
+    w = max_x - min_x
+    h = max_y - min_y
+    mid1 = skeleton_middle(skeleton1)
+    mid2 = skeleton_middle(skeleton2)
+    dist = np.abs(mid2 - mid1)
+    dist_per_frame = dist / frames
+    ratios = dist_per_frame / np.array([w, h])
+    return ratios
+
+
+def pose_track(frames: List[FrameData], threshold=60, width_ratio: float = 1.0, height_ratio: float = 0.5):
     tracks, num_tracks = [], 0
     num_joints = None
     for idx, frame in enumerate(frames):
@@ -35,20 +64,26 @@ def pose_track(frames: List[FrameData], threshold=60):
                     track_proposals[i]["data"][-1][1], poses[j]
                 )
         row, col = linear_sum_assignment(scores)
-
+        additional_col = []
         # Save results
         for r, c in zip(row, col):
+            move_ratios = calculate_movement_to_body_ratio(track_proposals[r]["data"][-1][1],
+                                                           poses[c],
+                                                           idx - track_proposals[r]["data"][-1][0])
+            print(move_ratios)
+            if (move_ratios > np.array([width_ratio, height_ratio])).any():
+                # deny
+                additional_col.append(c)
             track_proposals[r]["data"].append((idx, poses[c], c))
 
         # If there is more poses than tracks
-        if m > n:
-            for j in range(m):
-                if j not in col:
-                    num_tracks += 1
-                    new_track = dict(data=[])
-                    new_track["track_id"] = num_tracks
-                    new_track["data"] = [(idx, poses[j], j)]
-                    tracks.append(new_track)
+        for j in range(m):
+            if j not in col or j in additional_col:
+                num_tracks += 1
+                new_track = dict(data=[])
+                new_track["track_id"] = num_tracks
+                new_track["data"] = [(idx, poses[j], j)]
+                tracks.append(new_track)
 
     # Assign tracking ids to bodies
     for i, track in enumerate(tracks):
