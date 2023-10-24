@@ -342,6 +342,9 @@ class DetectionLoader:
                         cropped_boxes,
                     ),
                 )
+        self.wait_and_put(
+            self.det_queue, (None, None, None, None, None, None, None)
+        )
 
     def image_postprocess(self):
         # Post process
