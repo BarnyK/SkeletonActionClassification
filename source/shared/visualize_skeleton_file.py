@@ -147,7 +147,7 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
         int(video_stream.get(cv2.CAP_PROP_FRAME_HEIGHT)),
     )
     fps = video_stream.get(cv2.CAP_PROP_FPS)
-    length = skeleton_data.length
+    length = min(skeleton_data.length, skeleton_data.lengthB)
 
     for i in range(length):
         skel = skeleton_data.frames[i]
