@@ -9,7 +9,7 @@ def read_file(file_path):
 
     with open(file_path, "r") as fr:
         frame_count = int(fr.readline())
-        skeleton_data = SkeletonData("NTU RGB+D", "ntu", namedata, "", frame_count, [])
+        skeleton_data = SkeletonData("NTU RGB+D", "ntu", namedata, "", frame_count, [], frame_count, (1920, 1080))
 
         for frame in range(frame_count):
             body_count_in_frame = int(fr.readline())
