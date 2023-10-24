@@ -131,7 +131,8 @@ def draw_text_with_outline(image, point, text, font_size):
     )
 
 
-def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, window_name: str = "visualization"):
+def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, window_name: str = "visualization",
+              draw_bbox: bool = True, draw_frame_number: bool = False, draw_confidences: bool = False):
     skeleton_type = skeleton_data.type
     limb_pairs = limbs.get(skeleton_type)
     if limb_pairs is None:
@@ -154,6 +155,9 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
         if not grabbed:
             break
 
+        if draw_frame_number:
+            draw_text_with_outline(frame, (50, 50), str(i), 1)
+
         skeleton_color = (255, 0, 255)
         for body in skel.bodies:
             skeleton_color = (skeleton_color[1], skeleton_color[2], skeleton_color[0])
@@ -161,20 +165,21 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
                 skeleton_color = tracking_colors[body.tid % len(tracking_colors)]
 
             # Boxes
-            if body.box is not None:
+            if draw_bbox and body.box is not None:
                 p1, p2 = (int(body.box[0]), int(body.box[1])), (
                     int(body.box[2]),
                     int(body.box[3]),
                 )
                 frame = cv2.rectangle(frame, p1, p2, (0, 0, 255), 2)
-                conf = body.boxConf
-                if conf is not None:
-                    conf = conf[0]
-                    draw_text_with_outline(frame, p1, str(round(float(conf), 3)), 6 / 10)
-                conf = body.poseConf.mean()
-                if conf is not None:
-                    p1 = max(p1[0], 0), max(p1[1] - 15, 0)
-                    draw_text_with_outline(frame, p1, str(round(float(conf), 3)), 6 / 10)
+                if draw_confidences:
+                    conf = body.boxConf
+                    if conf is not None:
+                        conf = conf[0]
+                        draw_text_with_outline(frame, p1, str(round(float(conf), 3)), 6 / 10)
+                    conf = body.poseConf.mean()
+                    if conf is not None:
+                        p1 = max(p1[0], 0), max(p1[1] - 17, 0)
+                        draw_text_with_outline(frame, p1, str(round(float(conf), 3)), 6 / 10)
 
             # Points
             points = body.poseXY
@@ -195,10 +200,6 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
                     cv2.circle(frame, point, 10, (0, 0, 255), -1)
                 else:
                     cv2.circle(frame, point, 4, skeleton_color, -1)
-
-            # Limbs
-
-            # Confidence
 
         cv2.imshow(window_name, frame)
         cv2.waitKey(wait_key)
