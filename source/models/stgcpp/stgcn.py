@@ -13,14 +13,15 @@ class STGCN(nn.Module):
 
     def __init__(self,
                  graph_cfg,
+                 num_classes,
                  in_channels=3,
                  base_channels=64,
                  data_bn_type='VC',
                  ch_ratio=2,
                  num_person=2,  # * Only used when data_bn_type == 'MVC'
                  num_stages=10,
-                 inflate_stages=[5, 8],
-                 down_stages=[5, 8],
+                 inflate_stages=(5, 8),
+                 down_stages=(5, 8),
                  pretrained=None,
                  **kwargs):
         super().__init__()
@@ -71,12 +72,16 @@ class STGCN(nn.Module):
         self.gcn = nn.ModuleList(modules)
         self.pretrained = pretrained
 
+        # Head
+        self.pool = nn.AdaptiveAvgPool2d(1)
+        self.fc_cls = nn.Linear(out_channels, num_classes)
+
     # def init_weights(self):
     #     if isinstance(self.pretrained, str):
     #         self.pretrained = cache_checkpoint(self.pretrained)
     #         load_checkpoint(self, self.pretrained, strict=False)
 
-    def forward(self, x):
+    def forward_extraction(self, x):
         N, M, T, V, C = x.size()
         x = x.permute(0, 1, 3, 4, 2).contiguous()
         if self.data_bn_type == 'MVC':
@@ -90,3 +95,18 @@ class STGCN(nn.Module):
 
         x = x.reshape((N, M) + x.shape[1:])
         return x
+
+    def head_forward(self, x):
+        N, M, C, T, V = x.shape
+        x = x.reshape(N * M, C, T, V)
+
+        x = self.pool(x)
+        x = x.reshape(N, M, C)
+        x = x.mean(dim=1)
+        return self.fc_cls(x)
+
+    def forward(self, x):
+        x = self.forward_extraction(x)
+        x = self.head_forward(x)
+        return x
+
