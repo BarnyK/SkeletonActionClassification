@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable, Union
+from typing import Iterable
 
 import numpy as np
 
@@ -84,10 +84,15 @@ def joints_to_bones(points: np.ndarray, skeleton_type: str) -> np.ndarray:
 
 
 def to_motion(mat: np.ndarray) -> np.ndarray:
-    # Calculate motion of points or bone vectors
-    sub_mat = mat[..., :-1, :, :]
-    result = mat[..., 1:, :, :] - sub_mat
+    result = mat.copy()
+    result[..., 1:, :, :] = np.diff(result, 1, axis=1)
+    return result
 
+
+def to_accel(mat: np.ndarray) -> np.ndarray:
+    result = mat.copy()
+    result[..., 1:, :, :] = np.diff(result, 1, axis=1)
+    result[..., 1:, :, :] = np.diff(result, 1, axis=1)
     return result
 
 
@@ -142,3 +147,13 @@ def __calculate_angles(points: np.ndarray, angle_definitions: Iterable[tuple[int
     # angles_in_degrees = np.degrees(angles_in_radians)
 
     return angles_in_radians
+
+
+def relative_joints(mat: np.ndarray, skeleton_type: str) -> np.ndarray:
+    center_pos_map = {
+        "coco17": lambda x: (x[..., 5, :] + x[..., 6, :]) / 2
+    }
+    center_func = center_pos_map.get(skeleton_type)
+    centers = center_func(mat)
+    result = mat - centers[:, :, np.newaxis, :]
+    return result

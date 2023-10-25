@@ -7,7 +7,7 @@ from preprocessing import skeleton_filters
 from preprocessing.keypoint_fill import keypoint_fill
 from preprocessing.nms import nms
 from preprocessing.normalizations import screen_normalization, relative_normalization, spine_normalization, \
-    mean_spine_normalization, joints_to_bones, to_angles, to_motion, bone_angles
+    mean_spine_normalization, joints_to_bones, to_angles, to_motion, bone_angles, relative_joints
 from preprocessing.tracking import pose_track, select_tracks_by_motion
 from shared.structs import SkeletonData
 
@@ -67,3 +67,7 @@ class Test(TestCase):
     def test_bone_angles(self):
         mat = joints_to_bones(self.mat, self.data.type)
         mat = bone_angles(mat)
+
+    def test_relative_joints(self):
+        mat = relative_joints(self.mat, self.data.type)
+
