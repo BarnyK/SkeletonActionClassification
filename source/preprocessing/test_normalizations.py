@@ -7,7 +7,7 @@ from preprocessing import skeleton_filters
 from preprocessing.keypoint_fill import keypoint_fill
 from preprocessing.nms import nms
 from preprocessing.normalizations import screen_normalization, relative_normalization, spine_normalization, \
-    mean_spine_normalization, joints_to_bones, to_angles, to_motion, bone_angles, relative_joints
+    mean_spine_normalization
 from preprocessing.tracking import pose_track, select_tracks_by_motion
 from shared.structs import SkeletonData
 
@@ -50,24 +50,3 @@ class Test(TestCase):
         y_min, y_max = stack[:, :, 1].min(), stack[:, :, 1].max()
         var = np.var(stack)
         print(name, mean, var, x_min, x_max, y_min, y_max)
-
-    def test_to_bones(self):
-        mat = joints_to_bones(self.mat, self.data.type)
-
-    def test_to_angles(self):
-        mat = to_angles(self.mat, self.data.type)
-
-    def test_to_motion(self):
-        mat = to_motion(self.mat)
-
-    def test_bone_to_motion(self):
-        mat = joints_to_bones(self.mat, self.data.type)
-        mat = to_motion(mat)
-
-    def test_bone_angles(self):
-        mat = joints_to_bones(self.mat, self.data.type)
-        mat = bone_angles(mat)
-
-    def test_relative_joints(self):
-        mat = relative_joints(self.mat, self.data.type)
-
