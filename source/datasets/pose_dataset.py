@@ -1,16 +1,27 @@
+from __future__ import annotations
+
 import pickle
 
 import numpy as np
+import torch
 from torch.utils.data import Dataset, DataLoader
+from tqdm import tqdm
 
 from datasets.sampler import sampler
-import torch
+from datasets.transform_wrappers import TransformsDict, PoseTransform, TransformsList
+from models import create_stgcnpp
+from preprocessing.normalizations import spine_normalization, screen_normalization
 
-from preprocessing.feature_extraction import to_angles
+
+def flatten_list(in_list):
+    if len(in_list) == 0 or not isinstance(in_list[0], list):
+        return in_list
+    return [x for hid_list in in_list for x in hid_list]
 
 
 class PoseDataset(Dataset):
-    def __init__(self, data_file: str, window_size: int, samples_per_window: int):
+    def __init__(self, data_file: str, feature_list: list[str], window_size: int, samples_per_window: int,
+                 symmetry: bool = False):
         with open(data_file, "rb") as f:
             data = pickle.load(f)
         # Data should be a dict with keys "labels", "points", "confidences", "image_shape"
@@ -19,10 +30,37 @@ class PoseDataset(Dataset):
         self.confidences = data.get("confidences")
         self.image_shape = data.get("image_shape", (1920, 1080))
         self.skeleton_type = data.get("skeleton_type", "coco17")
+
         self.window_size = window_size
         self.samples_per_window = samples_per_window
 
+        self.symmetry = symmetry  # Symmetry processing for 2P-gcn
+        self.feature_list = feature_list
+        self.flat_feature_list = flatten_list(feature_list)
+
         assert len(self.labels) == len(self.points)
+        self.transforms: dict[str, PoseTransform] = {k: v(self.skeleton_type) for k, v in TransformsDict.items()}
+
+        self.required_transforms = self.solve_feature_transform_requirements()
+
+        for feature in self.flat_feature_list:
+            if feature not in self.transforms.keys():
+                raise ValueError(f"feature {feature} is not supported")
+
+    def solve_feature_transform_requirements(self):
+        required_transforms = set()
+        queue = flatten_list(self.feature_list)[:]
+        while queue:
+            feature_name = queue.pop(0)
+            required_transforms.add(feature_name)
+            transform = TransformsDict[feature_name]
+            required = transform.requires
+            for req in required:
+                if req.name not in required_transforms:
+                    queue.append(req.name)
+                required_transforms.add(req.name)
+        required_transforms = sorted(required_transforms, key=lambda x: TransformsList.index(TransformsDict[x]))
+        return required_transforms
 
     def __len__(self):
         return len(self.labels)
@@ -30,50 +68,76 @@ class PoseDataset(Dataset):
     def __getitem__(self, idx):
         label = self.labels[idx]
         points = self.points[idx]
+        points = np.float32(points)
         # Normalize
+        data1 = screen_normalization(points, (1920, 1080))
+        data2 = spine_normalization(points, self.skeleton_type)
 
         # Sample
-        data = sampler(points, self.window_size, self.samples_per_window)
-        # data = torch.from_numpy(data)
-        # Data is of shape [N, T, point_count, 2]
+        features = sampler(points, self.window_size, self.samples_per_window)
 
-        # Features: "joints", "bones", "m_joints", "m_bones", "angles", "bone_angles", "bone_lengths"
-        #              2         2         2           2         1            2              1
-        # featTODO: "relative_joint", "accel_joints", "accel_bones"
-        #               2                   2               2
         # Calculate features
-        feature_dictionary = {
-            "joints": data, "angles": to_angles(data, self.skeleton_type),
-        }
+        feature_dictionary = {"joints": features}
+        for feat in self.required_transforms:
+            self.transforms[feat](feature_dictionary)
 
         # Combine features
-        combine_list = ["joints", "angles", "bones", "bone_lengths"]
-        if isinstance(combine_list[0], list):
-            # TPGCN
-            raise NotImplementedError
-            pass
-        else:
-            # STGCN
-            features = [v for v in feature_dictionary.values()]
-            features = np.stack(features,axis=-1)
-            channels = [v.shape[-1] for v in features]
-            channel_count = sum(channels)
+        if isinstance(self.feature_list[0], str):
+            features = [feature_dictionary[k] for k in self.feature_list]
+            features = np.concatenate(features, axis=-1)
 
-            pass
+            # Pad empty dimension
+            M, T, V, C = features.shape
+            if M == 1:
+                padded = np.zeros((2, T, V, C), dtype=np.float32)
+                padded[0, ...] = features
+                features = padded
 
-        # Reshape
+        if isinstance(self.feature_list[0], list):
+            # Number of branches
+            B = len(self.feature_list)
+            # Number of channels in branch
+            C = sum([feature_dictionary[k].shape[-1] for k in self.feature_list[0]])
+            _, T, V, _ = features.shape
+            M = 2 if self.symmetry else 1
+            features = np.zeros((B, C, T, V * 2, M), dtype=np.float32)
+            for bi, branch in enumerate(self.feature_list):
+                branch_features = [feature_dictionary[k] for k in branch]
+                branch_features = np.concatenate(branch_features, axis=-1)
+                branch_features = branch_features.transpose(3, 1, 2, 0)  # C, T, V, M
+                features[bi, :, :, :V, 0] = branch_features[..., :, 0]
+                features[bi, :, :, V:, 0] = branch_features[..., :, 1]
+                if self.symmetry:
+                    features[bi, :, :, V:, 1] = branch_features[..., :, 0]
+                    features[bi, :, :, :V, 1] = branch_features[..., :, 1]
 
-        #
-        # Output should be [2, window_size, point_count, channels]
-        # 2P-GCN output should be [pipes, channels, window_size, 2*point_count, 1/2]
+        features = torch.from_numpy(features)
+        return features, label
 
-        return data, label
 
+if __name__ == "__main__2":
+    dataset = PoseDataset(
+        "/media/barny/SSD4/MasterThesis/Data/ntu_120_coco.f1.combined",
+        [["joints", "joint_motion"], ["bones", "bone_accel"], ["bones", "bone_motion"]],
+        64,
+        64)
+    loader = DataLoader(dataset, 16, False, num_workers=1, pin_memory=True)
+    for x, y in tqdm(loader):
+        print(x.shape)
+        break
 
 if __name__ == "__main__":
-    dataset = PoseDataset("/media/barny/SSD4/MasterThesis/Data/ntu_120_coco.f1.combined", 64, 64)
-    loader = DataLoader(dataset, 1, False, num_workers=4, pin_memory=True)
+    dataset = PoseDataset(
+        "/media/barny/SSD4/MasterThesis/Data/ntu_120_coco.f1.combined",
+        ["joints", "angles", "bones", "bone_accel"],
+        64,
+        64)
+    loader = DataLoader(dataset, 5, False, num_workers=1, pin_memory=True)
+    device = torch.device('cuda:0')
+    model = create_stgcnpp()
+    model.to(device)
+    for x, y in tqdm(loader):
+        x = x.to(device)
+        y_pred = model(x)
+        # Calculate loss
 
-    for x, y in loader:
-        print(x.shape)
-        pass
