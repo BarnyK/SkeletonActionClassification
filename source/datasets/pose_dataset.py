@@ -26,7 +26,9 @@ class PoseDataset(Dataset):
             data = pickle.load(f)
         # Data should be a dict with keys "labels", "points", "confidences", "image_shape"
         self.labels = data['labels']
+        self.labels = [x['info']['action'] for x in data['labels']]
         self.points = data['points']
+
         self.confidences = data.get("confidences")
         self.image_shape = data.get("image_shape", (1920, 1080))
         self.skeleton_type = data.get("skeleton_type", "coco17")
@@ -70,8 +72,7 @@ class PoseDataset(Dataset):
         points = self.points[idx]
         points = np.float32(points)
         # Normalize
-        data1 = screen_normalization(points, (1920, 1080))
-        data2 = spine_normalization(points, self.skeleton_type)
+        points = screen_normalization(points, (1920, 1080))
 
         # Sample
         features = sampler(points, self.window_size, self.samples_per_window)
@@ -122,22 +123,45 @@ if __name__ == "__main__2":
         64,
         64)
     loader = DataLoader(dataset, 16, False, num_workers=1, pin_memory=True)
-    for x, y in tqdm(loader):
+    for x, labels in tqdm(loader):
         print(x.shape)
         break
 
 if __name__ == "__main__":
+    import torch.nn.functional as F
+    from torch.optim.lr_scheduler import CosineAnnealingLR
     dataset = PoseDataset(
         "/media/barny/SSD4/MasterThesis/Data/ntu_120_coco.f1.combined",
-        ["joints", "angles", "bones", "bone_accel"],
+        ["joints", "joint_motion", "angles"],
         64,
         64)
-    loader = DataLoader(dataset, 5, False, num_workers=1, pin_memory=True)
+    loader = DataLoader(dataset, 16, True, num_workers=4, pin_memory=True)
     device = torch.device('cuda:0')
-    model = create_stgcnpp()
+    model = create_stgcnpp(60, 5)
     model.to(device)
-    for x, y in tqdm(loader):
-        x = x.to(device)
-        y_pred = model(x)
-        # Calculate loss
+
+    epochs = 40
+    loss_func = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0005, nesterov=True)
+    scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=0.0001)
+
+    for epoch in range(epochs):
+        running_loss = 0.0
+        current_lr = optimizer.param_groups[0]['lr']
+        for x, labels in (tq := tqdm(loader)):
+            x, labels = x.to(device, non_blocking=True), labels.to(device, non_blocking=True)
+            optimizer.zero_grad()
+
+            y_pred = model(x)
+
+            loss = F.cross_entropy(y_pred, labels-61)
+
+            tq.set_description(f"LR: {round(current_lr,4):0<6} Loss: {round(float(loss),4):0<7}")
+
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+
+        tq.set_description(f"LR: {round(current_lr, 4):0<6} Loss: {round(float(running_loss/len(loader)), 4):0<7}")
+        scheduler.step()
 

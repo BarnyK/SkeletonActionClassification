@@ -1,10 +1,10 @@
 from models.stgcpp.stgcn import STGCN
 import torch
 
-def create_stgcnpp():
-    graph_cfg = {'layout': 'coco', 'mode': 'spatial'}
-    num_classes = 60
-    model = STGCN(graph_cfg, num_classes, in_channels=7, gcn_adaptive="init", gcn_with_res=True, tcn_type='mstcn')
+def create_stgcnpp(num_classes: int, channels: int, graph_cfg: dict = None):
+    if graph_cfg is None:
+        graph_cfg = {'layout': 'coco', 'mode': 'spatial'}
+    model = STGCN(graph_cfg, num_classes, in_channels=channels, gcn_adaptive="init", gcn_with_res=True, tcn_type='mstcn')
     return model
 
 
