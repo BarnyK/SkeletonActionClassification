@@ -62,7 +62,7 @@ def to_angles(mat: np.ndarray, skeleton_type: str) -> np.ndarray:
     angle_array[..., (5, 6)] = 0
     angle_array /= (2 * np.pi)
 
-    return angle_array
+    return angle_array[..., np.newaxis]
 
 
 def __calculate_angles(points: np.ndarray, angle_definitions: Iterable[tuple[int, int, int]]) -> np.ndarray:
