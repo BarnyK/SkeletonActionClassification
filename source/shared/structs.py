@@ -152,7 +152,7 @@ class SkeletonData:
         tids = self.get_all_tids()
         M, T, (V, N) = len(tids), self.length, self.get_points_shape()
 
-        mat = np.zeros((M, T, V, N), dtype=float)
+        mat = np.zeros((M, T, V, N), dtype=np.float32)
         for i, tid in enumerate(tids):
             tid_bodies = [body for frame in self.frames for body in frame.bodies]
             tid_bodies = [body for body in tid_bodies if body.tid == tid]

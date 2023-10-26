@@ -8,7 +8,7 @@ def sampler(data: np.ndarray, window_length: int, samples_per_window: int) -> np
     if T < window_length:
         # data is shorter than window
         # position the data
-        new_data = np.zeros((*data.shape[:-3], window_length, V, C))
+        new_data = np.zeros((*data.shape[:-3], window_length, V, C), dtype=np.float32)
         t = window_length - T
         pos = np.random.randint(0, t)
         new_data[..., pos:pos + T, :, :] = data

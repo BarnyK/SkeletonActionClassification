@@ -20,10 +20,10 @@ def read_file(file_path):
                 tracker_id = int(person_info[0])
                 joint_count = int(fr.readline())
                 joints = [fr.readline().strip().split() for _ in range(joint_count)]
-                pose_xy = np.array([x[5:7] for x in joints], dtype=float).reshape(
+                pose_xy = np.array([x[5:7] for x in joints], dtype=np.float32).reshape(
                     (-1, 2)
                 )
-                pose_xyz = np.array([x[:3] for x in joints], dtype=float).reshape(
+                pose_xyz = np.array([x[:3] for x in joints], dtype=np.float32).reshape(
                     (-1, 3)
                 )
 

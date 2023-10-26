@@ -1,4 +1,5 @@
 import os
+import time
 
 import torch
 from tqdm import tqdm
@@ -17,7 +18,7 @@ def single_file_pose(filename, device: torch.device, skeleton_type: str = "coco1
     detector.load_model()
 
     pose = init_pose_model(device, gcfg, gcfg.weights_file)
-    det_loader = DetectionLoader(filename, detector, gcfg, opts, "video", 8, 256)
+    det_loader = DetectionLoader(filename, detector, gcfg, opts, "video", 8, 64)
     det_loader.start()
 
     pose_data_queue = run_pose_worker(pose, det_loader, opts)
@@ -41,8 +42,8 @@ def single_file_pose(filename, device: torch.device, skeleton_type: str = "coco1
         len(frames),
         det_loader.frameSize,
     )
-    visualize(data, data.video_file, wait_key=0, draw_bbox=True, draw_confidences=True, draw_frame_number=True)
+    #visualize(data, data.video_file, wait_key=1000//30, draw_bbox=True, draw_confidences=True, draw_frame_number=True)
 
 
 if __name__ == "__main__":
-    single_file_pose("/media/barny/SSD4/MasterThesis/Data/ut-interaction/1_1_2.avi", torch.device("cuda"), "coco17")
+    single_file_pose("/media/barny/SSD4/MasterThesis/Data/concatenated.avi", torch.device("cuda"), "coco17")

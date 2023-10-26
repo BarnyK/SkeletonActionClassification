@@ -19,7 +19,7 @@ def skeleton_bbox(skeleton: np.ndarray):
 
 def skeleton_middle(skeleton: np.ndarray):
     min_x, max_x, min_y, max_y = skeleton_bbox(skeleton)
-    return np.array([min_x + (max_x - min_x) / 2, min_y + (max_y - min_y) / 2], dtype=float)
+    return np.array([min_x + (max_x - min_x) / 2, min_y + (max_y - min_y) / 2], dtype=np.float32)
 
 
 def check_relative_body_distance(skeleton1: np.ndarray, skeleton2: np.ndarray):
