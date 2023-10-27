@@ -166,3 +166,17 @@ class SkeletonData:
         if [body for frame in self.frames for body in frame.bodies]:
             return False
         return True
+
+    def to_matrix_confidences(self) -> np.ndarray:
+        tids = self.get_all_tids()
+        M, T, (V, _) = len(tids), self.length, self.get_points_shape()
+
+        mat = np.zeros((M, T, V, 1), dtype=np.float32)
+        for i, tid in enumerate(tids):
+            tid_bodies = [body for frame in self.frames for body in frame.bodies]
+            tid_bodies = [body for body in tid_bodies if body.tid == tid]
+            if len(tid_bodies) != T:
+                raise ValueError(f"Missing bodies for tid:{tid}")
+            mat[i, ...] = np.stack([body.poseConf for body in tid_bodies])
+
+        return mat
