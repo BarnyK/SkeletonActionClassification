@@ -67,7 +67,7 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, config
 
     if no_pool:
         results = []
-        for file in files:
+        for file in tqdm(files):
             results.append(preprocess_file(file, config))
     else:
         pool = multiprocessing.Pool(processes=processes)
@@ -80,6 +80,9 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, config
     for strategy in split_strategy:
         split_func = datasets.split_map[strategy]
         train_split, test_split = split_func(results)
+        tqdm.write(f"{strategy}: {len(train_split['action']) + len(test_split['action'])}")
+        tqdm.write(f"\tTrain: {len(train_split['action'])}")
+        tqdm.write(f"\tTest: {len(test_split['action'])}")
 
         train_filename = os.path.join(output_path, f"{strategy}.train.pkl")
         with open(train_filename, "wb") as f:
@@ -92,7 +95,7 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, config
 
 if __name__ == '__main__':
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
-                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"],
+                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
                      PreprocessConfig(),
                      datasets.all_splits,

@@ -1,3 +1,4 @@
+import datasets
 from procedures.preprocess_files import preprocess_files, PreprocessConfig
 
 # preprocess_files("/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
@@ -23,9 +24,9 @@ if __name__ == "__main__2":
 
 if __name__ == "__main__":
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
-                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"],
+                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
                      PreprocessConfig(),
-                     ["ntu_xsub", "ntu_xview", "ntu120_xset", "ntu120_xsub"],
-                     1,
+                     datasets.all_splits,
+                     24,
                      False)
