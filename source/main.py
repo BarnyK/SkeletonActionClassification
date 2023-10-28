@@ -1,4 +1,3 @@
-
 from procedures.preprocess_files import preprocess_files, PreprocessConfig
 
 # preprocess_files("/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
@@ -7,7 +6,7 @@ from procedures.preprocess_files import preprocess_files, PreprocessConfig
 #                  "/media/barny/SSD4/MasterThesis/Data/ntu_120_coco.f1.combined", PreprocessConfig())
 # testing_generation()
 
-if __name__ == "__main__":
+if __name__ == "__main__2":
     import torch
     from procedures.single_file_pose import single_file_pose
 
@@ -17,7 +16,16 @@ if __name__ == "__main__":
     #     "coco17",
     # )
     single_file_pose(
-            "/media/barny/SSD4/MasterThesis/Data/concatenated.avi",
-            torch.device("cuda"),
-            "coco17",
-        )
+        "/media/barny/SSD4/MasterThesis/Data/concatenated.avi",
+        torch.device("cuda"),
+        "coco17",
+    )
+
+if __name__ == "__main__":
+    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
+                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"],
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
+                     PreprocessConfig(),
+                     ["ntu_xsub", "ntu_xview", "ntu120_xset", "ntu120_xsub"],
+                     1,
+                     False)

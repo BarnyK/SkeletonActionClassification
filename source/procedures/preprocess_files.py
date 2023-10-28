@@ -5,7 +5,7 @@ import os
 import pickle
 from dataclasses import dataclass
 from functools import partial
-from typing import Union
+from typing import Union, Iterable
 
 from tqdm import tqdm
 
@@ -53,7 +53,7 @@ def preprocess_file(in_file: str, config: PreprocessConfig):
 
 
 def preprocess_files(input_path: Union[str, list[str]], output_path: str, config: PreprocessConfig,
-                     split_strategy: str = "ntu_xsub",
+                     split_strategy: Union[str, Iterable[str]] = ("ntu_xsub",),
                      processes: int = 12, no_pool: bool = False):
     files = []
     if isinstance(input_path, str):
@@ -62,7 +62,8 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, config
         for path in input_path:
             files += [os.path.join(path, f) for f in os.listdir(path)]
 
-    files = files[:100]
+    if isinstance(split_strategy, str):
+        split_strategy = [split_strategy]
 
     if no_pool:
         results = []
@@ -74,18 +75,26 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, config
         pool.close()
         pool.join()
 
-    split_func = datasets.split_map[split_strategy]
-    train_split, test_split = split_func(results)
+    os.makedirs(output_path, exist_ok=True)
 
-    data = {
-        "labels": [x[0] for x, y, *_ in results if y is not None],
-        "points": [y for x, y, in results if y is not None]
-    }
+    for strategy in split_strategy:
+        split_func = datasets.split_map[strategy]
+        train_split, test_split = split_func(results)
 
-    with open(output_path, "wb") as f:
-        pickle.dump(data, f)
+        train_filename = os.path.join(output_path, f"{strategy}.train.pkl")
+        with open(train_filename, "wb") as f:
+            pickle.dump(train_split, f)
+
+        test_filename = os.path.join(output_path, f"{strategy}.test.pkl")
+        with open(test_filename, "wb") as f:
+            pickle.dump(train_split, f)
 
 
 if __name__ == '__main__':
-    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/ntu_coco.combined", PreprocessConfig(), "ntu_xsub",1, True)
+    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
+                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"],
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
+                     PreprocessConfig(),
+                     datasets.all_splits,
+                     12,
+                     False)

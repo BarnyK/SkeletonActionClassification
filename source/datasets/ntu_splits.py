@@ -22,33 +22,44 @@ def __tuplist_to_dict(lista: list[tuple], keys: list[str]):
     return res
 
 
-def ntu_split_factory(ntu_ver: int, param_key: str, train_set: set[int]):
+def ntu_split_factory(ntu_ver: int, param_key: str, train_set: set[int], mutual: bool = False):
     if ntu_ver == 60:
         ACTION_SET = NTU_ACTIONS
     elif ntu_ver == 120:
         ACTION_SET = NTU120_ACTIONS
+    else:
+        raise ValueError(f"ntu_ver should be 60 or 120")
+    if mutual:
+        ACTION_SET = ACTION_SET & MUTUAL_ACTIONS
 
     def split(data: list[list[dict, np.ndarray, np.ndarray]]):
         train_split = []
         test_split = []
+        keys = ["action", "dataset_info", "poseXY", "poseConf"]
         for dataset_info, poseXY, poseConf in data:
             action_id = dataset_info['info']['action']
             if action_id not in ACTION_SET:
                 continue
             param_id = dataset_info['info'][param_key]
+            tup_data = (action_id, dataset_info, poseXY, poseConf)
             if param_id in train_set:
-                train_split.append("")
+                train_split.append(tup_data)
             else:
-                test_split.append("")
+                test_split.append(tup_data)
 
-        train_split = __tuplist_to_dict(train_split, [])
-        test_split = __tuplist_to_dict(test_split, [])
+        train_split = __tuplist_to_dict(train_split, keys)
+        test_split = __tuplist_to_dict(test_split, keys)
         return train_split, test_split
 
     return split
 
 
-ntu_xsub = ntu_split_factory(60, "person", XSUB)
-ntu_xview = ntu_split_factory(60, "view", XVIEW)
-ntu120_xset = ntu_split_factory(120, "set", XSET)
-ntu120_xsub = ntu_split_factory(120, "person", XSUB)
+ntu_xsub_split = ntu_split_factory(60, "person", XSUB)
+ntu_xview_split = ntu_split_factory(60, "camera", XVIEW)
+ntu120_xset_split = ntu_split_factory(120, "set", XSET)
+ntu120_xsub_split = ntu_split_factory(120, "person", XSUB)
+
+ntu_mutual_xsub_split = ntu_split_factory(60, "person", XSUB, True)
+ntu_mutual_xview_split = ntu_split_factory(60, "camera", XVIEW, True)
+ntu120_mutual_xset_split = ntu_split_factory(120, "set", XSET, True)
+ntu120_mutual_xsub_split = ntu_split_factory(120, "person", XSUB, True)
