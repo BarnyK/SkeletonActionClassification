@@ -37,11 +37,11 @@ def ntu_split_factory(ntu_ver: int, param_key: str, train_set: set[int], mutual:
         test_split = []
         keys = ["action", "dataset_info", "poseXY", "poseConf"]
         for dataset_info, poseXY, poseConf in data:
-            action_id = dataset_info['info']['action']
+            action_id = dataset_info.info['action']
             if action_id not in ACTION_SET:
                 continue
-            param_id = dataset_info['info'][param_key]
-            tup_data = (action_id, dataset_info, poseXY, poseConf)
+            param_id = dataset_info.info[param_key]
+            tup_data = (action_id, dataset_info.to_filename(), poseXY, poseConf)
             if param_id in train_set:
                 train_split.append(tup_data)
             else:
