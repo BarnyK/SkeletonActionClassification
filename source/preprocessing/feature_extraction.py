@@ -5,12 +5,11 @@ from typing import Iterable
 import numpy as np
 
 
-def joints_to_bones(points: np.ndarray, skeleton_type: str) -> np.ndarray:
+def joints_to_bones(mat: np.ndarray, skeleton_type: str) -> np.ndarray:
     # Calculate bone vectors from joints
     bones = {"coco17": ((0, 0), (1, 0), (2, 0), (3, 1), (4, 2), (5, 0), (6, 0), (7, 5), (8, 6), (9, 7), (10, 8),
                         (11, 0), (12, 0), (13, 11), (14, 12), (15, 13), (16, 14))
              }
-    assert points.ndim == 4
 
     bone_pairs = bones.get(skeleton_type)
     if bone_pairs is None:
@@ -18,30 +17,30 @@ def joints_to_bones(points: np.ndarray, skeleton_type: str) -> np.ndarray:
 
     indices_1 = [x for x, _ in bone_pairs]
     indices_2 = [y for _, y in bone_pairs]
-    bone_array = points[:, :, indices_1, :] - points[:, :, indices_2, :]
+    result = mat[..., indices_1, :] - mat[..., indices_2, :]
 
-    return bone_array
+    return result
 
 
 def to_motion(mat: np.ndarray) -> np.ndarray:
     result = mat.copy()
-    result[..., 1:, :, :] = np.diff(result, 1, axis=1)
+    result[..., 1:, :, :] = np.diff(result, 1, axis=-3)
     return result
 
 
 def to_accel(mat: np.ndarray) -> np.ndarray:
     result = mat.copy()
-    result[..., 1:, :, :] = np.diff(result, 1, axis=1)
-    result[..., 1:, :, :] = np.diff(result, 1, axis=1)
+    result[..., 1:, :, :] = np.diff(result, 1, axis=-3)
+    result[..., 1:, :, :] = np.diff(result, 1, axis=-3)
     return result
 
 
 def bone_angles(mat: np.ndarray) -> np.ndarray:
     # Calculate angles of bones to axes
     np.seterr(divide='ignore', invalid='ignore')
-    magnitudes = np.linalg.norm(mat, axis=-1)
-    angles = np.arccos(mat / magnitudes[..., np.newaxis] % 1)
-    return angles
+    magnitudes = np.linalg.norm(mat, axis=-1) + 0.0001
+    result = np.arccos(mat / magnitudes[..., np.newaxis] % 1)
+    return result
 
 
 def to_angles(mat: np.ndarray, skeleton_type: str) -> np.ndarray:
@@ -95,5 +94,5 @@ def relative_joints(mat: np.ndarray, skeleton_type: str) -> np.ndarray:
     }
     center_func = center_pos_map.get(skeleton_type)
     centers = center_func(mat)
-    result = mat - centers[:, :, np.newaxis, :]
+    result = mat - centers[..., np.newaxis, :]
     return result

@@ -80,7 +80,7 @@ class ToBoneMotion(PoseTransform):
 
 class ToJointAccel(PoseTransform):
     name: str = "joint_accel"
-    requires = [ToJointMotion]
+    requires = [Joints]
 
     def __init__(self, skeleton_type: str, *args, **kwargs):
         super().__init__(skeleton_type, *args, **kwargs)
@@ -169,7 +169,7 @@ class FeatureNames:
 
 TransformsList: list[Type[PoseTransform]] = [Joints, ToJointMotion, ToAngles, ToRelativeJoints, ToJointAccel, ToBones,
                                              ToBoneMotion, ToBoneAngles, ToBoneAccel]
-
+TransformsNameList = [t.name for t in TransformsList]
 TransformsDict: dict[str, Type[PoseTransform]] = {
     Joints.name: Joints,  # 1
     ToJointMotion.name: ToJointMotion,  # 2

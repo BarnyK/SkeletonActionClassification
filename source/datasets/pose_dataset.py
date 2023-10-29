@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pickle
+from typing import Union
 
 import numpy as np
 import torch
@@ -8,7 +9,7 @@ from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 
 from datasets.sampler import Sampler
-from datasets.transform_wrappers import TransformsDict, PoseTransform, TransformsList
+from datasets.transform_wrappers import TransformsDict, PoseTransform, TransformsList, TransformsNameList
 from models import create_stgcnpp
 from preprocessing.normalizations import screen_normalization
 
@@ -20,7 +21,7 @@ def flatten_list(in_list):
 
 
 class PoseDataset(Dataset):
-    def __init__(self, data_file: str, feature_list: list[str],
+    def __init__(self, data_file: str, feature_list: Union[list[str], list[list[str]]],
                  sampler: Sampler, symmetry: bool = False):
         with open(data_file, "rb") as f:
             data = pickle.load(f)
@@ -74,6 +75,10 @@ class PoseDataset(Dataset):
 
         # Sample
         features = self.sampler(points)
+        listed = False
+        if isinstance(features, list):
+            listed = True
+            features = np.stack(features)
 
         # Calculate features
         feature_dictionary = {"joints": features}
@@ -86,35 +91,68 @@ class PoseDataset(Dataset):
             features = np.concatenate(features, axis=-1)
 
             # Pad empty dimension
-            M, T, V, C = features.shape
-            if M == 1:
-                padded = np.zeros((2, T, V, C), dtype=np.float32)
-                padded[0, ...] = features
-                features = padded
+            if features.ndim == 4:
+                M, T, V, C = features.shape
+                if M == 1:
+                    padded = np.zeros((2, T, V, C), dtype=np.float32)
+                    padded[0, ...] = features
+                    features = padded
+            elif features.ndim > 4:
+                *R, M, T, V, C = features.shape
+                if M == 1:
+                    padded = np.zeros((*R, 2, T, V, C), dtype=np.float32)
+                    padded[..., 0,np.newaxis, :, :, :] = features
+                    features = padded
 
         if isinstance(self.feature_list[0], list):
-            # Number of branches
-            B = len(self.feature_list)
-            # Number of channels in branch
-            C = sum([feature_dictionary[k].shape[-1] for k in self.feature_list[0]])
-            _, T, V, _ = features.shape
-            M = 2 if self.symmetry else 1
-            features = np.zeros((B, C, T, V * 2, M), dtype=np.float32)
-            for bi, branch in enumerate(self.feature_list):
-                branch_features = [feature_dictionary[k] for k in branch]
-                branch_features = np.concatenate(branch_features, axis=-1)
-                branch_features = branch_features.transpose(3, 1, 2, 0)  # C, T, V, M
-                features[bi, :, :, :V, 0] = branch_features[..., :, 0]
-                features[bi, :, :, V:, 0] = branch_features[..., :, 1]
-                if self.symmetry:
-                    features[bi, :, :, V:, 1] = branch_features[..., :, 0]
-                    features[bi, :, :, :V, 1] = branch_features[..., :, 1]
+            out_data = []
+            for s in range(features.shape[0]):
+                # Number of branches
+                B = len(self.feature_list)
+                # Number of channels in branch
+                C = sum([feature_dictionary[k].shape[-1] for k in self.feature_list[0]])
+                *_, T, V, _ = features.shape
+                M = 2 if self.symmetry else 1
+                new_features = np.zeros((B, C, T, V * 2, M), dtype=np.float32)
+                for bi, branch in enumerate(self.feature_list):
+                    branch_features = [feature_dictionary[k][s] for k in branch]
+                    branch_features = np.concatenate(branch_features, axis=-1)
+                    branch_features = branch_features.transpose(3, 1, 2, 0)  # C, T, V, M
+                    new_features[bi, :, :, :V, 0] = branch_features[..., :, 0]
+                    new_features[bi, :, :, V:, 0] = branch_features[..., :, 1]
+                    if self.symmetry:
+                        new_features[bi, :, :, V:, 1] = branch_features[..., :, 0]
+                        new_features[bi, :, :, :V, 1] = branch_features[..., :, 1]
+                out_data.append(new_features)
+            features = np.stack(features)
 
         features = torch.from_numpy(features)
         return features, label - 1, label
 
 
 if __name__ == "__main__":
+    test_sampler = Sampler(64, 32, True, 8)
+    # test_set = PoseDataset(
+    #     "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
+    #     TransformsNameList,
+    #     test_sampler
+    # )
+    # test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=1, pin_memory=True)
+    # for x, labels, labels_real in tqdm(test_loader):
+    #     print(x.shape)
+    #     break
+
+    test_set = PoseDataset(
+        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_mutual_xsub.test.pkl",
+        [["joints", "angles"], ["joint_motion", "angles"]],
+        test_sampler
+    )
+    test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=1, pin_memory=True)
+    for x, labels, labels_real in tqdm(test_loader):
+        print(x.shape)
+        break
+
+if __name__ == "__main__2":
     test_sampler = Sampler(64, 32, True, 10)
     test_set = PoseDataset(
         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
@@ -140,7 +178,7 @@ if __name__ == "__main__2":
 
     test_sampler = Sampler(64, 32, True, 10)
     test_set = PoseDataset(
-        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
+        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl",
         ["joints", "joint_motion", "angles"],
         test_sampler
     )
