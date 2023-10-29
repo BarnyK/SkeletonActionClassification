@@ -18,6 +18,10 @@ class PoseTransform:
     def __call__(self, *args, **kwargs):
         pass
 
+    @staticmethod
+    def calculate_channels(in_chan: int):
+        return in_chan
+
 
 class Joints(PoseTransform):
     name = "joints"
@@ -139,6 +143,10 @@ class ToAngles(PoseTransform):
         features[self.name] = fe.to_angles(joints, self.skeleton_type)
         return features
 
+    @staticmethod
+    def calculate_channels(in_chan: int):
+        return 1
+
 
 class ToRelativeJoints(PoseTransform):
     name: str = "joints_relative"
@@ -181,3 +189,10 @@ TransformsDict: dict[str, Type[PoseTransform]] = {
     ToBoneAngles.name: ToBoneAngles,  # 3
     ToBoneAccel.name: ToBoneAccel,  # 4
 }
+
+
+def calculate_channels(features: list[str], input_chan: int):
+    channel_sum = 0
+    for feat in features:
+        channel_sum += TransformsDict[feat].calculate_channels(input_chan)
+    return channel_sum
