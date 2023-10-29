@@ -49,7 +49,7 @@ def preprocess_file(in_file: str, config: PreprocessConfig):
         tqdm.write(f"Empty bodies in: {in_file}")
         return in_file, None
     # Should be of shape, M, T, V, C
-    return data.dataset_info, mat, confMat
+    return data.dataset_info, mat, confMat, data.type, data.original_image_shape
 
 
 def preprocess_files(input_path: Union[str, list[str]], output_path: str, config: PreprocessConfig,
@@ -60,7 +60,7 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, config
         files = [os.path.join(input_path, f) for f in os.listdir(input_path)]
     elif isinstance(input_path, list):
         for path in input_path:
-            files += [os.path.join(path, f) for f in os.listdir(path)][:200]
+            files += [os.path.join(path, f) for f in os.listdir(path)]
 
     if isinstance(split_strategy, str):
         split_strategy = [split_strategy]

@@ -7,10 +7,10 @@ import torch
 from torch.utils.data import Dataset, DataLoader
 from tqdm import tqdm
 
-from datasets.sampler import sampler
+from datasets.sampler import Sampler
 from datasets.transform_wrappers import TransformsDict, PoseTransform, TransformsList
 from models import create_stgcnpp
-from preprocessing.normalizations import spine_normalization, screen_normalization
+from preprocessing.normalizations import screen_normalization
 
 
 def flatten_list(in_list):
@@ -20,21 +20,19 @@ def flatten_list(in_list):
 
 
 class PoseDataset(Dataset):
-    def __init__(self, data_file: str, feature_list: list[str], window_size: int, samples_per_window: int,
-                 symmetry: bool = False):
+    def __init__(self, data_file: str, feature_list: list[str],
+                 sampler: Sampler, symmetry: bool = False):
         with open(data_file, "rb") as f:
             data = pickle.load(f)
         # Data should be a dict with keys "labels", "points", "confidences", "image_shape"
-        self.labels = data['labels']
-        self.labels = [x['info']['action'] for x in data['labels']]
-        self.points = data['points']
+        self.labels = data['action']
+        self.points = data['poseXY']
 
-        self.confidences = data.get("confidences")
-        self.image_shape = data.get("image_shape", (1920, 1080))
+        self.confidences = data['poseConf']
+        self.image_shape = data.get("im_shape", (1920, 1080))
         self.skeleton_type = data.get("skeleton_type", "coco17")
 
-        self.window_size = window_size
-        self.samples_per_window = samples_per_window
+        self.sampler = sampler
 
         self.symmetry = symmetry  # Symmetry processing for 2P-gcn
         self.feature_list = feature_list
@@ -75,7 +73,7 @@ class PoseDataset(Dataset):
         points = screen_normalization(points, (1920, 1080))
 
         # Sample
-        features = sampler(points, self.window_size, self.samples_per_window)
+        features = self.sampler(points)
 
         # Calculate features
         feature_dictionary = {"joints": features}
@@ -113,29 +111,41 @@ class PoseDataset(Dataset):
                     features[bi, :, :, :V, 1] = branch_features[..., :, 1]
 
         features = torch.from_numpy(features)
-        return features, label
+        return features, label - 1, label
 
 
-if __name__ == "__main__2":
-    dataset = PoseDataset(
-        "/media/barny/SSD4/MasterThesis/Data/ntu_120_coco.f1.combined",
-        [["joints", "joint_motion"], ["bones", "bone_accel"], ["bones", "bone_motion"]],
-        64,
-        64)
-    loader = DataLoader(dataset, 16, False, num_workers=1, pin_memory=True)
-    for x, labels in tqdm(loader):
+if __name__ == "__main__":
+    test_sampler = Sampler(64, 32, True, 10)
+    test_set = PoseDataset(
+        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
+        ["joints", "joint_motion", "angles"],
+        test_sampler
+    )
+    test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=4, pin_memory=True)
+    for x, labels in tqdm(test_loader):
         print(x.shape)
         break
 
-if __name__ == "__main__":
+if __name__ == "__main__2":
     import torch.nn.functional as F
     from torch.optim.lr_scheduler import CosineAnnealingLR
-    dataset = PoseDataset(
-        "/media/barny/SSD4/MasterThesis/Data/ntu_120_coco.f1.combined",
+
+    train_sampler = Sampler(64, 32)
+    train_set = PoseDataset(
+        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
         ["joints", "joint_motion", "angles"],
-        64,
-        64)
-    loader = DataLoader(dataset, 16, True, num_workers=4, pin_memory=True)
+        train_sampler
+    )
+    train_loader = DataLoader(train_set, 16, True, num_workers=4, pin_memory=True)
+
+    test_sampler = Sampler(64, 32, True, 10)
+    test_set = PoseDataset(
+        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
+        ["joints", "joint_motion", "angles"],
+        test_sampler
+    )
+    test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=4, pin_memory=True)
+
     device = torch.device('cuda:0')
     model = create_stgcnpp(60, 5)
     model.to(device)
@@ -148,20 +158,19 @@ if __name__ == "__main__":
     for epoch in range(epochs):
         running_loss = 0.0
         current_lr = optimizer.param_groups[0]['lr']
-        for x, labels in (tq := tqdm(loader)):
+        for x, labels, labels_real in (tq := tqdm(train_loader)):
             x, labels = x.to(device, non_blocking=True), labels.to(device, non_blocking=True)
             optimizer.zero_grad()
 
             y_pred = model(x)
 
-            loss = F.cross_entropy(y_pred, labels-61)
+            loss = F.cross_entropy(y_pred, labels - 61)
 
-            tq.set_description(f"LR: {round(current_lr,4):0<6} Loss: {round(float(loss),4):0<7}")
+            tq.set_description(f"LR: {round(current_lr, 4):0<6} Loss: {round(float(loss), 4):0<7}")
 
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
 
-        tq.set_description(f"LR: {round(current_lr, 4):0<6} Loss: {round(float(running_loss/len(loader)), 4):0<7}")
+        tq.set_description(f"LR: {round(current_lr, 4):0<6} Loss: {round(float(running_loss / len(loader)), 4):0<7}")
         scheduler.step()
-

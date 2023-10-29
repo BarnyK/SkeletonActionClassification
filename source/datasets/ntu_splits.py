@@ -36,7 +36,7 @@ def ntu_split_factory(ntu_ver: int, param_key: str, train_set: set[int], mutual:
         train_split = []
         test_split = []
         keys = ["action", "dataset_info", "poseXY", "poseConf"]
-        for dataset_info, poseXY, poseConf in data:
+        for dataset_info, poseXY, poseConf, *_ in data:
             action_id = dataset_info.info['action']
             if action_id not in ACTION_SET:
                 continue
@@ -48,7 +48,11 @@ def ntu_split_factory(ntu_ver: int, param_key: str, train_set: set[int], mutual:
                 test_split.append(tup_data)
 
         train_split = __tuplist_to_dict(train_split, keys)
+        train_split['skeleton_type'] = data[0][3]
+        train_split['im_shape'] = data[0][4]
         test_split = __tuplist_to_dict(test_split, keys)
+        test_split['skeleton_type'] = data[0][3]
+        test_split['im_shape'] = data[0][4]
         return train_split, test_split
 
     return split
