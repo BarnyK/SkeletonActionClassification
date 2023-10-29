@@ -130,85 +130,85 @@ class PoseDataset(Dataset):
         return features, label - 1, label
 
 
-if __name__ == "__main__":
-    test_sampler = Sampler(64, 32, True, 8)
-    # test_set = PoseDataset(
-    #     "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
-    #     TransformsNameList,
-    #     test_sampler
-    # )
-    # test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=1, pin_memory=True)
-    # for x, labels, labels_real in tqdm(test_loader):
-    #     print(x.shape)
-    #     break
-
-    test_set = PoseDataset(
-        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_mutual_xsub.test.pkl",
-        [["joints", "angles"], ["joint_motion", "angles"]],
-        test_sampler
-    )
-    test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=1, pin_memory=True)
-    for x, labels, labels_real in tqdm(test_loader):
-        print(x.shape)
-        break
-
-if __name__ == "__main__2":
-    test_sampler = Sampler(64, 32, True, 10)
-    test_set = PoseDataset(
-        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
-        ["joints", "joint_motion", "angles"],
-        test_sampler
-    )
-    test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=4, pin_memory=True)
-    for x, labels in tqdm(test_loader):
-        print(x.shape)
-        break
-
-if __name__ == "__main__2":
-    import torch.nn.functional as F
-    from torch.optim.lr_scheduler import CosineAnnealingLR
-
-    train_sampler = Sampler(64, 32)
-    train_set = PoseDataset(
-        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
-        ["joints", "joint_motion", "angles"],
-        train_sampler
-    )
-    train_loader = DataLoader(train_set, 16, True, num_workers=4, pin_memory=True)
-
-    test_sampler = Sampler(64, 32, True, 10)
-    test_set = PoseDataset(
-        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl",
-        ["joints", "joint_motion", "angles"],
-        test_sampler
-    )
-    test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=4, pin_memory=True)
-
-    device = torch.device('cuda:0')
-    model = create_stgcnpp(60, 5)
-    model.to(device)
-
-    epochs = 40
-    loss_func = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0005, nesterov=True)
-    scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=0.0001)
-
-    for epoch in range(epochs):
-        running_loss = 0.0
-        current_lr = optimizer.param_groups[0]['lr']
-        for x, labels, labels_real in (tq := tqdm(train_loader)):
-            x, labels = x.to(device, non_blocking=True), labels.to(device, non_blocking=True)
-            optimizer.zero_grad()
-
-            y_pred = model(x)
-
-            loss = F.cross_entropy(y_pred, labels - 61)
-
-            tq.set_description(f"LR: {round(current_lr, 4):0<6} Loss: {round(float(loss), 4):0<7}")
-
-            loss.backward()
-            optimizer.step()
-            running_loss += loss.item()
-
-        tq.set_description(f"LR: {round(current_lr, 4):0<6} Loss: {round(float(running_loss / len(loader)), 4):0<7}")
-        scheduler.step()
+# if __name__ == "__main__":
+#     test_sampler = Sampler(64, 32, True, 8)
+#     # test_set = PoseDataset(
+#     #     "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
+#     #     TransformsNameList,
+#     #     test_sampler
+#     # )
+#     # test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=1, pin_memory=True)
+#     # for x, labels, labels_real in tqdm(test_loader):
+#     #     print(x.shape)
+#     #     break
+#
+#     test_set = PoseDataset(
+#         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_mutual_xsub.test.pkl",
+#         [["joints", "angles"], ["joint_motion", "angles"]],
+#         test_sampler
+#     )
+#     test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=1, pin_memory=True)
+#     for x, labels, labels_real in tqdm(test_loader):
+#         print(x.shape)
+#         break
+#
+# if __name__ == "__main__2":
+#     test_sampler = Sampler(64, 32, True, 10)
+#     test_set = PoseDataset(
+#         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
+#         ["joints", "joint_motion", "angles"],
+#         test_sampler
+#     )
+#     test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=4, pin_memory=True)
+#     for x, labels in tqdm(test_loader):
+#         print(x.shape)
+#         break
+#
+# if __name__ == "__main__2":
+#     import torch.nn.functional as F
+#     from torch.optim.lr_scheduler import CosineAnnealingLR
+#
+#     train_sampler = Sampler(64, 32)
+#     train_set = PoseDataset(
+#         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
+#         ["joints", "joint_motion", "angles"],
+#         train_sampler
+#     )
+#     train_loader = DataLoader(train_set, 16, True, num_workers=4, pin_memory=True)
+#
+#     test_sampler = Sampler(64, 32, True, 10)
+#     test_set = PoseDataset(
+#         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl",
+#         ["joints", "joint_motion", "angles"],
+#         test_sampler
+#     )
+#     test_loader = DataLoader(test_set, 2, shuffle=False, num_workers=4, pin_memory=True)
+#
+#     device = torch.device('cuda:0')
+#     model = create_stgcnpp(60, 5)
+#     model.to(device)
+#
+#     epochs = 40
+#     loss_func = torch.nn.CrossEntropyLoss()
+#     optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0005, nesterov=True)
+#     scheduler = CosineAnnealingLR(optimizer, T_max=epochs, eta_min=0.0001)
+#
+#     for epoch in range(epochs):
+#         running_loss = 0.0
+#         current_lr = optimizer.param_groups[0]['lr']
+#         for x, labels, labels_real in (tq := tqdm(train_loader)):
+#             x, labels = x.to(device, non_blocking=True), labels.to(device, non_blocking=True)
+#             optimizer.zero_grad()
+#
+#             y_pred = model(x)
+#
+#             loss = F.cross_entropy(y_pred, labels - 61)
+#
+#             tq.set_description(f"LR: {round(current_lr, 4):0<6} Loss: {round(float(loss), 4):0<7}")
+#
+#             loss.backward()
+#             optimizer.step()
+#             running_loss += loss.item()
+#
+#         tq.set_description(f"LR: {round(current_lr, 4):0<6} Loss: {round(float(running_loss / len(loader)), 4):0<7}")
+#         scheduler.step()
