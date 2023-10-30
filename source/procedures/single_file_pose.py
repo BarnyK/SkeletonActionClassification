@@ -5,7 +5,8 @@ import torch
 from tqdm import tqdm
 
 from pose_estimation import run_pose_worker, DetectionLoader, init_pose_model, init_detector, read_configs
-from shared.structs import SkeletonData, FrameData, DatasetInfo
+from shared.structs import SkeletonData, FrameData
+from shared.dataset_info import DatasetInfo
 from shared.visualize_skeleton_file import visualize
 
 

@@ -1,0 +1,51 @@
+import re
+from dataclasses import dataclass
+from os import path
+
+
+@dataclass
+class DatasetInfo:
+    set_name: str = None
+    info: dict = None
+
+    def to_dict(self):
+        return self.__dict__
+
+    def to_ntu_filename(self):
+        # Ntu would have "set", "camera", "person", "replication", "action"
+        template = "S{:03d}C{:03d}P{:03d}R{:03d}A{:03d}"
+        info_list = [self.info.get(key, 0) for key in ["set", "camera", "person", "replication", "action"]]
+        return template.format(*info_list)
+
+    def to_filename(self):
+        if self.set_name == "ntu":
+            return self.to_ntu_filename()
+        else:
+            raise ValueError(f"Not supported set_name {self.set_name}")
+
+
+def name_to_ntu_data(filepath: str) -> DatasetInfo:
+    filename = path.split(filepath)[-1]
+    match = ntu_name_template.match(filename)
+    if match:
+        data = match.groupdict()
+        data = {k: int(v) for k, v in data.items()}
+        return DatasetInfo("ntu", data)
+    return None
+
+
+def name_to_ut_data(filepath: str) -> DatasetInfo:
+    filename = path.split(filepath)[-1]
+    match = ut_name_template.match(filename)
+    if match:
+        data = match.groupdict()
+        data = {k: int(v) for k, v in data.items()}
+        return DatasetInfo("ut", data)
+    return None
+
+
+ut_name_template = re.compile("(?P<subject>[0-9]+)_(?P<camera>[0-9]+)_(?P<action>[0-9]+)\.(avi|apskel\.pkl|skeleton)")
+
+ntu_name_template = re.compile(
+    "[A-Z](?P<set>[0-9]+)[A-Z](?P<camera>[0-9]+)[A-Z](?P<person>[0-9]+)[A-Z](?P<replication>[0-9]+)[A-Z](?P<action>[0-9]+)(?:_rgb)?\.(?:avi|.+\.apskel.pkl|skeleton)"
+)

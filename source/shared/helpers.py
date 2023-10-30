@@ -1,4 +1,3 @@
-import re
 from os import path
 from typing import List, Tuple
 
@@ -6,38 +5,13 @@ import numpy as np
 import yaml
 from easydict import EasyDict as edict
 
-from shared.structs import NtuNameData, DatasetInfo
+from shared.dataset_info import DatasetInfo
 
 
 def update_config(config_file):
     with open(config_file) as f:
         config = edict(yaml.load(f, Loader=yaml.FullLoader))
         return config
-
-
-template = re.compile(
-    "[A-Z](?P<set>[0-9]+)[A-Z](?P<camera>[0-9]+)[A-Z](?P<person>[0-9]+)[A-Z](?P<replication>[0-9]+)[A-Z](?P<action>[0-9]+)(?:_rgb)?\.(?:avi|.+\.apskel.pkl|skeleton)"
-)
-
-
-def name_to_data(filepath: str):
-    filename = path.split(filepath)[-1]
-    match = template.match(filename)
-    if match:
-        data = match.groupdict()
-        data = {k: int(v) for k, v in data.items()}
-        return NtuNameData(**data)
-    return None
-
-
-def name_to_ntu_data(filepath: str) -> DatasetInfo:
-    filename = path.split(filepath)[-1]
-    match = template.match(filename)
-    if match:
-        data = match.groupdict()
-        data = {k: int(v) for k, v in data.items()}
-        return DatasetInfo("ntu", data)
-    return None
 
 
 def create_ntu_outfile_name(output_folder: str, dataset_info: DatasetInfo, skeleton_type: str) -> str:

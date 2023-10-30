@@ -1,6 +1,6 @@
 import numpy as np
 
-from shared.helpers import name_to_ntu_data
+from shared.dataset_info import name_to_ntu_data
 from shared.structs import SkeletonData, FrameData, Body
 
 

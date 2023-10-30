@@ -4,6 +4,8 @@ from typing import Optional, List, Tuple
 
 import numpy as np
 
+from shared.dataset_info import DatasetInfo
+
 
 @dataclass
 class WindowProperties:
@@ -22,27 +24,6 @@ class NtuNameData:
 
     def to_dict(self):
         return self.__dict__
-
-
-@dataclass
-class DatasetInfo:
-    set_name: str = None
-    info: dict = None
-
-    def to_dict(self):
-        return self.__dict__
-
-    def to_ntu_filename(self):
-        # Ntu would have "set", "camera", "person", "replication", "action"
-        template = "S{:03d}C{:03d}P{:03d}R{:03d}A{:03d}"
-        info_list = [self.info.get(key, 0) for key in ["set", "camera", "person", "replication", "action"]]
-        return template.format(*info_list)
-
-    def to_filename(self):
-        if self.set_name == "ntu":
-            return self.to_ntu_filename()
-        else:
-            raise ValueError(f"Not supported set_name {self.set_name}")
 
 
 @dataclass
