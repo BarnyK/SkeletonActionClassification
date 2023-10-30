@@ -17,9 +17,16 @@ class DatasetInfo:
         info_list = [self.info.get(key, 0) for key in ["set", "camera", "person", "replication", "action"]]
         return template.format(*info_list)
 
+    def to_ut_filename(self):
+        template = "{}_{}_{}"
+        info_list = [self.info.get(key, 0) for key in ["subject", "camera", "action"]]
+        return template.format(*info_list)
+
     def to_filename(self):
         if self.set_name == "ntu":
             return self.to_ntu_filename()
+        elif self.set_name == "ut":
+            return self.to_ut_filename()
         else:
             raise ValueError(f"Not supported set_name {self.set_name}")
 

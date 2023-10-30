@@ -4,7 +4,7 @@ import torch
 from tqdm import tqdm
 
 from pose_estimation import read_configs, init_detector, init_pose_model, DetectionLoader, run_pose_worker
-from shared.dataset_info import name_to_ntu_data
+from shared.dataset_info import name_to_ntu_data, name_to_ut_data
 from shared.structs import SkeletonData, FrameData
 
 
@@ -81,23 +81,29 @@ def generate_alphapose_dataset(input_folder: str, output_folder: str, skeleton_t
         print(f"Not supported dataset {dataset_name}")
     gen_alphapose_skeletons(input_folder, output_folder, skeleton_type, name_func)
 
-    def testing_generation():
-        import time
-        folder = f"/tmp/{time.time()}/"
-        os.mkdir(folder)
-        st = time.time()
-        gen_alphapose_skeletons(
-            "/media/barny/SSD4/MasterThesis/Data/sample2/",
-            folder,
-            "halpe",
-        )
-        et = time.time()
-        print(et - st)
-        st = time.time()
-        gen_alphapose_skeletons(
-            "/media/barny/SSD4/MasterThesis/Data/sample2/",
-            folder,
-            "coco17",
-        )
-        et = time.time()
-        print(et - st)
+def testing():
+    input1 = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/segmented_set1/"
+    input2 = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/segmented_set2/"
+    out
+
+    pass
+def testing_generation():
+    import time
+    folder = f"/tmp/{time.time()}/"
+    os.mkdir(folder)
+    st = time.time()
+    gen_alphapose_skeletons(
+        "/media/barny/SSD4/MasterThesis/Data/sample2/",
+        folder,
+        "halpe",
+    )
+    et = time.time()
+    print(et - st)
+    st = time.time()
+    gen_alphapose_skeletons(
+        "/media/barny/SSD4/MasterThesis/Data/sample2/",
+        folder,
+        "coco17",
+    )
+    et = time.time()
+    print(et - st)
