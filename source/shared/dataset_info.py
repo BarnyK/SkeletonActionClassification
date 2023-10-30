@@ -1,6 +1,7 @@
 import re
 from dataclasses import dataclass
 from os import path
+from typing import Union
 
 
 @dataclass
@@ -31,7 +32,7 @@ class DatasetInfo:
             raise ValueError(f"Not supported set_name {self.set_name}")
 
 
-def name_to_ntu_data(filepath: str) -> DatasetInfo:
+def name_to_ntu_data(filepath: str) -> Union[DatasetInfo,None]:
     filename = path.split(filepath)[-1]
     match = ntu_name_template.match(filename)
     if match:
@@ -41,7 +42,7 @@ def name_to_ntu_data(filepath: str) -> DatasetInfo:
     return None
 
 
-def name_to_ut_data(filepath: str) -> DatasetInfo:
+def name_to_ut_data(filepath: str) -> Union[DatasetInfo,None]:
     filename = path.split(filepath)[-1]
     match = ut_name_template.match(filename)
     if match:
@@ -56,3 +57,8 @@ ut_name_template = re.compile("(?P<subject>[0-9]+)_(?P<camera>[0-9]+)_(?P<action
 ntu_name_template = re.compile(
     "[A-Z](?P<set>[0-9]+)[A-Z](?P<camera>[0-9]+)[A-Z](?P<person>[0-9]+)[A-Z](?P<replication>[0-9]+)[A-Z](?P<action>[0-9]+)(?:_rgb)?\.(?:avi|.+\.apskel.pkl|skeleton)"
 )
+
+name_info_func_map = {
+    "ntu": name_to_ntu_data,
+    "ut": name_to_ut_data,
+}
