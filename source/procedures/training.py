@@ -12,6 +12,17 @@ from models import create_stgcnpp
 logging.basicConfig(level=logging.INFO)  # Set the logging level to INFO (or other level of your choice)
 logger = logging.getLogger(__name__)
 
+# Create a file handler for writing log messages to a file
+file_handler = logging.FileHandler('training.log')
+file_handler.setLevel(logging.DEBUG)  # Set the log level for the file handler
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(formatter)
+logger.addHandler(file_handler)
+
+# Create a stream handler for displaying log messages on the console (stdout)
+stream_handler = logging.StreamHandler()
+stream_handler.setLevel(logging.INFO)  # Set the log level for the stream handler
+logger.addHandler(stream_handler)
 
 def train_epoch(model, loss_func, loader, optimizer, scheduler, device):
     model.train()
@@ -35,15 +46,14 @@ def train_epoch(model, loss_func, loader, optimizer, scheduler, device):
             top1 = out.max(1)[1]
             top1_count += (top1 == labels).sum().item()
 
-        mean_loss = float(running_loss / len(loader))
-        accuracy = top1_count / sample_count * 100.0
+        accuracy = top1_count / sample_count
         tq.set_description(
-            f"LR: {round(current_lr, 4):0<6} Loss: {round(mean_loss, 4):0<7} Accuracy: {round(accuracy, 2)}")
+            f"Training, LR: {current_lr:.4} Loss: {loss.item():.4} Accuracy: {accuracy:.2%}")
 
     mean_loss = float(running_loss / len(loader))
-    accuracy = top1_count / sample_count * 100.0
+    accuracy = top1_count / sample_count
     tq.set_description(
-        f"LR: {round(current_lr, 4):0<6} Loss: {round(mean_loss, 4):0<7} Accuracy: {round(accuracy, 2)}")
+        f"Training, LR: {current_lr:.4} Loss: {mean_loss:.4} Accuracy: {accuracy:.2%}")
     scheduler.step()
 
 
@@ -82,7 +92,7 @@ def test_epoch(model, loader, loss_func, device):
 
 def train_model(model, train_loder, test_loader, device, epochs: int):
     loss_func = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0005, nesterov=True)
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0002, nesterov=True)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=0.0001)
 
     for epoch in range(epochs):
@@ -91,30 +101,31 @@ def train_model(model, train_loder, test_loader, device, epochs: int):
         test_epoch(model, test_loader, loss_func, device)
 
 
-def main_test():
-    feature_set = ["joints", "joint_motion", "angles"]
-    train_sampler = Sampler(64, 64)
+def main_test(feature_set):
+    logger.info("Starting training")
+    logger.info(f"Using {feature_set}")
+    train_sampler = Sampler(64, 32)
     train_set = PoseDataset(
         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
         feature_set,
         train_sampler
     )
-    train_loader = DataLoader(train_set, 16, True, num_workers=4, pin_memory=True)
+    train_loader = DataLoader(train_set, 16, True, num_workers=0, pin_memory=True)
 
-    test_sampler = Sampler(64, 64, True, 8)
+    test_sampler = Sampler(64, 32, True, 8)
     test_set = PoseDataset(
         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl",
         feature_set,
         test_sampler
     )
-    test_loader = DataLoader(test_set, 8, shuffle=False, num_workers=4, pin_memory=True)
+    test_loader = DataLoader(test_set, 8, shuffle=False, num_workers=0, pin_memory=True)
 
     device = torch.device('cuda:0')
     channels = calculate_channels(feature_set, 2)
     model = create_stgcnpp(60, channels)
     model.to(device)
 
-    epochs = 40
+    epochs = 100
     train_model(model, train_loader, test_loader, device, epochs)
 
     pass

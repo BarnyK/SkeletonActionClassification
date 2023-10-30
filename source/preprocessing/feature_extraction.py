@@ -37,7 +37,7 @@ def to_accel(mat: np.ndarray) -> np.ndarray:
 
 def bone_angles(mat: np.ndarray) -> np.ndarray:
     # Calculate angles of bones to axes
-    np.seterr(divide='ignore', invalid='ignore')
+    #np.seterr(divide='ignore', invalid='ignore')
     magnitudes = np.linalg.norm(mat, axis=-1) + 0.0001
     result = np.arccos(mat / magnitudes[..., np.newaxis] % 1)
     return result

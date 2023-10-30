@@ -8,7 +8,10 @@ from procedures.training import main_test
 #                  "/media/barny/SSD4/MasterThesis/Data/ntu_120_coco.f1.combined", PreprocessConfig())
 # testing_generation()
 if __name__ == "__main__":
-    main_test()
+    main_test(["joints"])
+    main_test(["bones"])
+    main_test(["joint_motion"])
+    main_test(["bone_motion"])
 
 if __name__ == "__main__2":
     import torch
