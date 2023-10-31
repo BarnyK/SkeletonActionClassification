@@ -7,11 +7,7 @@ from procedures.training import main_test
 # preprocess_files("/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco",
 #                  "/media/barny/SSD4/MasterThesis/Data/ntu_120_coco.f1.combined", PreprocessConfig())
 # testing_generation()
-if __name__ == "__main__":
-    main_test(["joints"])
-    main_test(["bones"])
-    main_test(["joint_motion"])
-    main_test(["bone_motion"])
+
 
 if __name__ == "__main__2":
     import torch
@@ -28,7 +24,7 @@ if __name__ == "__main__2":
         "coco17",
     )
 
-if __name__ == "__main__3":
+if __name__ == "__main__":
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
@@ -36,3 +32,8 @@ if __name__ == "__main__3":
                      datasets.all_splits,
                      24,
                      False)
+if __name__ == "__main__":
+    main_test(["joints"])
+    main_test(["bones"])
+    main_test(["joint_motion"])
+    main_test(["bone_motion"])
