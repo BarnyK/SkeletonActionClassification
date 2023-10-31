@@ -8,7 +8,14 @@ TODO:
 - [x] Evaluation loop
 - [x] Support generation from ut
 - [ ] PreprocessConfig usage
-- [ ] TrainingConfig usage
+- [x] TrainingConfig usage
 - [ ] Support generation from nturgb
 - [ ] Support other skeletons
 - [ ] Single file + evaluation
+
+
+GENERAL PIPELINE:
+- Generate skeletons
+- Preprocess skeletons
+- Train/Classify/Evaluate
+

@@ -19,11 +19,17 @@ from shared.structs import SkeletonData
 
 @dataclass
 class PreprocessConfig:
+    use_box_conf: bool = True
     box_conf_threshold: float = 0.7
-    max_pose_conf_threshold: float = 0.7
-    pose_tracking_threshold: int = 90
-    keypoint_fill_type: str = "interpolation"
+    use_max_pose_conf: bool = True
+    max_pose_conf_threshold: float = 0.55
     use_nms: bool = True
+    pose_tracking_threshold: int = 90
+    pose_tracking_width_ratio: float = 1.8
+    pose_tracking_height_ratio: float = 0.55
+    use_motion_selection: bool = True
+    max_body_count: int = 2
+    keypoint_fill_type: str = "interpolation"
 
 
 def _preprocess_data(data: SkeletonData, config: PreprocessConfig):
