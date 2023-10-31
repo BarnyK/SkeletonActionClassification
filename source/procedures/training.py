@@ -6,8 +6,8 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
+from numpy import argmax
 import torch
-from torch import nn
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -95,29 +95,7 @@ def write_log(logs_path, text):
         f.write(text + '\n')
 
 
-def train_model(model: nn.Module, train_loder, test_loader, device: torch.device, epochs: int, logs_path: str):
-    loss_func = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0002, nesterov=True)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=0.0001)
-
-    for epoch in range(epochs):
-        logger.info(f"Current epoch: {epoch}")
-        sttrain = time.time()
-
-        training_stats = train_epoch(model, loss_func, train_loder, optimizer, scheduler, device)
-        ettrain = time.time()
-        write_log(logs_path, f"[{epoch}] - training stats - {','.join([str(x) for x in training_stats])}")
-        write_log(logs_path, f"[{epoch}] - training time - {timedelta(seconds=ettrain - sttrain)}")
-
-        eval_stats = test_epoch(model, test_loader, loss_func, device)
-        ettest = time.time()
-        write_log(logs_path, f"[{epoch}] - eval stats - {','.join([str(x) for x in eval_stats])}")
-        write_log(logs_path, f"[{epoch}] - eval time - {timedelta(seconds=ettest - ettrain)}")
-        # Save model
-        torch.save(model.state_dict(), os.path.join(logs_path, f"epoch_{epoch}.pth"))
-
-
-def main_test(feature_set, training_name: str = None):
+def train_network(feature_set, training_name: str = None):
     if training_name is None:
         now = datetime.now()
         training_name = now.strftime("%H_%M_%d_%m_%Y")
@@ -149,7 +127,32 @@ def main_test(feature_set, training_name: str = None):
 
     epochs = 80
     write_log(logs_path, f"Training with features: {', '.join(feature_set)}")
-    train_model(model, train_loader, test_loader, device, epochs, logs_path)
+    loss_func = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0002, nesterov=True)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=0.0001)
+
+    all_eval_stats = []
+    for epoch in range(epochs):
+        logger.info(f"Current epoch: {epoch}")
+        train_start_time = time.time()
+        training_stats = train_epoch(model, loss_func, train_loader, optimizer, scheduler, device)
+        train_end_time = time.time()
+
+        write_log(logs_path, f"[{epoch}] - training stats - {','.join([str(x) for x in training_stats])}")
+        write_log(logs_path, f"[{epoch}] - training time - {timedelta(seconds=train_end_time - train_start_time)}")
+
+        eval_start_time = time.time()
+        eval_stats = test_epoch(model, test_loader, loss_func, device)
+        eval_end_time = time.time()
+        all_eval_stats.append(eval_stats)
+
+        write_log(logs_path, f"[{epoch}] - eval stats - {','.join([str(x) for x in eval_stats])}")
+        write_log(logs_path, f"[{epoch}] - eval time - {timedelta(seconds=eval_end_time - eval_start_time)}")
+        # Save model
+        torch.save(model.state_dict(), os.path.join(logs_path, f"epoch_{epoch}.pth"))
+    best_eval_epoch = argmax([x[1] for x in all_eval_stats])
+    best_acc = all_eval_stats[best_eval_epoch][1]
+    logger.info(f"Best top1 accuracy {best_acc:.2%} at epoch {best_eval_epoch}")
 
 
 @dataclass
@@ -171,7 +174,7 @@ class TrainingConfig:
 
     eval_interval: int = 1
 
-    sgd_lr: float =0.1
+    sgd_lr: float = 0.1
     sgd_momentum: float = 0.9
     sgd_weight_decay: float = 0.0002
     sgd_nesterov: bool = True

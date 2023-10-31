@@ -1,6 +1,6 @@
 import datasets
 from procedures.preprocess_files import preprocess_files, PreprocessConfig
-from procedures.training import main_test
+from procedures.training import train_network
 
 # preprocess_files("/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
 #                  "/media/barny/SSD4/MasterThesis/Data/ntu_coco.f1.combined", PreprocessConfig())
@@ -33,7 +33,7 @@ if __name__ == "__main__":
                      24,
                      False)
 if __name__ == "__main__":
-    main_test(["joints"])
-    main_test(["bones"])
-    main_test(["joint_motion"])
-    main_test(["bone_motion"])
+    train_network(["joints"])
+    train_network(["bones"])
+    train_network(["joint_motion"])
+    train_network(["bone_motion"])
