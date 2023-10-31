@@ -67,7 +67,3 @@ def remove_bodies_by_box_confidence(data: SkeletonData, threshold: float = 0.5, 
     for fi, bi in to_remove:
         data.frames[fi].bodies.pop(bi)
     return True
-
-
-def select_biggest(data, n):
-    raise NotImplementedError

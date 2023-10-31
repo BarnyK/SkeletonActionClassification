@@ -21,24 +21,40 @@ from shared.structs import SkeletonData
 class PreprocessConfig:
     use_box_conf: bool = True
     box_conf_threshold: float = 0.7
+    box_conf_max_total: float = 0.9
+    box_conf_max_frames: float = 0.9
+
     use_max_pose_conf: bool = True
     max_pose_conf_threshold: float = 0.55
+
     use_nms: bool = True
+
+    use_tracking: bool = True
     pose_tracking_threshold: int = 90
     pose_tracking_width_ratio: float = 1.8
     pose_tracking_height_ratio: float = 0.55
+
     use_motion_selection: bool = True
     max_body_count: int = 2
     keypoint_fill_type: str = "interpolation"
 
 
-def _preprocess_data(data: SkeletonData, config: PreprocessConfig):
-    skeleton_filters.remove_bodies_by_box_confidence(data, 0.7, 0.9, 0.9)
-    skeleton_filters.remove_by_max_possible_pose_confidence(data, 0.55)
-    nms(data, True)
-    pose_track(data.frames, threshold=90, width_ratio=1.8, height_ratio=0.55)
-    select_tracks_by_motion(data, 2)
-    keypoint_fill(data, "interpolation")
+def _preprocess_data(data: SkeletonData, cfg: PreprocessConfig):
+    if cfg.use_box_conf:
+        skeleton_filters.remove_bodies_by_box_confidence(data, cfg.box_conf_threshold, cfg.box_conf_max_total,
+                                                         cfg.box_conf_max_frames)
+    if cfg.use_max_pose_conf:
+        skeleton_filters.remove_by_max_possible_pose_confidence(data, cfg.max_pose_conf_threshold)
+    if cfg.use_nms:
+        nms(data, True)
+    if cfg.use_tracking:
+        pose_track(data.frames,
+                   threshold=cfg.pose_tracking_threshold,
+                   width_ratio=cfg.pose_tracking_width_ratio,
+                   height_ratio=cfg.pose_tracking_height_ratio)
+    if cfg.use_motion_selection and cfg.use_tracking:
+        select_tracks_by_motion(data, 2)
+    keypoint_fill(data, cfg.keypoint_fill_type)
     return data
 
 
@@ -106,4 +122,4 @@ if __name__ == '__main__':
                      PreprocessConfig(),
                      datasets.all_splits,
                      12,
-                     False)
+                     True)
