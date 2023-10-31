@@ -13,7 +13,8 @@ import datasets
 from preprocessing import skeleton_filters
 from preprocessing.keypoint_fill import keypoint_fill
 from preprocessing.nms import nms
-from preprocessing.tracking import pose_track, select_tracks_by_motion
+from preprocessing.tracking import pose_track, select_tracks_by_motion, assign_tids_by_order, select_by_order, \
+    select_by_confidence, select_by_size
 from shared.structs import SkeletonData
 
 
@@ -35,6 +36,10 @@ class PreprocessConfig:
     pose_tracking_height_ratio: float = 0.55
 
     use_motion_selection: bool = True
+
+    use_size_selection: bool = False
+    use_confidence_selection: bool = False
+    use_order_selection: bool = False
     max_body_count: int = 2
     keypoint_fill_type: str = "interpolation"
 
@@ -47,13 +52,24 @@ def _preprocess_data(data: SkeletonData, cfg: PreprocessConfig):
         skeleton_filters.remove_by_max_possible_pose_confidence(data, cfg.max_pose_conf_threshold)
     if cfg.use_nms:
         nms(data, True)
+
+    if cfg.use_size_selection:
+        select_by_size(data, cfg.max_body_count)
+    elif cfg.use_confidence_selection:
+        select_by_confidence(data, cfg.max_body_count)
+    elif cfg.use_order_selection:
+        select_by_order(data, cfg.max_body_count)
+
     if cfg.use_tracking:
         pose_track(data.frames,
                    threshold=cfg.pose_tracking_threshold,
                    width_ratio=cfg.pose_tracking_width_ratio,
                    height_ratio=cfg.pose_tracking_height_ratio)
-    if cfg.use_motion_selection and cfg.use_tracking:
-        select_tracks_by_motion(data, 2)
+        if cfg.use_motion_selection:
+            select_tracks_by_motion(data, cfg.max_body_count)
+    else:
+        assign_tids_by_order(data)
+
     keypoint_fill(data, cfg.keypoint_fill_type)
     return data
 

@@ -168,6 +168,11 @@ def select_by_confidence(data: SkeletonData, max_bodies: int = 2):
         frame.bodies = [body for i, body in enumerate(frame.bodies) if i in [x[0] for x in confidences]]
 
 
+def select_by_order(data: SkeletonData, max_bodies: int = 2):
+    for frame in data.frames:
+        frame.bodies = frame.bodies[:max_bodies]
+
+
 def assign_tids_by_order(data: SkeletonData):
     for frame in data.frames:
         for i, body in enumerate(frame.bodies):
