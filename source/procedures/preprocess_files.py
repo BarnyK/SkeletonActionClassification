@@ -90,7 +90,7 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, config
 
         test_filename = os.path.join(output_path, f"{strategy}.test.pkl")
         with open(test_filename, "wb") as f:
-            pickle.dump(train_split, f)
+            pickle.dump(test_split, f)
 
 
 if __name__ == '__main__':
