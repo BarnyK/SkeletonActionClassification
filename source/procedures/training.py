@@ -6,8 +6,8 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from numpy import argmax
 import torch
+from numpy import argmax
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -18,6 +18,34 @@ from models import create_stgcnpp
 
 logging.basicConfig(level=logging.INFO)  # Set the logging level to INFO (or other level of your choice)
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class TrainingConfig:
+    name: str
+    model_type: str
+    epochs: int
+    device: str
+    features: list[str]
+    window_length: int
+    sampler_per_window: int
+
+    train_file: str
+    train_batch_size: int
+
+    test_file: str
+    test_batch_size: int
+    test_clips_count: int
+
+    eval_interval: int = 1
+
+    sgd_lr: float = 0.1
+    sgd_momentum: float = 0.9
+    sgd_weight_decay: float = 0.0002
+    sgd_nesterov: bool = True
+
+    cosine_shed_eta_min: float = 0.0001
+    log_folder: str = "logs"
 
 
 def train_epoch(model, loss_func, loader, optimizer, scheduler, device):
@@ -95,44 +123,43 @@ def write_log(logs_path, text):
         f.write(text + '\n')
 
 
-def train_network(feature_set, training_name: str = None):
-    if training_name is None:
+def train_network(cfg: TrainingConfig):
+    if cfg.name is None:
         now = datetime.now()
         training_name = now.strftime("%H_%M_%d_%m_%Y")
     logger.info("Starting training")
-    logger.info(f"Using {feature_set}")
-    train_sampler = Sampler(64, 32)
+    logger.info(f"Using {cfg.features}")
+    train_sampler = Sampler(cfg.window_length, cfg.sampler_per_window)
     train_set = PoseDataset(
-        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl",
-        feature_set,
+        cfg.train_file,
+        cfg.features,
         train_sampler
     )
-    train_loader = DataLoader(train_set, 64, True, num_workers=4, pin_memory=True)
+    train_loader = DataLoader(train_set, cfg.train_batch_size, True, num_workers=4, pin_memory=True)
 
-    test_sampler = Sampler(64, 32, True, 8)
+    test_sampler = Sampler(cfg.window_length, cfg.sampler_per_window, True, cfg.test_clips_count)
     test_set = PoseDataset(
-        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl",
-        feature_set,
+        cfg.test_file,
+        cfg.features,
         test_sampler
     )
-    test_loader = DataLoader(test_set, 128, shuffle=False, num_workers=4, pin_memory=True)
+    test_loader = DataLoader(test_set, cfg.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     device = torch.device('cpu')
-    channels = calculate_channels(feature_set, 2)
+    channels = calculate_channels(cfg.features, 2)
     model = create_stgcnpp(60, channels)
     model.to(device)
 
-    logs_path = os.path.join("logs", training_name)
+    logs_path = os.path.join(cfg.log_folder, cfg.name)
     os.mkdir(logs_path)
 
-    epochs = 80
-    write_log(logs_path, f"Training with features: {', '.join(feature_set)}")
+    write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
     loss_func = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=0.1, momentum=0.9, weight_decay=0.0002, nesterov=True)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs, eta_min=0.0001)
+    optimizer = torch.optim.SGD(model.parameters(), lr=cfg.sgd_lr, momentum=cfg.sgd_momentum, weight_decay=cfg.sgd_weight_decay, nesterov=cfg.sgd_nesterov)
+    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.epochs, eta_min=cfg.cosine_shed_eta_min)
 
     all_eval_stats = []
-    for epoch in range(epochs):
+    for epoch in range(cfg.epochs):
         logger.info(f"Current epoch: {epoch}")
         train_start_time = time.time()
         training_stats = train_epoch(model, loss_func, train_loader, optimizer, scheduler, device)
@@ -155,28 +182,9 @@ def train_network(feature_set, training_name: str = None):
     logger.info(f"Best top1 accuracy {best_acc:.2%} at epoch {best_eval_epoch}")
 
 
-@dataclass
-class TrainingConfig:
-    name: str
-    model_type: str
-    epochs: int
-    device: str
-    features: list[str]
-    window_length: int
-    sampler_per_window: int
-
-    train_file: str
-    train_batch_size: int
-
-    test_file: str
-    test_batch_size: int
-    test_clips_count: int
-
-    eval_interval: int = 1
-
-    sgd_lr: float = 0.1
-    sgd_momentum: float = 0.9
-    sgd_weight_decay: float = 0.0002
-    sgd_nesterov: bool = True
-
-    cosine_shed_eta_min: float = 0.0001
+def main():
+    cfg = TrainingConfig("base_joints", "stgcnpp", 80, "cuda:0", ["joints"], 64, 32,
+                         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl", 64,
+                         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl", 128, 8, 1, 0.1,
+                         0.9, 0.0002, True, 0.00001)
+    train_network(cfg)
