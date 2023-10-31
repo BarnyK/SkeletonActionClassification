@@ -35,7 +35,7 @@ class TrainingConfig:
 
     test_file: str
     test_batch_size: int
-    test_clips_count: int
+    test_clips_count: int = 8
 
     eval_interval: int = 1
 
@@ -145,7 +145,7 @@ def train_network(cfg: TrainingConfig):
     )
     test_loader = DataLoader(test_set, cfg.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
-    device = torch.device('cpu')
+    device = torch.device(cfg.device)
     channels = calculate_channels(cfg.features, 2)
     model = create_stgcnpp(60, channels)
     model.to(device)
@@ -155,12 +155,13 @@ def train_network(cfg: TrainingConfig):
 
     write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
     loss_func = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=cfg.sgd_lr, momentum=cfg.sgd_momentum, weight_decay=cfg.sgd_weight_decay, nesterov=cfg.sgd_nesterov)
+    optimizer = torch.optim.SGD(model.parameters(), lr=cfg.sgd_lr, momentum=cfg.sgd_momentum,
+                                weight_decay=cfg.sgd_weight_decay, nesterov=cfg.sgd_nesterov)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.epochs, eta_min=cfg.cosine_shed_eta_min)
 
     all_eval_stats = []
     for epoch in range(cfg.epochs):
-        logger.info(f"Current epoch: {epoch}")
+        logger.info(f"Current epoch: {epoch+1}/{cfg.epochs}")
         train_start_time = time.time()
         training_stats = train_epoch(model, loss_func, train_loader, optimizer, scheduler, device)
         train_end_time = time.time()
@@ -168,13 +169,14 @@ def train_network(cfg: TrainingConfig):
         write_log(logs_path, f"[{epoch}] - training stats - {','.join([str(x) for x in training_stats])}")
         write_log(logs_path, f"[{epoch}] - training time - {timedelta(seconds=train_end_time - train_start_time)}")
 
-        eval_start_time = time.time()
-        eval_stats = test_epoch(model, test_loader, loss_func, device)
-        eval_end_time = time.time()
-        all_eval_stats.append(eval_stats)
+        if (epoch+1) % cfg.eval_interval == 0:
+            eval_start_time = time.time()
+            eval_stats = test_epoch(model, test_loader, loss_func, device)
+            eval_end_time = time.time()
+            all_eval_stats.append(eval_stats)
 
-        write_log(logs_path, f"[{epoch}] - eval stats - {','.join([str(x) for x in eval_stats])}")
-        write_log(logs_path, f"[{epoch}] - eval time - {timedelta(seconds=eval_end_time - eval_start_time)}")
+            write_log(logs_path, f"[{epoch}] - eval stats - {','.join([str(x) for x in eval_stats])}")
+            write_log(logs_path, f"[{epoch}] - eval time - {timedelta(seconds=eval_end_time - eval_start_time)}")
         # Save model
         torch.save(model.state_dict(), os.path.join(logs_path, f"epoch_{epoch}.pth"))
     best_eval_epoch = argmax([x[1] for x in all_eval_stats])

@@ -1,6 +1,6 @@
 import datasets
 from procedures.preprocess_files import preprocess_files, PreprocessConfig
-from procedures.training import train_network
+from procedures.training import train_network, TrainingConfig
 
 # preprocess_files("/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
 #                  "/media/barny/SSD4/MasterThesis/Data/ntu_coco.f1.combined", PreprocessConfig())
@@ -24,7 +24,7 @@ if __name__ == "__main__2":
         "coco17",
     )
 
-if __name__ == "__main__":
+if __name__ == "__main__2":
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
@@ -32,8 +32,10 @@ if __name__ == "__main__":
                      datasets.all_splits,
                      24,
                      False)
+
 if __name__ == "__main__":
-    train_network(["joints"])
-    train_network(["bones"])
-    train_network(["joint_motion"])
-    train_network(["bone_motion"])
+    cfg = TrainingConfig("test_angles", "stgcnpp", 80, "cuda:0", ["angles"], 64, 32,
+                         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl", 64,
+                         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl", 128, 8, 5, 0.1,
+                         0.9, 0.0002, True, 0.00001)
+    train_network(cfg)
