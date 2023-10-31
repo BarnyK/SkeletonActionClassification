@@ -1,11 +1,14 @@
 import os
 from unittest import TestCase
-from shared.structs import SkeletonData
-from preprocessing.tracking import select_tracks_by_motion, pose_track
+
 from preprocessing import skeleton_filters
 from preprocessing.nms import nms
+from preprocessing.tracking import select_tracks_by_motion, pose_track, assign_tids_by_order, select_by_size, \
+    select_by_confidence
+from shared.structs import SkeletonData
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
+
 
 class Test_Tracking(TestCase):
     def test_select_tracks_by_motion_single(self):
@@ -27,3 +30,18 @@ class Test_Tracking(TestCase):
         pose_track(data.frames, threshold=90)
         select_tracks_by_motion(data, 2)
         assert len(data.get_all_tids()) == 2
+
+    def test_assign_tids_by_order(self):
+        data_path = os.path.join(THIS_DIR, os.pardir, "sample_files/S001C001P001R001A057.coco17.apskel.pkl")
+        data = SkeletonData.load(data_path)
+        assign_tids_by_order(data)
+
+    def test_select_by_confidence(self):
+        data_path = os.path.join(THIS_DIR, os.pardir, "sample_files/S001C001P001R001A057.coco17.apskel.pkl")
+        data = SkeletonData.load(data_path)
+        select_by_confidence(data)
+
+    def test_select_by_size(self):
+        data_path = os.path.join(THIS_DIR, os.pardir, "sample_files/S001C001P001R001A057.coco17.apskel.pkl")
+        data = SkeletonData.load(data_path)
+        select_by_size(data)

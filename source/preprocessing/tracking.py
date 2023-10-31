@@ -17,6 +17,10 @@ def skeleton_bbox(skeleton: np.ndarray):
     return min_x, max_x, min_y, max_y
 
 
+def body_bbox(body: Body):
+    return skeleton_bbox(body.poseXY)
+
+
 def skeleton_middle(skeleton: np.ndarray):
     min_x, max_x, min_y, max_y = skeleton_bbox(skeleton)
     return np.array([min_x + (max_x - min_x) / 2, min_y + (max_y - min_y) / 2], dtype=np.float32)
@@ -141,3 +145,30 @@ def select_tracks_by_motion(data: SkeletonData, max_bodies: int = 2):
         body.tid = map[body.tid]
 
     return selected_tids
+
+
+def select_by_size(data: SkeletonData, max_bodies: int = 2):
+    for frame in data.frames:
+        if not frame.bodies:
+            continue
+        bboxes = [body_bbox(body) for body in frame.bodies]
+        sizes = [(bb[1] - bb[0]) * (bb[3] - bb[2]) for bb in bboxes]
+        sizes = sorted([(i, bb) for i, bb in enumerate(sizes)], key=lambda x: x[1], )
+        sizes = sizes[:max_bodies]
+        frame.bodies = [body for i, body in enumerate(frame.bodies) if i in [x[0] for x in sizes]]
+
+
+def select_by_confidence(data: SkeletonData, max_bodies: int = 2):
+    for frame in data.frames:
+        if not frame.bodies:
+            continue
+        confidences = [np.sum(body.poseConf) for body in frame.bodies]
+        confidences = sorted([(i, bb) for i, bb in enumerate(confidences)], key=lambda x: x[1], )
+        confidences = confidences[:max_bodies]
+        frame.bodies = [body for i, body in enumerate(frame.bodies) if i in [x[0] for x in confidences]]
+
+
+def assign_tids_by_order(data: SkeletonData):
+    for frame in data.frames:
+        for i, body in enumerate(frame.bodies):
+            body.tid = i
