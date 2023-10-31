@@ -1,4 +1,5 @@
 import datasets.ntu_splits
+from datasets.transform_wrappers import TransformsList, TransformsDict, TransformsNameList
 
 split_map = {
     "ntu_xsub": ntu_splits.ntu_xsub_split,

@@ -34,8 +34,12 @@ if __name__ == "__main__2":
                      False)
 
 if __name__ == "__main__":
-    cfg = TrainingConfig("test_angles", "stgcnpp", 80, "cuda:0", ["angles"], 64, 32,
-                         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl", 64,
-                         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl", 128, 8, 5, 0.1,
-                         0.9, 0.0002, True, 0.00001)
-    train_network(cfg)
+    print(datasets.TransformsNameList)
+    for feat in datasets.TransformsNameList:
+        feat_initials = "".join([x[:2] for x in feat.split("_")])
+        print(feat_initials, feat)
+        cfg = TrainingConfig("1_" + feat_initials, "stgcnpp", 80, "cuda:0", [feat], 64, 32,
+                             "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl", 64,
+                             "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl", 128, 8, 100,
+                             20, 0.1, 0.9, 0.0002, True, 0.00001)
+        train_network(cfg)

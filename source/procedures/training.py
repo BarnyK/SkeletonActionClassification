@@ -38,6 +38,7 @@ class TrainingConfig:
     test_clips_count: int = 8
 
     eval_interval: int = 1
+    eval_last_n: int = 10
 
     sgd_lr: float = 0.1
     sgd_momentum: float = 0.9
@@ -152,6 +153,7 @@ def train_network(cfg: TrainingConfig):
 
     logs_path = os.path.join(cfg.log_folder, cfg.name)
     os.mkdir(logs_path)
+    os.mkdir(os.path.join(logs_path, "models"))
 
     write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
     loss_func = torch.nn.CrossEntropyLoss()
@@ -161,7 +163,7 @@ def train_network(cfg: TrainingConfig):
 
     all_eval_stats = []
     for epoch in range(cfg.epochs):
-        logger.info(f"Current epoch: {epoch+1}/{cfg.epochs}")
+        logger.info(f"Current epoch: {epoch + 1}/{cfg.epochs}")
         train_start_time = time.time()
         training_stats = train_epoch(model, loss_func, train_loader, optimizer, scheduler, device)
         train_end_time = time.time()
@@ -169,7 +171,7 @@ def train_network(cfg: TrainingConfig):
         write_log(logs_path, f"[{epoch}] - training stats - {','.join([str(x) for x in training_stats])}")
         write_log(logs_path, f"[{epoch}] - training time - {timedelta(seconds=train_end_time - train_start_time)}")
 
-        if (epoch+1) % cfg.eval_interval == 0:
+        if (epoch + 1) % cfg.eval_interval == 0 or cfg.epochs - epoch < cfg.eval_last_n:
             eval_start_time = time.time()
             eval_stats = test_epoch(model, test_loader, loss_func, device)
             eval_end_time = time.time()
@@ -178,7 +180,7 @@ def train_network(cfg: TrainingConfig):
             write_log(logs_path, f"[{epoch}] - eval stats - {','.join([str(x) for x in eval_stats])}")
             write_log(logs_path, f"[{epoch}] - eval time - {timedelta(seconds=eval_end_time - eval_start_time)}")
         # Save model
-        torch.save(model.state_dict(), os.path.join(logs_path, f"epoch_{epoch}.pth"))
+        torch.save(model.state_dict(), os.path.join(logs_path, "models", f"epoch_{epoch}.pth"))
     best_eval_epoch = argmax([x[1] for x in all_eval_stats])
     best_acc = all_eval_stats[best_eval_epoch][1]
     logger.info(f"Best top1 accuracy {best_acc:.2%} at epoch {best_eval_epoch}")
