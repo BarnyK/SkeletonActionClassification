@@ -16,6 +16,7 @@ from datasets.pose_dataset import PoseDataset
 from datasets.sampler import Sampler
 from datasets.transform_wrappers import calculate_channels
 from models import create_stgcnpp
+from preprocessing.normalizations import create_norm_func
 
 logging.basicConfig(level=logging.INFO)  # Set the logging level to INFO (or other level of your choice)
 logger = logging.getLogger(__name__)
@@ -179,12 +180,13 @@ def train_network(cfg: TrainingConfig):
     best_acc = all_eval_stats[best_eval_epoch][1]
     logger.info(f"Best top1 accuracy {best_acc:.2%} at epoch {best_eval_epoch}")
 
-def norm_function_setup():
-    pass
+
 def create_dataloaders(cfg):
     augments = []
     if cfg.use_scale_augment:
         augments.append(RandomScale(cfg.scale_value))
+
+    norm_func = create_norm_func(cfg.normalization_type, cfg.train_file)
 
     train_sampler = Sampler(cfg.window_length, cfg.sampler_per_window)
     train_set = PoseDataset(
@@ -193,7 +195,7 @@ def create_dataloaders(cfg):
         train_sampler,
         augments,
         cfg.symmetry_processing,
-        cfg.normalization_type
+        norm_func
     )
 
     train_loader = DataLoader(train_set, cfg.train_batch_size, True, num_workers=4, pin_memory=True)
@@ -204,7 +206,7 @@ def create_dataloaders(cfg):
         test_sampler,
         [],
         cfg.symmetry_processing,
-        cfg.normalization_type
+        norm_func
     )
     test_loader = DataLoader(test_set, cfg.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
     return test_loader, train_loader

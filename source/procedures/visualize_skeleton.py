@@ -20,7 +20,7 @@ def visualize_skeleton(skeleton_file: str, video_file: str = None, window_name: 
 
 
 if __name__ == "__main__":
-    with open("/media/barny/SSD4/MasterThesis/Data/bad.files","r") as f:
+    with open("/media/barny/SSD4/MasterThesis/Data/bad.files", "r") as f:
         data = f.read().split("\n")
         data = [x.split("\t") for x in data]
 

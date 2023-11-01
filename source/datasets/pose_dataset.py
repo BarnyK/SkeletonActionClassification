@@ -10,7 +10,7 @@ from torch.utils.data import Dataset
 from datasets.sampler import Sampler
 from datasets.transform_wrappers import TransformsDict, PoseTransform, TransformsList
 from preprocessing.normalizations import screen_normalization, relative_normalization, mean_spine_normalization, \
-    spine_normalization
+    spine_normalization, no_norm
 from procedures.visualize_skeleton import visualize_skeleton
 from shared.structs import SkeletonData, FrameData, Body
 from shared.visualize_skeleton_file import visualize_data
@@ -24,7 +24,7 @@ def flatten_list(in_list):
 
 class PoseDataset(Dataset):
     def __init__(self, data_file: str, feature_list: Union[list[str], list[list[str]]],
-                 sampler: Sampler, augments: list = (), symmetry: bool = False, norm_func: str = "screen"):
+                 sampler: Sampler, augments: list = (), symmetry: bool = False, norm_func=no_norm):
         with open(data_file, "rb") as f:
             data = pickle.load(f)
         # Data should be a dict with keys "labels", "points", "confidences", "image_shape"
@@ -53,14 +53,6 @@ class PoseDataset(Dataset):
 
         unique_labels = list(sorted(set(self.labels)))
         self.label_translation = {x: i for i, x in enumerate(unique_labels)}
-
-        norm_dict = {
-            "screen": screen_normalization,
-            "relative": relative_normalization,
-            "spine": spine_normalization,
-            "mean_spine": mean_spine_normalization
-        }
-        self.norm_func = norm_dict.get(norm_func)
 
     def solve_feature_transform_requirements(self):
         required_transforms = set()
@@ -146,3 +138,38 @@ class PoseDataset(Dataset):
 
         features = torch.from_numpy(features)
         return features, self.label_translation[label], label
+
+
+def matrix_to_skeleton_body(mat):
+    B, T, V, C = mat.shape
+    data = SkeletonData("ababa", "coco17", None, None, T, [], T, (1920, 1080))
+    for fi in range(T):
+        frame = FrameData(fi, B, [])
+        for b in range(B):
+            frame.bodies.append(Body(mat[b, fi, :, :], None, None, None, None, b))
+        data.frames.append(frame)
+    return data
+
+
+if __name__ == "__main__":
+    from torch.utils.data import DataLoader
+    from tqdm import tqdm
+
+    test_sampler = Sampler(64, 64, False, 5)
+    test_set = PoseDataset(
+        "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.train.pkl",
+        ["joints"],
+        test_sampler,
+        []
+    )
+    test_loader = DataLoader(test_set, 1, shuffle=False, num_workers=0, pin_memory=True)
+
+    for x, y, yy, dataset_info in tqdm(test_loader):
+        x = screen_normalization(x, (1920, 1080))
+        sd = matrix_to_skeleton_body(x[0])
+        visualize_data(sd, 1000 // 30)
+        visualize_skeleton(
+            f"/home/barny/MasterThesis/Data/alphapose_skeletons/ntu_coco/S008C002P030R001A037.coco17.apskel.pkl")
+        ['S008C002P030R001A037']
+        break
+        pass
