@@ -11,6 +11,7 @@ from numpy import argmax
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
+from datasets.augments import RandomScale
 from datasets.pose_dataset import PoseDataset
 from datasets.sampler import Sampler
 from datasets.transform_wrappers import calculate_channels
@@ -47,6 +48,10 @@ class TrainingConfig:
 
     cosine_shed_eta_min: float = 0.0001
     log_folder: str = "logs"
+
+    use_scale_augment: bool = False
+    scale_value: float = 0.2
+    symmetry_processing: bool = False
 
 
 def train_epoch(model, loss_func, loader, optimizer, scheduler, device):
@@ -127,14 +132,21 @@ def write_log(logs_path, text):
 def train_network(cfg: TrainingConfig):
     if cfg.name is None:
         now = datetime.now()
-        training_name = now.strftime("%H_%M_%d_%m_%Y")
+        cfg.name = now.strftime("%H_%M_%d_%m_%Y")
     logger.info("Starting training")
     logger.info(f"Using {cfg.features}")
+
+    augments = []
+    if cfg.use_scale_augment:
+        augments.append(RandomScale(cfg.scale_value))
+
     train_sampler = Sampler(cfg.window_length, cfg.sampler_per_window)
     train_set = PoseDataset(
         cfg.train_file,
         cfg.features,
-        train_sampler
+        train_sampler,
+        augments,
+        cfg.symmetry_processing
     )
     train_loader = DataLoader(train_set, cfg.train_batch_size, True, num_workers=4, pin_memory=True)
 
@@ -142,7 +154,9 @@ def train_network(cfg: TrainingConfig):
     test_set = PoseDataset(
         cfg.test_file,
         cfg.features,
-        test_sampler
+        test_sampler,
+        [],
+        cfg.symmetry_processing
     )
     test_loader = DataLoader(test_set, cfg.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
@@ -171,7 +185,7 @@ def train_network(cfg: TrainingConfig):
         write_log(logs_path, f"[{epoch}] - training stats - {','.join([str(x) for x in training_stats])}")
         write_log(logs_path, f"[{epoch}] - training time - {timedelta(seconds=train_end_time - train_start_time)}")
 
-        if (epoch + 1) % cfg.eval_interval == 0 or cfg.epochs - epoch < cfg.eval_last_n:
+        if (epoch + 1) % cfg.eval_interval == 0 or cfg.epochs - epoch - 1 < cfg.eval_last_n:
             eval_start_time = time.time()
             eval_stats = test_epoch(model, test_loader, loss_func, device)
             eval_end_time = time.time()

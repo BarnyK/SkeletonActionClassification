@@ -35,11 +35,12 @@ if __name__ == "__main__2":
 
 if __name__ == "__main__":
     print(datasets.TransformsNameList)
-    for feat in datasets.TransformsNameList:
+    feats = ["joints", "joints_relative", "bones"]
+    for feat in feats:
         feat_initials = "".join([x[:2] for x in feat.split("_")])
         print(feat_initials, feat)
-        cfg = TrainingConfig("1_" + feat_initials, "stgcnpp", 80, "cuda:0", [feat], 64, 32,
-                             "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl", 64,
-                             "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl", 128, 8, 100,
-                             20, 0.1, 0.9, 0.0002, True, 0.00001)
+        cfg = TrainingConfig("xview_" + feat_initials, "stgcnpp", 80, "cuda:0", [feat], 64, 32,
+                             "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.train.pkl", 64,
+                             "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.test.pkl", 128, 8, 5,
+                             10, 0.1, 0.9, 0.0002, True, 0, "logs", False, 0)
         train_network(cfg)

@@ -20,7 +20,7 @@ def flatten_list(in_list):
 
 class PoseDataset(Dataset):
     def __init__(self, data_file: str, feature_list: Union[list[str], list[list[str]]],
-                 sampler: Sampler, symmetry: bool = False):
+                 sampler: Sampler, augments: list = (), symmetry: bool = False):
         with open(data_file, "rb") as f:
             data = pickle.load(f)
         # Data should be a dict with keys "labels", "points", "confidences", "image_shape"
@@ -32,6 +32,7 @@ class PoseDataset(Dataset):
         self.skeleton_type = data.get("skeleton_type", "coco17")
 
         self.sampler = sampler
+        self.augments = augments
 
         self.symmetry = symmetry  # Symmetry processing for 2P-gcn
         self.feature_list = feature_list
@@ -72,7 +73,11 @@ class PoseDataset(Dataset):
         points = self.points[idx]
         points = np.float32(points)
         # Normalize
-        points = screen_normalization(points, (1920, 1080))
+        points = screen_normalization(points, self.image_shape)
+
+        # Augments
+        for augment in self.augments:
+            points = augment(points)
 
         # Sample
         features = self.sampler(points)

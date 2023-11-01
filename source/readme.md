@@ -8,10 +8,13 @@ TODO:
 - [x] Evaluation loop
 - [x] Support generation from ut
 - [x] PreprocessConfig usage
-  - [ ] Add algorithms for body selection without motion (size/confidence)
+  - [x] Add algorithms for body selection without motion (size/confidence)
 - [x] TrainingConfig usage
+- [x] Add scale augmentation
+- [ ] Add possibility of other normalizations
 - [ ] Support generation from nturgb
 - [ ] Support other skeletons
+- [ ] 2P-GCN
 - [ ] Single file + evaluation
 
 
