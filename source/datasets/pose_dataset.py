@@ -9,7 +9,11 @@ from torch.utils.data import Dataset
 
 from datasets.sampler import Sampler
 from datasets.transform_wrappers import TransformsDict, PoseTransform, TransformsList
-from preprocessing.normalizations import screen_normalization
+from preprocessing.normalizations import screen_normalization, relative_normalization, mean_spine_normalization, \
+    spine_normalization
+from procedures.visualize_skeleton import visualize_skeleton
+from shared.structs import SkeletonData, FrameData, Body
+from shared.visualize_skeleton_file import visualize_data
 
 
 def flatten_list(in_list):
@@ -20,7 +24,7 @@ def flatten_list(in_list):
 
 class PoseDataset(Dataset):
     def __init__(self, data_file: str, feature_list: Union[list[str], list[list[str]]],
-                 sampler: Sampler, augments: list = (), symmetry: bool = False):
+                 sampler: Sampler, augments: list = (), symmetry: bool = False, norm_func: str = "screen"):
         with open(data_file, "rb") as f:
             data = pickle.load(f)
         # Data should be a dict with keys "labels", "points", "confidences", "image_shape"
@@ -50,6 +54,14 @@ class PoseDataset(Dataset):
         unique_labels = list(sorted(set(self.labels)))
         self.label_translation = {x: i for i, x in enumerate(unique_labels)}
 
+        norm_dict = {
+            "screen": screen_normalization,
+            "relative": relative_normalization,
+            "spine": spine_normalization,
+            "mean_spine": mean_spine_normalization
+        }
+        self.norm_func = norm_dict.get(norm_func)
+
     def solve_feature_transform_requirements(self):
         required_transforms = set()
         queue = flatten_list(self.feature_list)[:]
@@ -73,7 +85,7 @@ class PoseDataset(Dataset):
         points = self.points[idx]
         points = np.float32(points)
         # Normalize
-        points = screen_normalization(points, self.image_shape)
+        points = self.norm_func(points, screen_size=self.image_shape, skeleton_type=self.skeleton_type)
 
         # Augments
         for augment in self.augments:

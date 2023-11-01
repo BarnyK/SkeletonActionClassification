@@ -36,10 +36,12 @@ class TrainingConfig:
 
     test_file: str
     test_batch_size: int
-    test_clips_count: int = 8
+    test_clips_count: int
 
     eval_interval: int = 1
     eval_last_n: int = 10
+
+    normalization_type: str = "screen"
 
     sgd_lr: float = 0.1
     sgd_momentum: float = 0.9
@@ -136,29 +138,7 @@ def train_network(cfg: TrainingConfig):
     logger.info("Starting training")
     logger.info(f"Using {cfg.features}")
 
-    augments = []
-    if cfg.use_scale_augment:
-        augments.append(RandomScale(cfg.scale_value))
-
-    train_sampler = Sampler(cfg.window_length, cfg.sampler_per_window)
-    train_set = PoseDataset(
-        cfg.train_file,
-        cfg.features,
-        train_sampler,
-        augments,
-        cfg.symmetry_processing
-    )
-    train_loader = DataLoader(train_set, cfg.train_batch_size, True, num_workers=4, pin_memory=True)
-
-    test_sampler = Sampler(cfg.window_length, cfg.sampler_per_window, True, cfg.test_clips_count)
-    test_set = PoseDataset(
-        cfg.test_file,
-        cfg.features,
-        test_sampler,
-        [],
-        cfg.symmetry_processing
-    )
-    test_loader = DataLoader(test_set, cfg.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    test_loader, train_loader = create_dataloaders(cfg)
 
     device = torch.device(cfg.device)
     channels = calculate_channels(cfg.features, 2)
@@ -198,6 +178,36 @@ def train_network(cfg: TrainingConfig):
     best_eval_epoch = argmax([x[1] for x in all_eval_stats])
     best_acc = all_eval_stats[best_eval_epoch][1]
     logger.info(f"Best top1 accuracy {best_acc:.2%} at epoch {best_eval_epoch}")
+
+def norm_function_setup():
+    pass
+def create_dataloaders(cfg):
+    augments = []
+    if cfg.use_scale_augment:
+        augments.append(RandomScale(cfg.scale_value))
+
+    train_sampler = Sampler(cfg.window_length, cfg.sampler_per_window)
+    train_set = PoseDataset(
+        cfg.train_file,
+        cfg.features,
+        train_sampler,
+        augments,
+        cfg.symmetry_processing,
+        cfg.normalization_type
+    )
+
+    train_loader = DataLoader(train_set, cfg.train_batch_size, True, num_workers=4, pin_memory=True)
+    test_sampler = Sampler(cfg.window_length, cfg.sampler_per_window, True, cfg.test_clips_count)
+    test_set = PoseDataset(
+        cfg.test_file,
+        cfg.features,
+        test_sampler,
+        [],
+        cfg.symmetry_processing,
+        cfg.normalization_type
+    )
+    test_loader = DataLoader(test_set, cfg.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    return test_loader, train_loader
 
 
 def main():

@@ -3,7 +3,7 @@ from __future__ import annotations
 import numpy as np
 
 
-def screen_normalization(mat: np.ndarray, screen_size: tuple[int, int]) -> np.ndarray:
+def screen_normalization(mat: np.ndarray, screen_size: tuple[int, int], **kwargs) -> np.ndarray:
     # Normalize points by shifting points by half the size of screen and diving by it
     w, h = screen_size
     result = np.zeros_like(mat)
@@ -12,7 +12,7 @@ def screen_normalization(mat: np.ndarray, screen_size: tuple[int, int]) -> np.nd
     return result
 
 
-def relative_normalization(mat: np.ndarray) -> np.ndarray:
+def relative_normalization(mat: np.ndarray, **kwargs) -> np.ndarray:
     # Normalizes points using minimal and maximal values of points
     result = mat.copy()
     x_max = np.max(mat[..., 0])
@@ -23,8 +23,8 @@ def relative_normalization(mat: np.ndarray) -> np.ndarray:
     w = x_max - x_min
     h = y_max - y_min
 
-    result[..., 0] = (mat[..., 0] - w / 2) / (w * 2)
-    result[..., 1] = (mat[..., 1] - h / 2) / (h * 2)
+    result[..., 0] = (mat[..., 0] - w / 2) / w
+    result[..., 1] = (mat[..., 1] - h / 2) / h
     return result
 
 
@@ -38,7 +38,7 @@ def spine_size_coco(mat: np.ndarray) -> np.ndarray:
     return spine_sizes
 
 
-def spine_normalization(mat: np.ndarray, skeleton_type: str) -> np.ndarray:
+def spine_normalization(mat: np.ndarray, skeleton_type: str, **kwargs) -> np.ndarray:
     # Normalize skeletons with the size of a spine of a first skeleton
     spine_func_map = {
         "coco17": spine_size_coco
@@ -50,7 +50,7 @@ def spine_normalization(mat: np.ndarray, skeleton_type: str) -> np.ndarray:
     return result
 
 
-def mean_spine_normalization(mat: np.ndarray, skeleton_type: str) -> np.ndarray:
+def mean_spine_normalization(mat: np.ndarray, skeleton_type: str, **kwargs) -> np.ndarray:
     # Normalize skeletons with the mean spine size across frames
     spine_func_map = {
         "coco17": spine_size_coco
