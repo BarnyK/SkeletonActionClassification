@@ -11,7 +11,8 @@ TODO:
   - [x] Add algorithms for body selection without motion (size/confidence)
 - [x] TrainingConfig usage
 - [x] Add scale augmentation
-- [ ] Add possibility of other normalizations
+- [x] Add possibility of other normalizations
+- [ ] Add shoulder alignment
 - [ ] Support generation from nturgb
 - [ ] Support other skeletons
 - [ ] 2P-GCN

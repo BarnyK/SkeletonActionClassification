@@ -176,11 +176,11 @@ def train_network(cfg: TrainingConfig):
             write_log(logs_path, f"[{epoch}] - eval stats - {','.join([str(x) for x in eval_stats])}")
             write_log(logs_path, f"[{epoch}] - eval time - {timedelta(seconds=eval_end_time - eval_start_time)}")
         else:
-            all_eval_stats.append((None,None,None))
+            all_eval_stats.append((None, None, None))
         # Save model
         torch.save(model.state_dict(), os.path.join(logs_path, "models", f"epoch_{epoch}.pth"))
         # Print ETA
-        estimated_remaining_time = ((time.time()- start_time) / (epoch + 1)) * (cfg.epochs - (epoch + 1))
+        estimated_remaining_time = ((time.time() - start_time) / (epoch + 1)) * (cfg.epochs - (epoch + 1))
         logger.info(f"Estimated remaining time: {timedelta(seconds=estimated_remaining_time)}")
     end_time = time.time()
     best_eval_epoch = argmax([x[1] for x in all_eval_stats if x[1] is not None])
