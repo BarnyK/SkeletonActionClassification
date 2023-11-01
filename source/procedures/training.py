@@ -156,6 +156,7 @@ def train_network(cfg: TrainingConfig):
                                 weight_decay=cfg.sgd_weight_decay, nesterov=cfg.sgd_nesterov)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.epochs, eta_min=cfg.cosine_shed_eta_min)
 
+    start_time = time.time()
     all_eval_stats = []
     for epoch in range(cfg.epochs):
         logger.info(f"Current epoch: {epoch + 1}/{cfg.epochs}")
@@ -174,11 +175,18 @@ def train_network(cfg: TrainingConfig):
 
             write_log(logs_path, f"[{epoch}] - eval stats - {','.join([str(x) for x in eval_stats])}")
             write_log(logs_path, f"[{epoch}] - eval time - {timedelta(seconds=eval_end_time - eval_start_time)}")
+        else:
+            all_eval_stats.append((None,None,None))
         # Save model
         torch.save(model.state_dict(), os.path.join(logs_path, "models", f"epoch_{epoch}.pth"))
-    best_eval_epoch = argmax([x[1] for x in all_eval_stats])
+        # Print ETA
+        estimated_remaining_time = ((time.time()- start_time) / (epoch + 1)) * (cfg.epochs - (epoch + 1))
+        logger.info(f"Estimated remaining time: {timedelta(seconds=estimated_remaining_time)}")
+    end_time = time.time()
+    best_eval_epoch = argmax([x[1] for x in all_eval_stats if x[1] is not None])
     best_acc = all_eval_stats[best_eval_epoch][1]
     logger.info(f"Best top1 accuracy {best_acc:.2%} at epoch {best_eval_epoch}")
+    logger.info(f"Training took {timedelta(seconds=end_time - start_time)}")
 
 
 def create_dataloaders(cfg):
