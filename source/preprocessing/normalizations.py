@@ -44,6 +44,11 @@ spine_func_map = {
     "coco17": spine_size_coco
 }
 
+align_func_map = {
+    # "coco17": align_value_coco,
+    "coco17": lambda mat: mat[..., 5, :]
+}
+
 
 def spine_normalization(mat: np.ndarray, skeleton_type: str, **kwargs) -> np.ndarray:
     # Normalize skeletons with the size of a spine of a first skeleton
@@ -75,7 +80,7 @@ class ScreenNormalization:
 
 
 class SpineNormalization:
-    def __init__(self, dataset_file: str, use_mean: bool = False):
+    def __init__(self, dataset_file: str, use_mean: bool = False, align: bool = False):
         with open(dataset_file, "rb") as f:
             data = pickle.load(f)
         points_list = data['poseXY']
@@ -92,8 +97,14 @@ class SpineNormalization:
         else:
             self.scale = np.max(all_spines)
 
+        self.align = align
+        self.align_func = align_func_map.get(skeleton_type)
+
     def __call__(self, mat: np.ndarray, ):
         result = mat / self.scale
+        if self.align:
+            align_value = self.align_func(result[..., 0, 0, :, :])
+            result = result - align_value
         return result
 
 
@@ -108,16 +119,18 @@ def create_norm_func(norm_name: str, dataset_file: str, **kwargs):
     elif norm_name == "relative":
         return relative_normalization
     elif norm_name == "spine":
-        return SpineNormalization(dataset_file, use_mean=False)
+        return SpineNormalization(dataset_file, use_mean=False, align=False)
     elif norm_name == "mean_spine":
-        return SpineNormalization(dataset_file, use_mean=True)
+        return SpineNormalization(dataset_file, use_mean=True, align=False)
+    elif norm_name == "spine_align":
+        return SpineNormalization(dataset_file, use_mean=False, align=True)
+    elif norm_name == "mean_spine_align":
+        return SpineNormalization(dataset_file, use_mean=True, align=True)
     else:
         return no_norm
 
 
 if __name__ == "__main__":
     dataset_file_ = "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl"
-    x1 = create_norm_func("screen", dataset_file=dataset_file_)
-    x2 = create_norm_func("relative", dataset_file=dataset_file_)
-    x3 = create_norm_func("spine", dataset_file=dataset_file_)
-    x4 = create_norm_func("mean_spine", dataset_file=dataset_file_)
+    x1 = create_norm_func("spine_align", dataset_file=dataset_file_)
+

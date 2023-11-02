@@ -9,7 +9,7 @@ from torch.utils.data import Dataset
 
 from datasets.sampler import Sampler
 from datasets.transform_wrappers import TransformsDict, PoseTransform, TransformsList
-from preprocessing.normalizations import screen_normalization, no_norm
+from preprocessing.normalizations import screen_normalization, no_norm, SpineNormalization
 from procedures.visualize_skeleton import visualize_skeleton
 from shared.structs import SkeletonData, FrameData, Body
 from shared.visualize_skeleton_file import visualize_data
@@ -163,8 +163,11 @@ if __name__ == "__main__":
         []
     )
     test_loader = DataLoader(test_set, 1, shuffle=False, num_workers=0, pin_memory=True)
+    norm = SpineNormalization("/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.train.pkl", use_mean=False, align=True)
+    for x, y, yy in tqdm(test_loader):
+        xx = norm(x[0])
 
-    for x, y, yy, dataset_info in tqdm(test_loader):
+        break
         x = screen_normalization(x, (1920, 1080))
         sd = matrix_to_skeleton_body(x[0])
         visualize_data(sd, 1000 // 30)

@@ -10,7 +10,8 @@ TODO:
 - [x] TrainingConfig usage
 - [x] Add scale augmentation
 - [x] Add possibility of other normalizations
-- [ ] Add shoulder alignment
+- [x] Add shoulder alignment
+- [x] Graph creation for training stats
 - [ ] Support generation from nturgb
 - [ ] Support other skeletons
 - [ ] 2P-GCN

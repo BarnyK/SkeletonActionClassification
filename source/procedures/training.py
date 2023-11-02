@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import torch
+from dataclass_wizard import YAMLWizard
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -22,7 +23,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class TrainingConfig:
+class TrainingConfig(YAMLWizard, key_transform='SNAKE'):
     name: str
     model_type: str
     epochs: int
@@ -152,6 +153,7 @@ def train_network(cfg: TrainingConfig):
     os.makedirs(logs_path, exist_ok=True)
     os.mkdir(os.path.join(logs_path, "models"))
 
+    cfg.to_yaml_file(os.path.join(logs_path, "config.yaml"))
     write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
     loss_func = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=cfg.sgd_lr, momentum=cfg.sgd_momentum,
@@ -187,6 +189,7 @@ def train_network(cfg: TrainingConfig):
     best_eval_epoch = max(all_eval_stats, key=lambda x: x[2])
     logger.info(f"Best top1 accuracy {best_eval_epoch[2]:.2%} at epoch {best_eval_epoch[0]}")
     logger.info(f"Training took {timedelta(seconds=end_time - start_time)}")
+    write_log(logs_path, f"Top1 accuracy {best_eval_epoch[2]:.2%} at epoch {best_eval_epoch[0]}")
 
 
 def create_dataloaders(cfg):
