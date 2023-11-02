@@ -16,7 +16,7 @@ def visualize_skeleton(skeleton_file: str, video_file: str = None, window_name: 
     if video_file is None:
         raise ValueError("Video file not found")
     data.type = "coco17"
-    visualize(data, video_file, 1000//30, window_name=window_name)
+    visualize(data, video_file, 1000 // 30, window_name=window_name)
 
 
 if __name__ == "__main__":
@@ -34,9 +34,8 @@ if __name__ == "__main__":
         # print(reason)
         if "motion" in reason:
             continue
-        #visualize_skeleton(file, window_name=reason)
+        # visualize_skeleton(file, window_name=reason)
     # visualize_skeleton(f"/home/barny/MasterThesis/Data/alphapose_skeletons/ntu_coco/S005C001P010R001A044.coco17.apskel.pkl")
-    #visualize_skeleton("/home/barny/thesis/source/sample_files/S001C001P001R001A010.coco17.apskel.pkl")
-    #visualize_skeleton("/home/barny/thesis/source/sample_files/S009C003P025R001A060.coco17.apskel.pkl")
-    #'/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb/S001C003P003R002A032_rgb.avi'
-
+    # visualize_skeleton("/home/barny/thesis/source/sample_files/S001C001P001R001A010.coco17.apskel.pkl")
+    # visualize_skeleton("/home/barny/thesis/source/sample_files/S009C003P025R001A060.coco17.apskel.pkl")
+    # '/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb/S001C003P003R002A032_rgb.avi'

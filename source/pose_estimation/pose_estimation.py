@@ -1,7 +1,5 @@
 import os
-import pickle
 import sys
-import time
 from queue import Queue
 from threading import Thread
 
@@ -512,7 +510,6 @@ def run_pose_worker(pose_model, det_loader: DetectionLoader, opts: EasyDict):
     return pose_queue
 
 
-
 def window_worker(
         q: Queue, datalen: int, pose_data_queue: Queue, length: int, interlace: int
 ):
@@ -535,8 +532,6 @@ def run_window_worker(
     )
     window_worker_thread.start()
     return q
-
-
 
 # if __name__ == "__main__2":
 #     folder = f"/tmp/{time.time()}/"
@@ -642,4 +637,4 @@ def run_window_worker(
 #         cv2.imshow("test", orig_img[:, :, ::-1])
 #         cv2.waitKey(1)
 
-    # cv2.destroyAllWindows()
+# cv2.destroyAllWindows()

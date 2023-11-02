@@ -109,4 +109,3 @@ class STGCN(nn.Module):
         x = self.forward_extraction(x)
         x = self.head_forward(x)
         return x
-

@@ -4,7 +4,7 @@ import torch
 from tqdm import tqdm
 
 from pose_estimation import read_configs, init_detector, init_pose_model, DetectionLoader, run_pose_worker
-from shared.dataset_info import name_to_ntu_data, name_to_ut_data, name_info_func_map
+from shared.dataset_info import name_to_ntu_data, name_info_func_map
 from shared.structs import SkeletonData, FrameData
 
 
@@ -93,5 +93,3 @@ def testing():
 
 if __name__ == "__main__":
     testing()
-
-

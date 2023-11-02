@@ -9,8 +9,7 @@ from torch.utils.data import Dataset
 
 from datasets.sampler import Sampler
 from datasets.transform_wrappers import TransformsDict, PoseTransform, TransformsList
-from preprocessing.normalizations import screen_normalization, relative_normalization, mean_spine_normalization, \
-    spine_normalization, no_norm
+from preprocessing.normalizations import screen_normalization, no_norm
 from procedures.visualize_skeleton import visualize_skeleton
 from shared.structs import SkeletonData, FrameData, Body
 from shared.visualize_skeleton_file import visualize_data

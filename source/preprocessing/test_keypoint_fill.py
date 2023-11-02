@@ -46,4 +46,4 @@ class Test(TestCase):
             for body in frame.bodies:
                 matrix[tids_map[body.tid], fi, :, :] = body.poseXY
         et = time.time()
-        print(et-st)
+        print(et - st)

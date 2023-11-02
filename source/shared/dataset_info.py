@@ -32,7 +32,7 @@ class DatasetInfo:
             raise ValueError(f"Not supported set_name {self.set_name}")
 
 
-def name_to_ntu_data(filepath: str) -> Union[DatasetInfo,None]:
+def name_to_ntu_data(filepath: str) -> Union[DatasetInfo, None]:
     filename = path.split(filepath)[-1]
     match = ntu_name_template.match(filename)
     if match:
@@ -42,7 +42,7 @@ def name_to_ntu_data(filepath: str) -> Union[DatasetInfo,None]:
     return None
 
 
-def name_to_ut_data(filepath: str) -> Union[DatasetInfo,None]:
+def name_to_ut_data(filepath: str) -> Union[DatasetInfo, None]:
     filename = path.split(filepath)[-1]
     match = ut_name_template.match(filename)
     if match:

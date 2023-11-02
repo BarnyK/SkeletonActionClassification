@@ -34,7 +34,7 @@ if __name__ == "__main__2":
                      False)
 
 if __name__ == "__main__":
-    norms = ["none","mean_spine", "spine", "screen", "relative"]
+    norms = ["none", "mean_spine", "spine", "screen", "relative"]
     for norm_type in norms:
         cfg = TrainingConfig("xsub_joints_" + norm_type, "stgcnpp", 80, "cuda:0", ["joints"], 64, 32,
                              "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl", 64,

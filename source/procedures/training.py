@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import torch
-from numpy import argmax
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 

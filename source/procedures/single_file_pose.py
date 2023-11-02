@@ -1,13 +1,11 @@
 import os
-import time
 
 import torch
 from tqdm import tqdm
 
 from pose_estimation import run_pose_worker, DetectionLoader, init_pose_model, init_detector, read_configs
-from shared.structs import SkeletonData, FrameData
 from shared.dataset_info import DatasetInfo
-from shared.visualize_skeleton_file import visualize
+from shared.structs import SkeletonData, FrameData
 
 
 def single_file_pose(filename, device: torch.device, skeleton_type: str = "coco17"):
@@ -43,7 +41,7 @@ def single_file_pose(filename, device: torch.device, skeleton_type: str = "coco1
         len(frames),
         det_loader.frameSize,
     )
-    #visualize(data, data.video_file, wait_key=1000//30, draw_bbox=True, draw_confidences=True, draw_frame_number=True)
+    # visualize(data, data.video_file, wait_key=1000//30, draw_bbox=True, draw_confidences=True, draw_frame_number=True)
 
 
 if __name__ == "__main__":
