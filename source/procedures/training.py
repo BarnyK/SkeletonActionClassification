@@ -143,11 +143,14 @@ def train_network(cfg: TrainingConfig):
 
     device = torch.device(cfg.device)
     channels = calculate_channels(cfg.features, 2)
-    model = create_stgcnpp(60, channels)
-    model.to(device)
+    if cfg.model_type == "stgcnpp":
+        model = create_stgcnpp(60, channels)
+        model.to(device)
+    else:
+        raise ValueError("2p-gcn not supported yet")
 
     logs_path = os.path.join(cfg.log_folder, cfg.name)
-    os.mkdir(logs_path)
+    os.makedirs(logs_path, exist_ok=True)
     os.mkdir(os.path.join(logs_path, "models"))
 
     write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
@@ -171,21 +174,19 @@ def train_network(cfg: TrainingConfig):
             eval_start_time = time.time()
             eval_stats = test_epoch(model, test_loader, loss_func, device)
             eval_end_time = time.time()
-            all_eval_stats.append(eval_stats)
+            all_eval_stats.append((epoch, *eval_stats))
 
             write_log(logs_path, f"[{epoch}] - eval stats - {','.join([str(x) for x in eval_stats])}")
             write_log(logs_path, f"[{epoch}] - eval time - {timedelta(seconds=eval_end_time - eval_start_time)}")
-        else:
-            all_eval_stats.append((None, None, None))
+
         # Save model
         torch.save(model.state_dict(), os.path.join(logs_path, "models", f"epoch_{epoch}.pth"))
         # Print ETA
         estimated_remaining_time = ((time.time() - start_time) / (epoch + 1)) * (cfg.epochs - (epoch + 1))
         logger.info(f"Estimated remaining time: {timedelta(seconds=estimated_remaining_time)}")
     end_time = time.time()
-    best_eval_epoch = argmax([x[1] for x in all_eval_stats if x[1] is not None])
-    best_acc = all_eval_stats[best_eval_epoch][1]
-    logger.info(f"Best top1 accuracy {best_acc:.2%} at epoch {best_eval_epoch}")
+    best_eval_epoch = max(all_eval_stats, key=lambda x: x[2])
+    logger.info(f"Best top1 accuracy {best_eval_epoch[2]:.2%} at epoch {best_eval_epoch[0]}")
     logger.info(f"Training took {timedelta(seconds=end_time - start_time)}")
 
 

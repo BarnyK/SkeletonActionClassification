@@ -53,6 +53,7 @@ class PoseDataset(Dataset):
 
         unique_labels = list(sorted(set(self.labels)))
         self.label_translation = {x: i for i, x in enumerate(unique_labels)}
+        self.norm_func = norm_func
 
     def solve_feature_transform_requirements(self):
         required_transforms = set()
@@ -77,7 +78,7 @@ class PoseDataset(Dataset):
         points = self.points[idx]
         points = np.float32(points)
         # Normalize
-        points = self.norm_func(points, screen_size=self.image_shape, skeleton_type=self.skeleton_type)
+        points = self.norm_func(points)
 
         # Augments
         for augment in self.augments:

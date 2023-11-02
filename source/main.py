@@ -34,11 +34,10 @@ if __name__ == "__main__2":
                      False)
 
 if __name__ == "__main__":
-    print(datasets.TransformsNameList)
-    norms = ["mean_spine", "spine", "screen","relative"]
+    norms = ["none","mean_spine", "spine", "screen", "relative"]
     for norm_type in norms:
-        cfg = TrainingConfig("xsub_joints_" + norm_type , "stgcnpp", 80, "cuda:0", ["joints"], 64, 32,
+        cfg = TrainingConfig("xsub_joints_" + norm_type, "stgcnpp", 80, "cuda:0", ["joints"], 64, 32,
                              "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl", 64,
                              "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl", 64, 8, 5,
-                             10, norm_type, 0.1, 0.9, 0.0002, True, 0, "logs/norm_tests", False, 0)
+                             20, norm_type, 0.1, 0.9, 0.0002, True, 0, "logs/norm_tests2", False, 0)
         train_network(cfg)
