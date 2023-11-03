@@ -1,8 +1,17 @@
 from shared.skeletons import coco
 
+drawn_limbs_map = {
+    "coco17": coco.drawn_limbs,
+}
+
+draw_preparation_func_map = {
+    "coco17": coco.prepare_draw_keypoints
+}
+
 bones_map = {
     "coco17": coco.bones
 }
+
 angles_map = {
     "coco17": coco.angles
 }

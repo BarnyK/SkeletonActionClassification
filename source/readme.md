@@ -16,7 +16,7 @@ TODO:
   - [ ] Transform from ntu to this
   - [ ] Transform from coco to this
 - [ ] Support other skeletons
-  - [ ] Port all functions that use information about skeleton type to one module
+  - [x] Port all functions that use information about skeleton type to one module
 - [ ] Support generation from nturgb
 - [ ] 2P-GCN
 - [ ] Single file + evaluation

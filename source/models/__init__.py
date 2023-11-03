@@ -13,12 +13,12 @@ if __name__ == "__main__":
     import torch
     import time
 
-    model = create_stgcnpp()
+    model = create_stgcnpp(120, 3)
 
-    device = torch.device("cuda:0")
+    device = torch.device("cpu")
 
     model.to(device)
-    xd = torch.rand((5, 2, 64, 17, 7), device=device)
+    xd = torch.rand((5, 2, 64, 17, 3), device=device)
 
     for i in range(100):
         st = time.time()

@@ -113,7 +113,7 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, config
         pool.close()
         pool.join()
 
-    os.makedirs(output_path, exist_ok=True)
+    os.makedirs(output_path, exist_ok=False)
 
     for strategy in split_strategy:
         split_func = datasets.split_map[strategy]

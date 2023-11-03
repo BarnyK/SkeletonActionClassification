@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 
 from shared.read_skeleton import read_skeleton
+from shared.skeletons import drawn_limbs_map, draw_preparation_func_map
 from shared.structs import SkeletonData
 
 limbs = {
@@ -129,9 +130,11 @@ def draw_text_with_outline(image, point, text, font_size):
 def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, window_name: str = "visualization",
               draw_bbox: bool = True, draw_frame_number: bool = False, draw_confidences: bool = False):
     skeleton_type = skeleton_data.type
-    limb_pairs = limbs.get(skeleton_type)
+    limb_pairs = drawn_limbs_map.get(skeleton_type)
     if limb_pairs is None:
         raise ValueError(f"Skeleton type not available {skeleton_type}")
+
+    prep_keypoints = draw_preparation_func_map.get(skeleton_type, lambda x: x)
 
     if video_file is None:
         video_file = skeleton_data.video_file
@@ -178,15 +181,17 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
 
             # Points
             points = body.poseXY
-            if skeleton_type == "coco17" or len(points) == 17:
-                # Additional point between shoulders
-                points = np.concatenate((points, (points[5:6, :] + points[6:7, :]) / 2))
 
-            for i, (p1, p2) in enumerate(limb_pairs):
+            # Additional points if needed
+            points = prep_keypoints(points)
+
+            # Draw limbs
+            for ii, (p1, p2) in enumerate(limb_pairs):
                 point1 = (int(points[p1][0]), int(points[p1][1]))
                 point2 = (int(points[p2][0]), int(points[p2][1]))
                 cv2.line(frame, point1, point2, skeleton_color, 2)
 
+            # Draw points
             for ii, point in enumerate(points):
                 point = (int(point[0]), int(point[1]))
                 draw_text_with_outline(frame, point, str(ii), 5 / 10)
@@ -224,7 +229,8 @@ def visualize_data(data: SkeletonData, wait_key: int = 0):
 
     yt_scale = (im_h * 0.8) / (y_max - y_min)
 
-    limb_pairs = limbs.get(data.type)
+    limb_pairs = drawn_limbs_map.get(data.type)
+    prep_keypoints = draw_preparation_func_map.get(data.type, lambda mat: mat)
 
     for frame in data.frames:
         image = np.zeros((im_h, im_w, 3))
@@ -236,9 +242,7 @@ def visualize_data(data: SkeletonData, wait_key: int = 0):
                 skeleton_color = tracking_colors[body.tid % len(tracking_colors)]
 
             points = body.poseXY
-            if data.type == "coco17" or len(points) == 17:
-                # Additional point between shoulders
-                points = np.concatenate((points, (points[5:6, :] + points[6:7, :]) / 2))
+            points = prep_keypoints(points)
 
             points = (np.array([im_w * 0.1, im_h * 0.1]) + (points - np.array([x_min, y_min])) *
                       np.array([xt_scale, yt_scale]))

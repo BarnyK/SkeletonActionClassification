@@ -26,6 +26,12 @@ angles = ((6, 0, 5), (1, 0, 5), (2, 0, 6), (0, 1, 3), (0, 2, 4), (5, 14, 5), (5,
           (12, 14, 16))
 
 
+def prepare_draw_keypoints(points: np.ndarray) -> np.ndarray:
+    # Add points between shoulders
+    points = np.concatenate((points, (points[5:6, :] + points[6:7, :]) / 2))
+    return points
+
+
 def center_position_func(mat):
     return (mat[..., 5, :] + mat[..., 6, :]) / 2
 
