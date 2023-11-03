@@ -12,8 +12,12 @@ TODO:
 - [x] Add possibility of other normalizations
 - [x] Add shoulder alignment
 - [x] Graph creation for training stats
-- [ ] Support generation from nturgb
+- [ ] Support skeleton between ntu and coco with 15 joints
+  - [ ] Transform from ntu to this
+  - [ ] Transform from coco to this
 - [ ] Support other skeletons
+  - [ ] Port all functions that use information about skeleton type to one module
+- [ ] Support generation from nturgb
 - [ ] 2P-GCN
 - [ ] Single file + evaluation
 
