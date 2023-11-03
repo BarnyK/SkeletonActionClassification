@@ -26,12 +26,6 @@ def skeleton_middle(skeleton: np.ndarray):
     return np.array([min_x + (max_x - min_x) / 2, min_y + (max_y - min_y) / 2], dtype=np.float32)
 
 
-def check_relative_body_distance(skeleton1: np.ndarray, skeleton2: np.ndarray):
-    mid1 = skeleton_middle(skeleton1)
-    mid2 = skeleton_middle(skeleton2)
-    return np.abs(mid2 - mid1)
-
-
 def calculate_movement_to_body_ratio(skeleton1: np.ndarray, skeleton2: np.ndarray, frames: int):
     min_x, max_x, min_y, max_y = skeleton_bbox(skeleton1)
     w = max_x - min_x

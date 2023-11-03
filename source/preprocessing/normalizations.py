@@ -4,6 +4,8 @@ import pickle
 
 import numpy as np
 
+from shared.skeletons import spine_size_func_map, align_func_map
+
 
 def screen_normalization(mat: np.ndarray, screen_size: tuple[int, int], **kwargs) -> np.ndarray:
     # Normalize points by shifting points by half the size of screen and diving by it
@@ -30,29 +32,9 @@ def relative_normalization(mat: np.ndarray, **kwargs) -> np.ndarray:
     return result
 
 
-def spine_size_coco(mat: np.ndarray) -> np.ndarray:
-    # Calculates the size of spine given a matrix with skeleton
-    # Input should be at least 2-dimensional
-    x = (mat[..., 5, :] + mat[..., 6, :]) / 2
-    y = (mat[..., 11, :] + mat[..., 12, :]) / 2
-
-    spine_sizes = np.linalg.norm(x - y, axis=-1)
-    return spine_sizes
-
-
-spine_func_map = {
-    "coco17": spine_size_coco
-}
-
-align_func_map = {
-    # "coco17": align_value_coco,
-    "coco17": lambda mat: mat[..., 5, :]
-}
-
-
 def spine_normalization(mat: np.ndarray, skeleton_type: str, **kwargs) -> np.ndarray:
     # Normalize skeletons with the size of a spine of a first skeleton
-    spine_func = spine_func_map[skeleton_type]
+    spine_func = spine_size_func_map[skeleton_type]
 
     spine_sizes = spine_func(mat[0, ...])
     result = mat / spine_sizes[:, np.newaxis, np.newaxis]
@@ -61,7 +43,7 @@ def spine_normalization(mat: np.ndarray, skeleton_type: str, **kwargs) -> np.nda
 
 def mean_spine_normalization(mat: np.ndarray, skeleton_type: str, **kwargs) -> np.ndarray:
     # Normalize skeletons with the mean spine size across frames
-    spine_func = spine_func_map[skeleton_type]
+    spine_func = spine_size_func_map[skeleton_type]
 
     spine_sizes = spine_func(mat[0, ...])
     spine_size = np.mean(spine_sizes)
@@ -86,7 +68,7 @@ class SpineNormalization:
         points_list = data['poseXY']
         skeleton_type = data.get("skeleton_type", "coco17")
 
-        spine_func = spine_func_map[skeleton_type]
+        spine_func = spine_size_func_map[skeleton_type]
         all_spines = []
         for points in points_list:
             spines = spine_func(points)
@@ -133,4 +115,3 @@ def create_norm_func(norm_name: str, dataset_file: str, **kwargs):
 if __name__ == "__main__":
     dataset_file_ = "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl"
     x1 = create_norm_func("spine_align", dataset_file=dataset_file_)
-
