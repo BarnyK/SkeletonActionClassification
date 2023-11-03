@@ -42,12 +42,12 @@ def bone_angles(mat: np.ndarray) -> np.ndarray:
 def to_angles(mat: np.ndarray, skeleton_type: str) -> np.ndarray:
     # Calculate angles in the body
     # Coco angles have shoulder points set to 0
-    angles = angles_map.get(skeleton_type)
+    angles, to_zero = angles_map.get(skeleton_type)
     if angles is None:
         raise ValueError
 
     angle_array = __calculate_angles(mat, angles)
-    angle_array[..., (5, 6)] = 0
+    angle_array[..., to_zero] = 0
     angle_array /= (2 * np.pi)
 
     return angle_array[..., np.newaxis]
