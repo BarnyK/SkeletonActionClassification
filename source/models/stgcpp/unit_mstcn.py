@@ -78,6 +78,3 @@ class mstcn(nn.Module):
         out = self.inner_forward(x)
         out = self.bn(out)
         return self.drop(out)
-
-    def init_weights(self):
-        pass

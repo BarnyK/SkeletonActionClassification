@@ -74,6 +74,3 @@ class unit_gcn(nn.Module):
             x = self.conv(x)
 
         return self.act(self.bn(x) + res)
-
-    def init_weights(self):
-        pass

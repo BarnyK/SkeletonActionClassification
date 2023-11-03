@@ -24,7 +24,3 @@ class unit_tcn(nn.Module):
 
     def forward(self, x):
         return self.drop(self.bn(self.conv(x)))
-
-    def init_weights(self):
-        conv_init(self.conv)
-        bn_init(self.bn, 1)
