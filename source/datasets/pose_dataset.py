@@ -75,7 +75,6 @@ class PoseDataset(Dataset):
     def __getitem__(self, idx):
         label = self.labels[idx]
         points = self.points[idx]
-        points = np.float32(points)
         # Normalize
         points = self.norm_func(points)
 
@@ -85,9 +84,7 @@ class PoseDataset(Dataset):
 
         # Sample
         features = self.sampler(points)
-        listed = False
         if isinstance(features, list):
-            listed = True
             features = np.stack(features)
 
         # Calculate features
@@ -136,7 +133,7 @@ class PoseDataset(Dataset):
                 out_data.append(new_features)
             features = np.stack(features)
 
-        features = torch.from_numpy(features)
+        features = torch.from_numpy(features).float()
         return features, self.label_translation[label], label
 
 

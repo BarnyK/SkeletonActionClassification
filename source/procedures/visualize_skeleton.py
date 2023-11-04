@@ -31,7 +31,7 @@ if __name__ == "__main__":
     #     if "motion" in reason:
     #         continue
     # visualize_skeleton(file, window_name=reason)
-    # visualize_skeleton(f"/home/barny/MasterThesis/Data/alphapose_skeletons/ntu_coco/S005C001P010R001A044.coco17.apskel.pkl")
+    visualize_skeleton(f"/home/barny/MasterThesis/Data/alphapose_skeletons/ntu_coco/S001C001P001R001A025.coco17.apskel.pkl")
     visualize_skeleton("/home/barny/MasterThesis/Data/nturgb+d_skeletons/S001C001P001R001A025.skeleton",
                        "/home/barny/MasterThesis/Data/nturgb+d_rgb/S001C001P001R001A025_rgb.avi")
     # visualize_skeleton("/home/barny/thesis/source/sample_files/S009C003P025R001A060.coco17.apskel.pkl")
