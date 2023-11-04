@@ -1,3 +1,4 @@
+import os
 from typing import Union, List
 
 import numpy as np
@@ -7,7 +8,7 @@ from sklearn.impute import IterativeImputer, KNNImputer
 from shared.structs import SkeletonData, Body
 
 enable_iterative_imputer
-
+os.environ['NUMEXPR_NUM_THREADS'] = '2'
 
 def keypoint_interpolation_fill(bodies: List[Body], keypoint_index: int, threshold: float = 0.4):
     ki = keypoint_index
@@ -65,7 +66,7 @@ def mice_fill(data: SkeletonData, tid: int, threshold: float = 0.3, max_iter: in
     imputer = IterativeImputer(max_iter=max_iter, random_state=0)
     for i in range(full_matrix.shape[2]):
         imputer.fit(full_matrix[:, :, i])
-        full_matrix[:, :, i] = imputer.transform(full_matrix[:, :, i])
+        full_matrix[:, ~missing.all(0), i] = imputer.transform(full_matrix[:, :, i])
 
     for i, body in enumerate(bodies):
         body.poseXY = full_matrix[i, :, :]
@@ -85,7 +86,7 @@ def knn_fill(data: SkeletonData, tid: int, threshold: float = 0.3, neighbours: i
 
     imputer = KNNImputer(n_neighbors=neighbours)
     for i in range(full_matrix.shape[2]):
-        full_matrix[:, :, i] = imputer.fit_transform(full_matrix[:, :, i])
+        full_matrix[:, ~missing.all(0), i] = imputer.fit_transform(full_matrix[:, :, i])
 
     for i, body in enumerate(bodies):
         body.poseXY = full_matrix[i, :, :]

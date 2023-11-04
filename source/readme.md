@@ -13,11 +13,15 @@ TODO:
 - [x] Add shoulder alignment
 - [x] Graph creation for training stats
 - [x] Support skeleton between ntu and coco with 15 joints
-  - [x] Transform from ntu to this
-  - [x] Transform from coco to this
+    - [x] Transform from ntu to this
+    - [x] Transform from coco to this
 - [x] Support other skeletons
-  - [x] Port all functions that use information about skeleton type to one module
+    - [x] Port all functions that use information about skeleton type to one module
 - [ ] Support preprocessing from nturgb
+- [ ] Figure out a way to fill missing joints if all other are missing
+- [ ] Continue training(1. compare cfgs, 2. check epochs recorded in log, 3. load model)
+    -  [ ] Load model ensure works
+- [ ] Evaluation from loaded model
 - [ ] 2P-GCN
 - [ ] Fix for alignement in mutual (double the bodies up front)
 - [ ] Single file + evaluation

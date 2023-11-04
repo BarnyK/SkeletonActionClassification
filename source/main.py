@@ -26,27 +26,47 @@ if __name__ == "__main__2":
 
 if __name__ == "__main__2":
     # Generation of NTU datasets from Alphapose skeletons
+    # preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
+    #                   "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
+    #                  "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
+    #                  PreprocessConfig(),
+    #                  datasets.all_splits,
+    #                  24,
+    #                  False)
+
+    cfg = PreprocessConfig()
+    cfg.keypoint_fill_type = "knn"
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
-                     PreprocessConfig(),
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_knn_fill_bad",
+                     cfg,
                      datasets.all_splits,
-                     24,
+                     3,
                      False)
 
-if __name__ == "__main__":
+    cfg = PreprocessConfig()
+    cfg.keypoint_fill_type = "mice"
+    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
+                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_mice_fill_bad",
+                     cfg,
+                     datasets.all_splits,
+                     3,
+                     False)
+
+if __name__ == "__main__2":
     # Generation of NTU datasets from Alphapose skeleton while changing the skeleton type
     cfg = PreprocessConfig()
     cfg.transform_to_combined = True
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/combined_skeleton",
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/coco_combined",
                      cfg,
                      datasets.all_splits,
                      24,
                      False)
 
-if __name__ == "__main__2":
+if __name__ == "__main__":
     norms = ["none", "mean_spine", "spine", "screen", "relative", "spine_align", "mean_spine_align"]
     for norm_type in norms:
         try:
@@ -54,7 +74,7 @@ if __name__ == "__main__2":
             cfg = TrainingConfig("xview_joints_" + norm_type, "stgcnpp", 80, "cuda:0", ["joints"], 64, 32,
                                  "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.train.pkl", 64,
                                  "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.test.pkl", 128, 8, 1,
-                                 20, norm_type, 0.1, 0.9, 0.0002, True, 0, "logs/augment_test", True, 0.0, False)
+                                 20, norm_type, 0.1, 0.9, 0.0002, True, 0, "logs/augment_test2", True, 0.2, False)
             train_network(cfg)
         except FileExistsError as er:
             print(er)
