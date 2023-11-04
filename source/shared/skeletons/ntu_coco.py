@@ -1,58 +1,94 @@
 import numpy as np
 
+from shared.structs import SkeletonData
+
 drawn_limbs = [
-    (0, 1),
-    (0, 2),
-    (1, 3),
-    (2, 4),
-    (5, 6),
-    (5, 7),
-    (7, 9),
-    (6, 8),
-    (8, 10),
-    (17, 11),
-    (17, 12),
-    (11, 13),
-    (12, 14),
-    (13, 15),
-    (14, 16),
+    (0, 1), (2, 1), (3, 2), (4, 3), (5, 1), (6, 5), (7, 6), (8, 1), (9, 8), (10, 9), (11, 10), (12, 8), (13, 12),
+    (14, 13)
 ]
 
-bones = ((0, 0), (1, 0), (2, 0), (3, 1), (4, 2), (5, 0), (6, 0), (7, 5), (8, 6), (9, 7), (10, 8),
-         (11, 0), (12, 0), (13, 11), (14, 12), (15, 13), (16, 14))
+bones = (
+    (0, 1), (1, 1), (2, 1), (3, 2), (4, 3), (5, 1), (6, 5), (7, 6), (8, 1), (9, 8), (10, 9), (11, 10), (12, 8),
+    (13, 12), (14, 13))
 
-angles = ((6, 0, 5), (1, 0, 5), (2, 0, 6), (0, 1, 3), (0, 2, 4), (5, 14, 5), (5, 14, 5), (7, 5, 11), (8, 6, 12),
-          (5, 7, 9), (6, 8, 10), (0, 5, 11), (0, 6, 12), (5, 11, 13), (6, 12, 14), (11, 13, 15),
-          (12, 14, 16))
+angles = (
+    (0, 1, 5), (4, 0, 14), (2, 1, 0), (3, 2, 1), (4, 3, 2), (5, 1, 0), (6, 5, 1), (7, 6, 5), (4, 0, 14), (9, 8, 1),
+    (10, 9, 8), (11, 10, 9), (12, 8, 1), (13, 12, 8), (14, 13, 12))
+angles_to_zero = (1, 8)
 
-num_nodes = 17
+num_nodes = 15
 
-edges = ((15, 13), (13, 11), (16, 14), (14, 12), (11, 5), (12, 6),
-         (9, 7), (7, 5), (10, 8), (8, 6), (5, 0), (6, 0),
-         (1, 0), (3, 1), (2, 0), (4, 2))
+edges = ((0, 1), (2, 1), (3, 2), (4, 3), (5, 1), (6, 5),
+         (7, 6), (8, 1), (9, 8), (10, 9), (11, 10),
+         (12, 8), (13, 12), (14, 13))
 
-center = 0
+center = 1
 
 
 def prepare_draw_keypoints(points: np.ndarray) -> np.ndarray:
-    # Add points between shoulders
-    points = np.concatenate((points, (points[5:6, :] + points[6:7, :]) / 2))
     return points
 
 
 def center_position_func(mat):
-    return (mat[..., 5, :] + mat[..., 6, :]) / 2
+    return mat[..., center, :]
 
 
 def spine_size(mat: np.ndarray) -> np.ndarray:
     # Calculates the size of spine given a matrix with skeleton
     # Input should be at least 2-dimensional
-    x = (mat[..., 5, :] + mat[..., 6, :]) / 2
-    y = (mat[..., 11, :] + mat[..., 12, :]) / 2
+    x = mat[..., 1, :]
+    y = mat[..., 8, :]
 
     spine_sizes = np.linalg.norm(x - y, axis=-1)
     return spine_sizes
 
 
 def alignment_keypoint_value(mat: np.ndarray) -> np.ndarray:
-    return mat[..., 5, :]
+    return mat[..., center, :]
+
+
+def from_coco(mat: np.ndarray) -> np.ndarray:
+    *R, V, C = mat.shape
+    new_mat = np.zeros((*R, 15, C))
+    direct_translations = {0: 0, 5: 5, 6: 2, 7: 6, 8: 3, 9: 7, 10: 4, 11: 12, 12: 9, 13: 13, 14: 10, 15: 14, 16: 11}
+    for src, dst in direct_translations.items():
+        new_mat[..., dst, :] = mat[..., src, :]
+    # spine parts
+    new_mat[..., 1, :] = (new_mat[..., 2, :] + new_mat[..., 5, :]) / 2
+    new_mat[..., 8, :] = (new_mat[..., 9, :] + new_mat[..., 12, :]) / 2
+    # Maybe calculate average of head points for point 0
+    return new_mat
+
+
+def from_skeleton_data(data: SkeletonData) -> SkeletonData:
+    if data.type == "coco17":
+        func = from_coco
+    elif data.type == "ntu":
+        func = from_coco
+    else:
+        raise KeyError(f"not supported type {data.type}")
+    for frame in data.frames:
+        for body in frame.bodies:
+            body.poseXY = func(body.poseXY)
+            body.poseConf = func(body.poseConf)
+
+
+def from_ntu(mat: np.ndarray) -> np.ndarray:
+    *R, V, C = mat.shape
+    new_mat = np.zeros((*R, 15, C))
+    direct_translations = {0: 8, 3: 0, 4: 2, 5: 3, 6: 4, 8: 5, 9: 6, 10: 7, 12: 9, 13: 10, 14: 11, 16: 12, 17: 13,
+                           18: 14, 20: 1}
+
+    for src, dst in direct_translations.items():
+        new_mat[..., dst, :] = mat[..., src, :]
+
+    return new_mat
+
+
+if __name__ == "__main__":
+    from shared.ntu_loader import read_file
+
+    xd = read_file("/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons/S001C001P001R001A001.skeleton")
+    pose = xd.frames[0].bodies[0].poseXY
+    newpose = from_ntu(pose)
+    pass

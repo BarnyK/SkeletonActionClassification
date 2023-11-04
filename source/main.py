@@ -38,11 +38,10 @@ if __name__ == "__main__":
     for norm_type in norms:
         try:
             print(norm_type)
-            cfg = TrainingConfig("xsub_joints_" + norm_type, "stgcnpp", 80, "cuda:0", ["joints"], 64, 32,
-                                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl", 64,
-                                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl", 128, 8, 1,
-                                 20, norm_type, 0.1, 0.9, 0.0002, True, 0, "logs/norm_tests3", False, 0)
+            cfg = TrainingConfig("xview_joints_" + norm_type, "stgcnpp", 80, "cuda:0", ["joints"], 64, 32,
+                                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.train.pkl", 64,
+                                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.test.pkl", 128, 8, 1,
+                                 20, norm_type, 0.1, 0.9, 0.0002, True, 0, "logs/augment_test", True, 0.0, False)
             train_network(cfg)
         except FileExistsError as er:
             print(er)
-           
