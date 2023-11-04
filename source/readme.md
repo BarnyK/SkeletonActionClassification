@@ -17,10 +17,11 @@ TODO:
   - [x] Transform from coco to this
 - [x] Support other skeletons
   - [x] Port all functions that use information about skeleton type to one module
-- [ ] Fix for alignement in mutual (double the bodies up front)
-- [ ] Support generation from nturgb
+- [ ] Support preprocessing from nturgb
 - [ ] 2P-GCN
+- [ ] Fix for alignement in mutual (double the bodies up front)
 - [ ] Single file + evaluation
+- [ ] Visualization with windowing
 
 GENERAL PIPELINE:
 

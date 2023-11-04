@@ -15,6 +15,7 @@ from preprocessing.keypoint_fill import keypoint_fill
 from preprocessing.nms import nms
 from preprocessing.tracking import pose_track, select_tracks_by_motion, assign_tids_by_order, select_by_order, \
     select_by_confidence, select_by_size
+from shared.skeletons import ntu_coco
 from shared.structs import SkeletonData
 
 
@@ -43,8 +44,12 @@ class PreprocessConfig:
     max_body_count: int = 2
     keypoint_fill_type: str = "interpolation"
 
+    transform_to_combined: bool = False
+
 
 def _preprocess_data(data: SkeletonData, cfg: PreprocessConfig):
+    if cfg.transform_to_combined:
+        data = ntu_coco.from_skeleton_data(data)
     if cfg.use_box_conf:
         skeleton_filters.remove_bodies_by_box_confidence(data, cfg.box_conf_threshold, cfg.box_conf_max_total,
                                                          cfg.box_conf_max_frames)

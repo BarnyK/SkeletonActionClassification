@@ -25,6 +25,7 @@ if __name__ == "__main__2":
     )
 
 if __name__ == "__main__2":
+    # Generation of NTU datasets from Alphapose skeletons
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
@@ -34,6 +35,18 @@ if __name__ == "__main__2":
                      False)
 
 if __name__ == "__main__":
+    # Generation of NTU datasets from Alphapose skeleton while changing the skeleton type
+    cfg = PreprocessConfig()
+    cfg.transform_to_combined = True
+    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
+                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/combined_skeleton",
+                     cfg,
+                     datasets.all_splits,
+                     24,
+                     False)
+
+if __name__ == "__main__2":
     norms = ["none", "mean_spine", "spine", "screen", "relative", "spine_align", "mean_spine_align"]
     for norm_type in norms:
         try:
