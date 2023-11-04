@@ -50,13 +50,15 @@ def alignment_keypoint_value(mat: np.ndarray) -> np.ndarray:
 def from_coco(mat: np.ndarray) -> np.ndarray:
     *R, V, C = mat.shape
     new_mat = np.zeros((*R, 15, C))
-    direct_translations = {0: 0, 5: 5, 6: 2, 7: 6, 8: 3, 9: 7, 10: 4, 11: 12, 12: 9, 13: 13, 14: 10, 15: 14, 16: 11}
+    direct_translations = {5: 5, 6: 2, 7: 6, 8: 3, 9: 7, 10: 4, 11: 12, 12: 9, 13: 13, 14: 10, 15: 14, 16: 11}
     for src, dst in direct_translations.items():
         new_mat[..., dst, :] = mat[..., src, :]
     # spine parts
     new_mat[..., 1, :] = (new_mat[..., 2, :] + new_mat[..., 5, :]) / 2
     new_mat[..., 8, :] = (new_mat[..., 9, :] + new_mat[..., 12, :]) / 2
     # Maybe calculate average of head points for point 0
+    new_mat[..., 0, :] = np.mean([mat[..., i, :] for i in range(0, 5)], axis=-2)
+    new_mat[..., 0, :] = 0.2 * mat[..., 0, :] + 0.4 * mat[..., 3, :] + 0.4 * mat[..., 4, :]
     return new_mat
 
 
@@ -71,6 +73,7 @@ def from_skeleton_data(data: SkeletonData) -> SkeletonData:
         for body in frame.bodies:
             body.poseXY = func(body.poseXY)
             body.poseConf = func(body.poseConf)
+    data.type = "ntu_coco"
     return data
 
 
