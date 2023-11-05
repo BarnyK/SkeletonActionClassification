@@ -78,3 +78,4 @@ if __name__ == "__main__":
             train_network(cfg)
         except FileExistsError as er:
             print(er)
+           
