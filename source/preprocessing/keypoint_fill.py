@@ -2,8 +2,10 @@ import os
 from typing import Union, List
 
 import numpy as np
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.experimental import enable_iterative_imputer
 from sklearn.impute import IterativeImputer, KNNImputer
+from sklearn.utils._testing import ignore_warnings
 
 from shared.structs import SkeletonData, Body
 
@@ -51,8 +53,8 @@ def interpolation_fill(data: SkeletonData, tid: int, threshold: float = 0.3):
     for keypoint_index in range(keypoint_count):
         keypoint_interpolation_fill(bodies, keypoint_index, threshold)
 
-
-def mice_fill(data: SkeletonData, tid: int, threshold: float = 0.3, max_iter: int = 5):
+@ignore_warnings(category=ConvergenceWarning)
+def mice_fill(data: SkeletonData, tid: int, threshold: float = 0.3, max_iter: int = 15):
     bodies = []
     for frame in data.frames:
         for body in frame.bodies:
@@ -62,9 +64,9 @@ def mice_fill(data: SkeletonData, tid: int, threshold: float = 0.3, max_iter: in
     assert len(bodies) == data.length
     full_matrix = np.stack([body.poseXY for body in bodies], 0)
     missing = np.stack([body.poseConf.squeeze() for body in bodies], 0) < threshold
-    full_matrix[missing] = np.nan
+    full_matrix[missing] = -10e4
 
-    imputer = IterativeImputer(max_iter=max_iter, random_state=0, n_nearest_features=8)
+    imputer = IterativeImputer(missing_values=-10e4, max_iter=max_iter, random_state=0, n_nearest_features=5, tol=1e-2)
     for i in range(full_matrix.shape[2]):
         imputer.fit(full_matrix[:, ~missing.all(0), i])
         full_matrix[:, ~missing.all(0), i] = imputer.transform(full_matrix[:, ~missing.all(0), i])
@@ -72,7 +74,7 @@ def mice_fill(data: SkeletonData, tid: int, threshold: float = 0.3, max_iter: in
     for i, body in enumerate(bodies):
         body.poseXY = full_matrix[i, :, :]
 
-
+@ignore_warnings(category=ConvergenceWarning)
 def knn_fill(data: SkeletonData, tid: int, threshold: float = 0.3, neighbours: int = 8):
     bodies = []
     for frame in data.frames:
@@ -83,9 +85,9 @@ def knn_fill(data: SkeletonData, tid: int, threshold: float = 0.3, neighbours: i
     assert len(bodies) == data.length
     full_matrix = np.stack([body.poseXY for body in bodies], 0)
     missing = np.stack([body.poseConf.squeeze() for body in bodies], 0) < threshold
-    full_matrix[missing] = np.nan
+    full_matrix[missing] = -10e4
 
-    imputer = KNNImputer(n_neighbors=neighbours)
+    imputer = KNNImputer(missing_values=-10e4, n_neighbors=neighbours)
     for i in range(full_matrix.shape[2]):
         full_matrix[:, ~missing.all(0), i] = imputer.fit_transform(full_matrix[:, :, i])
 
@@ -148,7 +150,7 @@ def fill_missing_frames(skeleton_data: SkeletonData, tid: int):
 
 
 def keypoint_fill(skeleton_data: SkeletonData, fill_type: str = "interpolation", threshold: float = 0.3,
-                  max_iters: int = 5, neighbours: int = 5):
+                  max_iters: int = 15, neighbours: int = 8):
     assert fill_type in ["interpolation", "mice", "knn"]
 
     for tid in skeleton_data.get_all_tids():
