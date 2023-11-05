@@ -161,3 +161,10 @@ class SkeletonData:
             mat[i, ...] = np.stack([body.poseConf for body in tid_bodies])
 
         return mat
+
+    def get_frame_body(self, frame_id: int, body_tid: int):
+        frame = self.frames[frame_id]
+        for body in frame.bodies:
+            if body.tid == body_tid:
+                return body
+        return None

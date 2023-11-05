@@ -10,6 +10,7 @@ from shared.structs import SkeletonData, Body
 enable_iterative_imputer
 os.environ['NUMEXPR_NUM_THREADS'] = '2'
 
+
 def keypoint_interpolation_fill(bodies: List[Body], keypoint_index: int, threshold: float = 0.4):
     ki = keypoint_index
     coords = np.stack([body.poseXY[ki, :] for body in bodies])
@@ -63,16 +64,16 @@ def mice_fill(data: SkeletonData, tid: int, threshold: float = 0.3, max_iter: in
     missing = np.stack([body.poseConf.squeeze() for body in bodies], 0) < threshold
     full_matrix[missing] = np.nan
 
-    imputer = IterativeImputer(max_iter=max_iter, random_state=0)
+    imputer = IterativeImputer(max_iter=max_iter, random_state=0, n_nearest_features=8)
     for i in range(full_matrix.shape[2]):
-        imputer.fit(full_matrix[:, :, i])
-        full_matrix[:, ~missing.all(0), i] = imputer.transform(full_matrix[:, :, i])
+        imputer.fit(full_matrix[:, ~missing.all(0), i])
+        full_matrix[:, ~missing.all(0), i] = imputer.transform(full_matrix[:, ~missing.all(0), i])
 
     for i, body in enumerate(bodies):
         body.poseXY = full_matrix[i, :, :]
 
 
-def knn_fill(data: SkeletonData, tid: int, threshold: float = 0.3, neighbours: int = 5):
+def knn_fill(data: SkeletonData, tid: int, threshold: float = 0.3, neighbours: int = 8):
     bodies = []
     for frame in data.frames:
         for body in frame.bodies:
@@ -104,7 +105,9 @@ def fill_missing_frames(skeleton_data: SkeletonData, tid: int):
     if ref_body is None:
         raise ValueError("No body in skeleton frames")
 
-    for frame in skeleton_data.frames:
+    fill_frame = []
+    good_frames = []
+    for fi, frame in enumerate(skeleton_data.frames):
         if tid not in [body.tid for body in frame.bodies]:
             new_body = Body(
                 poseXY=np.zeros_like(ref_body.poseXY),
@@ -116,6 +119,31 @@ def fill_missing_frames(skeleton_data: SkeletonData, tid: int):
             )
             frame.bodies.append(new_body)
             __added_count += 1
+            fill_frame.append(fi)
+        else:
+            good_frames.append(fi)
+
+    low = 0
+    for id_to_fill in fill_frame:
+        # binary search for finding an index of the closest good frame in the future
+        high = len(good_frames) - 1
+        while low <= high:
+            mid = (low + high) // 2
+            if good_frames[mid] < id_to_fill:
+                low = mid + 1
+            else:
+                high = mid - 1
+        left, right = good_frames[max(0, low - 1)], good_frames[min(low, len(good_frames) - 1)]
+
+        if id_to_fill - left > right - id_to_fill:
+            src = skeleton_data.get_frame_body(right, tid)
+            dst = skeleton_data.get_frame_body(id_to_fill, tid)
+            dst.poseXY = src.poseXY
+        else:
+            src = skeleton_data.get_frame_body(left, tid)
+            dst = skeleton_data.get_frame_body(id_to_fill, tid)
+            dst.poseXY = src.poseXY
+
     return __added_count
 
 
