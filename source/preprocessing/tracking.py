@@ -89,7 +89,7 @@ def pose_track(frames: List[FrameData], threshold=60, width_ratio: float = 100.0
             frames[idx].bodies[pos].tid = i
 
 
-def get_valid_frame_count(bodies: List[Body], ratio: float = 0.8) -> List[Body]:
+def get_valid_bodies(bodies: List[Body], ratio: float = 0.8) -> List[Body]:
     good_bodies = []
     for body in bodies:
         xs = body.poseXY[:, 0]
@@ -112,7 +112,7 @@ def select_tracks_by_motion(data: SkeletonData, max_bodies: int = 2):
     all_tids = data.get_all_tids()
     for tid in all_tids:
         bodies = data.get_all_bodies_for_tid(tid)
-        good_bodies = get_valid_frame_count(bodies)
+        good_bodies = get_valid_bodies(bodies)
 
         backup_motions[tid] = min(
             np.sum(np.var(np.vstack([x.poseXY for x in bodies]), axis=0)),
@@ -133,12 +133,77 @@ def select_tracks_by_motion(data: SkeletonData, max_bodies: int = 2):
         frame.bodies = sorted(frame.bodies, key=lambda x: selected_tids.index(x.tid))
 
     # Reassign ids so that lowest has highest motion
-    map = {tid: i for i, tid in enumerate(selected_tids)}
+    tid_mapping = {tid: i for i, tid in enumerate(selected_tids)}
     all_bodies = [body for frame in data.frames for body in frame.bodies]
     for body in all_bodies:
-        body.tid = map[body.tid]
+        body.tid = tid_mapping[body.tid]
 
     return selected_tids
+
+
+def ntu_track_selection(data: SkeletonData, max_bodies: int = 2, length_threshold: int = 11):
+    tids = data.get_all_tids()
+    if len(data.get_all_tids()) == 1:
+        return
+
+    # Remove short sequences
+    for tid in tids:
+        if len(data.get_all_bodies_for_tid(tid)) < length_threshold:
+            data.remove_bodies_for_tid(tid)
+    if len(data.get_all_tids()) == 1:
+        return
+
+    # Spread denoising
+    good_motions, all_motions = {}, {}
+    for tid in tids:
+        bodies = data.get_all_bodies_for_tid(tid)
+        good_bodies = get_valid_bodies(bodies, 0.8)
+
+        all_motions[tid] = min(
+            np.sum(np.var(np.vstack([x.poseXY for x in bodies]), axis=0)),
+            np.sum(np.var(np.vstack([x.poseXY for x in good_bodies]), axis=0)) if good_bodies else np.inf
+        )
+        if (1 - 0.69754) < + (len(good_bodies) / len(bodies)):
+            good_motions[tid] = all_motions[tid]
+        else:
+            data.remove_bodies_for_tid(tid)
+
+    good_tids = sorted([key for key in good_motions.keys()], key=lambda x: -good_motions[x])
+    tid_mapping = {tid: i for i, tid in enumerate(good_tids)}
+    all_bodies = [body for frame in data.frames for body in frame.bodies]
+    for body in all_bodies:
+        body.tid = tid_mapping[body.tid]
+    if len(good_tids) == 1:
+        return
+
+    ## Wacky stuff with track combinations
+    # Combine all tracks into max_bodies number of them
+    # Priority by good_tids
+    tid_dict = {tid: data.get_all_bodies_for_tid_with_seq(tid) for tid in good_tids}
+    tid_starts = {tid: min([x[0] for x in tid_dict[tid]]) for tid in good_tids}
+    tid_ends = {tid: max([x[0] for x in tid_dict[tid]]) for tid in good_tids}
+    tracks = [[good_tids[0]], *([[]] * (max_bodies - 1))]
+    track_bounds = [(tid_starts[good_tids[0]], tid_ends[good_tids[0]]), (0, 0)] * (max_bodies - 1)
+    for tid in good_tids[1:]:
+        s, e = tid_starts[tid], tid_ends[tid]
+        for ti in range(max_bodies):
+            st, et = track_bounds[ti]
+            if max(st, s) >= min(et, e):
+                tracks[ti].append(tid)
+                track_bounds[ti] = min(s, st), max(e, et)
+
+    mapping = {}
+    for track_id in range(max_bodies):
+        tids = tracks[track_id]
+        if tids:
+            mapping.update({tid: track_id for tid in tids })
+    for good_tid in good_tids:
+        if good_tid not in mapping.keys():
+            data.remove_bodies_for_tid(good_tid)
+    all_bodies = [body for frame in data.frames for body in frame.bodies]
+    for body in all_bodies:
+        body.tid = tid_mapping[body.tid]
+    return good_tids
 
 
 def select_by_size(data: SkeletonData, max_bodies: int = 2):

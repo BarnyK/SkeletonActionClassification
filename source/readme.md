@@ -17,8 +17,7 @@ TODO:
     - [x] Transform from coco to this
 - [x] Support other skeletons
     - [x] Port all functions that use information about skeleton type to one module
-- [ ] Support preprocessing from nturgb
-- [ ] Figure out a way to fill missing joints if all other are missing
+- [x] Support preprocessing from nturgb
 - [ ] Continue training(1. compare cfgs, 2. check epochs recorded in log, 3. load model)
     -  [ ] Load model ensure works
 - [ ] Evaluation from loaded model
@@ -26,6 +25,7 @@ TODO:
 - [ ] Fix for alignement in mutual (double the bodies up front)
 - [ ] Single file + evaluation
 - [ ] Visualization with windowing
+- [ ] Figure out a way to fill missing joints if all other are missing
 
 GENERAL PIPELINE:
 

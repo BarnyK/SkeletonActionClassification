@@ -3,10 +3,13 @@ from __future__ import annotations
 import multiprocessing
 import os
 import pickle
+from copy import deepcopy
 from dataclasses import dataclass
 from functools import partial
 from typing import Union, Iterable
 
+import numpy as np
+from dataclass_wizard import YAMLWizard
 from tqdm import tqdm
 
 import datasets
@@ -14,13 +17,14 @@ from preprocessing import skeleton_filters
 from preprocessing.keypoint_fill import keypoint_fill
 from preprocessing.nms import nms
 from preprocessing.tracking import pose_track, select_tracks_by_motion, assign_tids_by_order, select_by_order, \
-    select_by_confidence, select_by_size
+    select_by_confidence, select_by_size, body_bbox, ntu_track_selection
+from shared import ntu_loader
 from shared.skeletons import ntu_coco
 from shared.structs import SkeletonData
 
 
 @dataclass
-class PreprocessConfig:
+class PreprocessConfig(YAMLWizard, key_transform='SNAKE'):
     use_box_conf: bool = True
     box_conf_threshold: float = 0.7
     box_conf_max_total: float = 0.9
@@ -45,9 +49,53 @@ class PreprocessConfig:
     keypoint_fill_type: str = "interpolation"
 
     transform_to_combined: bool = False
+    alphapose_skeletons: bool = True
 
 
-def _preprocess_data(data: SkeletonData, cfg: PreprocessConfig):
+def ntu_preprocess_cfg():
+    return PreprocessConfig(
+        use_box_conf=False,
+        use_max_pose_conf=False,
+        use_nms=True,
+        use_tracking=False,
+        pose_tracking_threshold=90,
+        pose_tracking_width_ratio=1.9,
+        pose_tracking_height_ratio=0.55,
+        use_motion_selection=True,
+        use_size_selection=True,
+        use_order_selection=False,
+        max_body_count=2,
+        keypoint_fill_type="interpolation",
+        transform_to_combined=False,
+        alphapose_skeletons=False
+    )
+
+
+def attach_fake_bbox(data: SkeletonData):
+    for frame in data.frames:
+        for body in frame.bodies:
+            bbox = body_bbox(body)
+            body.box = np.array([bbox[0], bbox[2], bbox[1], bbox[3]])
+            body.boxConf = np.array([0.8])
+
+
+def _preprocess_data_ntu(data: SkeletonData, cfg: PreprocessConfig):
+    if cfg.transform_to_combined:
+        data = ntu_coco.from_skeleton_data(data)
+    # box conf doesn't work because no info about boxes
+    # max_pose conf doesn't work either
+    # nms is only doing wrong things
+    debug_copy = deepcopy(data)
+
+    if data.no_bodies():
+        return data
+
+    ntu_track_selection(data, cfg.max_body_count)
+    keypoint_fill(data, cfg.keypoint_fill_type)
+    return data
+
+
+def _preprocess_data_ap(data: SkeletonData, cfg: PreprocessConfig) -> SkeletonData:
     if cfg.transform_to_combined:
         data = ntu_coco.from_skeleton_data(data)
     if cfg.use_box_conf:
@@ -74,14 +122,18 @@ def _preprocess_data(data: SkeletonData, cfg: PreprocessConfig):
             select_tracks_by_motion(data, cfg.max_body_count)
     else:
         assign_tids_by_order(data)
-
     keypoint_fill(data, cfg.keypoint_fill_type)
     return data
 
 
-def preprocess_file(in_file: str, config: PreprocessConfig):
-    data = SkeletonData.load(in_file)
-    _preprocess_data(data, config)
+def preprocess_file(in_file: str, cfg: PreprocessConfig):
+    if cfg.alphapose_skeletons:
+        data = SkeletonData.load(in_file)
+        _preprocess_data_ap(data, cfg)
+    else:
+        data = ntu_loader.read_file(in_file)
+        data = _preprocess_data_ntu(data, cfg)
+
     if data.no_bodies():
         tqdm.write(f"Empty bodies in: {in_file}")
         return in_file, None
@@ -136,11 +188,30 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, config
             pickle.dump(test_split, f)
 
 
-if __name__ == '__main__':
-    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
-                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
-                     PreprocessConfig(),
-                     datasets.all_splits,
-                     12,
-                     True)
+# if __name__ == '__main__':
+#     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
+#                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
+#                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
+#                      PreprocessConfig(),
+#                      datasets.all_splits,
+#                      12,
+#                      True)
+#     cfg = PreprocessConfig()
+#     cfg.keypoint_fill_type = "mice"
+#     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
+#                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
+#                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_mice_fill_bad",
+#                      cfg,
+#                      datasets.all_splits,
+#                      3,
+#                      True)
+#
+#     cfg = ntu_preprocess_cfg()
+#     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons",
+#                       "/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons_120"],
+#                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test1",
+#                      cfg,
+#                      datasets.all_splits,
+#                      3,
+#                      True
+#                      )
