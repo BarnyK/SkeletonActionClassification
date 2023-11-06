@@ -19,6 +19,7 @@ from preprocessing.nms import nms
 from preprocessing.tracking import pose_track, select_tracks_by_motion, assign_tids_by_order, select_by_order, \
     select_by_confidence, select_by_size, body_bbox, ntu_track_selection
 from shared import ntu_loader
+from shared.dataset_info import name_to_ntu_data
 from shared.skeletons import ntu_coco
 from shared.structs import SkeletonData
 
@@ -50,6 +51,7 @@ class PreprocessConfig(YAMLWizard, key_transform='SNAKE'):
 
     transform_to_combined: bool = False
     alphapose_skeletons: bool = True
+    remove_missing_from_file: bool = False
 
 
 def ntu_preprocess_cfg():
@@ -67,7 +69,8 @@ def ntu_preprocess_cfg():
         max_body_count=2,
         keypoint_fill_type="interpolation",
         transform_to_combined=False,
-        alphapose_skeletons=False
+        alphapose_skeletons=False,
+        remove_missing_from_file=True,
     )
 
 
@@ -147,9 +150,9 @@ def preprocess_file(in_file: str, cfg: PreprocessConfig):
     return data.dataset_info, mat, confMat, data.type, data.original_image_shape
 
 
-def preprocess_files(input_path: Union[str, list[str]], output_path: str, config: PreprocessConfig,
+def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: PreprocessConfig,
                      split_strategy: Union[str, Iterable[str]] = ("ntu_xsub",),
-                     processes: int = 12, no_pool: bool = False):
+                     processes: int = 12, no_pool: bool = False, missing_file: str = None):
     files = []
     if isinstance(input_path, str):
         files = [os.path.join(input_path, f) for f in os.listdir(input_path)]
@@ -157,20 +160,34 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, config
         for path in input_path:
             files += [os.path.join(path, f) for f in os.listdir(path)]
 
+    if cfg.remove_missing_from_file and missing_file:
+        with open(missing_file) as f:
+            missing_files = f.read().split("\n")
+        missing_files = [x.strip() for x in missing_files if x.strip()]
+        missing_files = set([x for x in missing_files if len(x.split()) == 1])
+        new_files = []
+        for file in files:
+            info = name_to_ntu_data(file)
+            if info and info.to_filename() in missing_files:
+                continue
+            new_files.append(file)
+        files = new_files
+
     if isinstance(split_strategy, str):
         split_strategy = [split_strategy]
 
     if no_pool:
         results = []
         for file in tqdm(files):
-            results.append(preprocess_file(file, config))
+            results.append(preprocess_file(file, cfg))
     else:
         pool = multiprocessing.Pool(processes=processes)
-        results = list(tqdm(pool.imap(partial(preprocess_file, config=config), files), total=len(files)))
+        results = list(tqdm(pool.imap(partial(preprocess_file, cfg=cfg), files), total=len(files)))
         pool.close()
         pool.join()
 
     os.makedirs(output_path, exist_ok=False)
+    results = [x for x in results if x[1] is not None]
 
     for strategy in split_strategy:
         split_func = datasets.split_map[strategy]
@@ -186,7 +203,6 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, config
         test_filename = os.path.join(output_path, f"{strategy}.test.pkl")
         with open(test_filename, "wb") as f:
             pickle.dump(test_split, f)
-
 
 # if __name__ == '__main__':
 #     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",

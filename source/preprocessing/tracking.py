@@ -1,4 +1,4 @@
-from typing import List
+from __future__ import annotations
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
@@ -38,7 +38,7 @@ def calculate_movement_to_body_ratio(skeleton1: np.ndarray, skeleton2: np.ndarra
     return ratios
 
 
-def pose_track(frames: List[FrameData], threshold=60, width_ratio: float = 100.0, height_ratio: float = 50.0):
+def pose_track(frames: list[FrameData], threshold=60, width_ratio: float = 100.0, height_ratio: float = 50.0):
     tracks, num_tracks = [], 0
     num_joints = None
     for idx, frame in enumerate(frames):
@@ -89,7 +89,7 @@ def pose_track(frames: List[FrameData], threshold=60, width_ratio: float = 100.0
             frames[idx].bodies[pos].tid = i
 
 
-def get_valid_bodies(bodies: List[Body], ratio: float = 0.8) -> List[Body]:
+def get_valid_bodies(bodies: list[Body], ratio: float = 0.8) -> list[Body]:
     good_bodies = []
     for body in bodies:
         xs = body.poseXY[:, 0]
@@ -155,7 +155,7 @@ def ntu_track_selection(data: SkeletonData, max_bodies: int = 2, length_threshol
 
     # Spread denoising
     good_motions, all_motions = {}, {}
-    for tid in tids:
+    for tid in data.get_all_tids():
         bodies = data.get_all_bodies_for_tid(tid)
         good_bodies = get_valid_bodies(bodies, 0.8)
 
@@ -173,15 +173,16 @@ def ntu_track_selection(data: SkeletonData, max_bodies: int = 2, length_threshol
     all_bodies = [body for frame in data.frames for body in frame.bodies]
     for body in all_bodies:
         body.tid = tid_mapping[body.tid]
-    if len(good_tids) == 1:
+    if len(good_tids) <= 1:
         return
 
-    ## Wacky stuff with track combinations
+    # Wacky stuff with track combinations
     # Combine all tracks into max_bodies number of them
     # Priority by good_tids
-    tid_dict = {tid: data.get_all_bodies_for_tid_with_seq(tid) for tid in good_tids}
-    tid_starts = {tid: min([x[0] for x in tid_dict[tid]]) for tid in good_tids}
-    tid_ends = {tid: max([x[0] for x in tid_dict[tid]]) for tid in good_tids}
+    good_tids = [tid_mapping[x] for x in good_tids]
+    tid_dict: dict[int, tuple] = {tid: data.get_all_bodies_for_tid_with_seq(tid) for tid in good_tids}
+    tid_starts: dict[int, int] = {tid: min([x[0] for x in tid_dict[tid]]) for tid in good_tids}
+    tid_ends: dict[int, int] = {tid: max([x[0] for x in tid_dict[tid]]) for tid in good_tids}
     tracks = [[good_tids[0]], *([[]] * (max_bodies - 1))]
     track_bounds = [(tid_starts[good_tids[0]], tid_ends[good_tids[0]]), (0, 0)] * (max_bodies - 1)
     for tid in good_tids[1:]:
@@ -196,13 +197,13 @@ def ntu_track_selection(data: SkeletonData, max_bodies: int = 2, length_threshol
     for track_id in range(max_bodies):
         tids = tracks[track_id]
         if tids:
-            mapping.update({tid: track_id for tid in tids })
+            mapping.update({tid: track_id for tid in tids})
     for good_tid in good_tids:
         if good_tid not in mapping.keys():
             data.remove_bodies_for_tid(good_tid)
     all_bodies = [body for frame in data.frames for body in frame.bodies]
     for body in all_bodies:
-        body.tid = tid_mapping[body.tid]
+        body.tid = mapping[body.tid]
     return good_tids
 
 

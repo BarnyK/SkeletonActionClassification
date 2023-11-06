@@ -139,12 +139,12 @@ def train_network(cfg: TrainingConfig):
     logger.info("Starting training")
     logger.info(f"Using {cfg.features}")
 
-    test_loader, train_loader = create_dataloaders(cfg)
+    test_loader, train_loader, test_set, _ = create_dataloaders(cfg)
 
     device = torch.device(cfg.device)
     channels = calculate_channels(cfg.features, 2)
     if cfg.model_type == "stgcnpp":
-        model = create_stgcnpp(60, channels)
+        model = create_stgcnpp(test_set.num_classes(), channels)
         model.to(device)
     else:
         raise ValueError("2p-gcn not supported yet")
@@ -220,7 +220,7 @@ def create_dataloaders(cfg):
         norm_func
     )
     test_loader = DataLoader(test_set, cfg.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
-    return test_loader, train_loader
+    return test_loader, train_loader, test_set, train_set
 
 
 def main():

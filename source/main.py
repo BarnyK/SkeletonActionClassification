@@ -37,43 +37,46 @@ if __name__ == "__main__2":
     cfg.keypoint_fill_type = "mice"
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_mice_fill_bad",
-                     cfg,
-                     datasets.all_splits,
-                     4,
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_mice_fill_bad", cfg, datasets.all_splits, 4,
                      False)
 
     cfg = PreprocessConfig()
     cfg.keypoint_fill_type = "knn"
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_knn_fill_bad",
-                     cfg,
-                     datasets.all_splits,
-                     4,
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_knn_fill_bad", cfg, datasets.all_splits, 4,
                      False)
 
 if __name__ == "__main__":
     # Generation of NTU datasets from Alphapose skeleton while changing the skeleton type
+    # cfg = PreprocessConfig()
+    # cfg.transform_to_combined = True
+    # preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
+    #                   "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
+    #                  "/media/barny/SSD4/MasterThesis/Data/prepped_data/coco_combined",
+    #                  cfg,
+    #                  datasets.all_splits,
+    #                  24,
+    #                  False)
+
+    # cfg = ntu_preprocess_cfg()
+    # cfg.remove_missing_from_file = True
+    # preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons",
+    #                   "/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons_120"],
+    #                  "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test1",
+    #                  cfg,
+    #                  datasets.all_splits, 6, False,
+    #                  "/media/barny/SSD4/MasterThesis/Data/NTU_RGBD120_samples_with_missing_skeletons.txt")
     cfg = PreprocessConfig()
-    cfg.transform_to_combined = True
+    cfg.remove_missing_from_file = True
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/coco_combined",
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_no_missing",
                      cfg,
                      datasets.all_splits,
-                     3,
-                     False)
-
-    cfg = ntu_preprocess_cfg()
-    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons",
-                      "/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons_120"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test1",
-                     cfg,
-                     datasets.all_splits,
-                     3,
-                     False
-                     )
+                     10,
+                     False,
+                     "/media/barny/SSD4/MasterThesis/Data/NTU_RGBD120_samples_with_missing_skeletons.txt")
 
 if __name__ == "__main__2":
     norms = ["none", "mean_spine", "spine", "screen", "relative", "spine_align", "mean_spine_align"]
@@ -108,10 +111,17 @@ if __name__ == "__main__2":
          "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu120_xset.test.pkl"),
     ]
     for x, train_path, test_path in sets:
-        print(x)
-        cfg = TrainingConfig(x+"_joints_spine_align", "stgcnpp", 80, "cuda:0", ["joints"], 64, 32,
-                             train_path, 64,
-                             test_path, 128, 8, 5,
-                             20, "spine_align", 0.1, 0.9, 0.0002, True, 0, "logs/differnt_sets", True, 0.1, False)
-        print(cfg.to_yaml())
-        train_network(cfg)
+        try:
+            if "mutual" in x:
+                eval_int = 1
+            else:
+                eval_int = 5
+            print(x)
+            cfg = TrainingConfig(x + "_joints_spine_align", "stgcnpp", 80, "cuda:0", ["joints"], 64, 32,
+                                 train_path, 64,
+                                 test_path, 128, 8, eval_int,
+                                 20, "spine_align", 0.1, 0.9, 0.0002, True, 0, "logs/differnt_sets", True, 0.1, False)
+            print(cfg.to_yaml())
+            train_network(cfg)
+        except FileExistsError as er:
+            print(er)

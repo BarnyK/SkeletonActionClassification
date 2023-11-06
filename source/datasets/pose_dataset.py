@@ -54,6 +54,9 @@ class PoseDataset(Dataset):
         self.label_translation = {x: i for i, x in enumerate(unique_labels)}
         self.norm_func = norm_func
 
+    def num_classes(self):
+        return len(self.label_translation)
+
     def solve_feature_transform_requirements(self):
         required_transforms = set()
         queue = flatten_list(self.feature_list)[:]
