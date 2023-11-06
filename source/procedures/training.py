@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import re
 import shutil
 import time
 from datetime import datetime, timedelta
@@ -98,6 +99,27 @@ def write_log(logs_path, text):
         f.write(text + '\n')
 
 
+def save_model(filename, model, optimizer, scheduler):
+    data = {
+        "net": model.state_dict(),
+        "optimizer": optimizer.state_dict(),
+        "scheduler": scheduler.state_dict(),
+    }
+    torch.save(data, filename)
+
+
+def load_model(filename, model, optimizer, scheduler, device):
+    data = torch.load(filename, map_location=device)
+    if "net" in data.keys():
+        model.load_state_dict(data['net'])
+        if optimizer:
+            optimizer.load_state_dict(data['optimizer'])
+        if scheduler:
+            scheduler.load_state_dict(data['scheduler'])
+    else:
+        model.load_state_dict(data)
+
+
 def train_network(cfg: GeneralConfig):
     t_cfg = cfg.train_config
     e_cfg = cfg.eval_config
@@ -117,6 +139,14 @@ def train_network(cfg: GeneralConfig):
     else:
         raise ValueError("2p-gcn not supported yet")
 
+    loss_func = torch.nn.CrossEntropyLoss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=t_cfg.sgd_lr, momentum=t_cfg.sgd_momentum,
+                                weight_decay=t_cfg.sgd_weight_decay, nesterov=t_cfg.sgd_nesterov)
+    scheduler = CosineAnnealingLR(optimizer, T_max=t_cfg.epochs,
+                                  eta_min=t_cfg.cosine_shed_eta_min)
+    start_epoch = 0
+
+    # Resume handling
     logs_path = os.path.join(cfg.log_folder, cfg.name)
     if os.path.exists(logs_path):
         existing_cfg_path = os.path.join(logs_path, "config.yaml")
@@ -124,28 +154,24 @@ def train_network(cfg: GeneralConfig):
         if existing_cfg != cfg:
             raise ValueError("Existing config is different to the current one")
         # load 
-        models_folder = os.path.join(logs_path,"models")
+        models_folder = os.path.join(logs_path, "models")
         if os.path.isdir(models_folder):
             epoch_files = os.listdir(models_folder)
             if epoch_files:
-                newest_file = max(epoch_files, key=os.path.getctime)
-                model_file = os.path.join(models_folder, newest_file)
-                model.load_state_dict(torch.load(model_file, map_location=device))
+                newest_file = max([os.path.join(models_folder, x) for x in epoch_files], key=os.path.getctime)
+                match = re.findall("([0-9]*).pth", newest_file)[-1]
+                start_epoch = int(match) + 1
+                load_model(newest_file, model, optimizer, scheduler, device)
 
     os.makedirs(logs_path, exist_ok=True)
-    os.makedirs(os.path.join(logs_path, "models"), exists_ok=True)
+    os.makedirs(os.path.join(logs_path, "models"), exist_ok=True)
 
     cfg.to_yaml_file(os.path.join(logs_path, "config.yaml"))
     write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
-    loss_func = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=t_cfg.sgd_lr, momentum=t_cfg.sgd_momentum,
-                                weight_decay=t_cfg.sgd_weight_decay, nesterov=t_cfg.sgd_nesterov)
-    scheduler = CosineAnnealingLR(optimizer, T_max=t_cfg.epochs,
-                                  eta_min=t_cfg.cosine_shed_eta_min)
 
     start_time = time.time()
     all_eval_stats = []
-    for epoch in range(t_cfg.epochs):
+    for epoch in range(start_epoch, t_cfg.epochs):
         logger.info(f"Current epoch: {epoch + 1}/{t_cfg.epochs}")
         train_start_time = time.time()
         training_stats = train_epoch(model, loss_func, train_loader, optimizer, scheduler, device)
@@ -164,10 +190,13 @@ def train_network(cfg: GeneralConfig):
             write_log(logs_path, f"[{epoch}] - eval time - {timedelta(seconds=eval_end_time - eval_start_time)}")
 
         # Save model
-        torch.save(model.state_dict(), os.path.join(logs_path, "models", f"epoch_{epoch}.pth"))
+        model_path = os.path.join(logs_path, "models", f"epoch_{epoch}.pth")
+        save_model(model_path, model, optimizer, scheduler)
+
         # Print ETA
         estimated_remaining_time = ((time.time() - start_time) / (epoch + 1)) * (t_cfg.epochs - (epoch + 1))
         logger.info(f"Estimated remaining time: {timedelta(seconds=estimated_remaining_time)}")
+
     end_time = time.time()
     best_eval_epoch = max(all_eval_stats, key=lambda x: x[2])
     logger.info(f"Best top1 accuracy {best_eval_epoch[2]:.2%} at epoch {best_eval_epoch[0]}")
