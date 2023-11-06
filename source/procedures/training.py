@@ -118,8 +118,22 @@ def train_network(cfg: GeneralConfig):
         raise ValueError("2p-gcn not supported yet")
 
     logs_path = os.path.join(cfg.log_folder, cfg.name)
+    if os.path.exists(logs_path):
+        existing_cfg_path = os.path.join(logs_path, "config.yaml")
+        existing_cfg = GeneralConfig.from_yaml_file(existing_cfg_path)
+        if existing_cfg != cfg:
+            raise ValueError("Existing config is different to the current one")
+        # load 
+        models_folder = os.path.join(logs_path,"models")
+        if os.path.isdir(models_folder):
+            epoch_files = os.listdir(models_folder)
+            if epoch_files:
+                newest_file = max(epoch_files, key=os.path.getctime)
+                model_file = os.path.join(models_folder, newest_file)
+                model.load_state_dict(torch.load(model_file, map_location=device))
+
     os.makedirs(logs_path, exist_ok=True)
-    os.mkdir(os.path.join(logs_path, "models"))
+    os.makedirs(os.path.join(logs_path, "models"), exists_ok=True)
 
     cfg.to_yaml_file(os.path.join(logs_path, "config.yaml"))
     write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
