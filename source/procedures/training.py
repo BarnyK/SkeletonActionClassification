@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import logging
 import os
+import shutil
 import time
-from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import torch
-from dataclass_wizard import YAMLWizard
+from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 
@@ -17,44 +17,10 @@ from datasets.sampler import Sampler
 from datasets.transform_wrappers import calculate_channels
 from models import create_stgcnpp
 from preprocessing.normalizations import create_norm_func
+from procedures.config import TrainingConfig, GeneralConfig
 
 logging.basicConfig(level=logging.INFO)  # Set the logging level to INFO (or other level of your choice)
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class TrainingConfig(YAMLWizard, key_transform='SNAKE'):
-    name: str
-    model_type: str
-    epochs: int
-    device: str
-    features: list[str]
-    window_length: int
-    sampler_per_window: int
-
-    train_file: str
-    train_batch_size: int
-
-    test_file: str
-    test_batch_size: int
-    test_clips_count: int
-
-    eval_interval: int = 1
-    eval_last_n: int = 10
-
-    normalization_type: str = "screen"
-
-    sgd_lr: float = 0.1
-    sgd_momentum: float = 0.9
-    sgd_weight_decay: float = 0.0002
-    sgd_nesterov: bool = True
-
-    cosine_shed_eta_min: float = 0.0001
-    log_folder: str = "logs"
-
-    use_scale_augment: bool = False
-    scale_value: float = 0.2
-    symmetry_processing: bool = False
 
 
 def train_epoch(model, loss_func, loader, optimizer, scheduler, device):
@@ -132,7 +98,9 @@ def write_log(logs_path, text):
         f.write(text + '\n')
 
 
-def train_network(cfg: TrainingConfig):
+def train_network(cfg: GeneralConfig):
+    t_cfg = cfg.train_config
+    e_cfg = cfg.eval_config
     if cfg.name is None:
         now = datetime.now()
         cfg.name = now.strftime("%H_%M_%d_%m_%Y")
@@ -156,14 +124,15 @@ def train_network(cfg: TrainingConfig):
     cfg.to_yaml_file(os.path.join(logs_path, "config.yaml"))
     write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
     loss_func = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.SGD(model.parameters(), lr=cfg.sgd_lr, momentum=cfg.sgd_momentum,
-                                weight_decay=cfg.sgd_weight_decay, nesterov=cfg.sgd_nesterov)
-    scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=cfg.epochs, eta_min=cfg.cosine_shed_eta_min)
+    optimizer = torch.optim.SGD(model.parameters(), lr=t_cfg.sgd_lr, momentum=t_cfg.sgd_momentum,
+                                weight_decay=t_cfg.sgd_weight_decay, nesterov=t_cfg.sgd_nesterov)
+    scheduler = CosineAnnealingLR(optimizer, T_max=t_cfg.epochs,
+                                  eta_min=t_cfg.cosine_shed_eta_min)
 
     start_time = time.time()
     all_eval_stats = []
-    for epoch in range(cfg.epochs):
-        logger.info(f"Current epoch: {epoch + 1}/{cfg.epochs}")
+    for epoch in range(t_cfg.epochs):
+        logger.info(f"Current epoch: {epoch + 1}/{t_cfg.epochs}")
         train_start_time = time.time()
         training_stats = train_epoch(model, loss_func, train_loader, optimizer, scheduler, device)
         train_end_time = time.time()
@@ -171,7 +140,7 @@ def train_network(cfg: TrainingConfig):
         write_log(logs_path, f"[{epoch}] - training stats - {','.join([str(x) for x in training_stats])}")
         write_log(logs_path, f"[{epoch}] - training time - {timedelta(seconds=train_end_time - train_start_time)}")
 
-        if (epoch + 1) % cfg.eval_interval == 0 or cfg.epochs - epoch - 1 < cfg.eval_last_n:
+        if (epoch + 1) % e_cfg.eval_interval == 0 or t_cfg.epochs - epoch - 1 < e_cfg.eval_last_n:
             eval_start_time = time.time()
             eval_stats = test_epoch(model, test_loader, loss_func, device)
             eval_end_time = time.time()
@@ -183,7 +152,7 @@ def train_network(cfg: TrainingConfig):
         # Save model
         torch.save(model.state_dict(), os.path.join(logs_path, "models", f"epoch_{epoch}.pth"))
         # Print ETA
-        estimated_remaining_time = ((time.time() - start_time) / (epoch + 1)) * (cfg.epochs - (epoch + 1))
+        estimated_remaining_time = ((time.time() - start_time) / (epoch + 1)) * (t_cfg.epochs - (epoch + 1))
         logger.info(f"Estimated remaining time: {timedelta(seconds=estimated_remaining_time)}")
     end_time = time.time()
     best_eval_epoch = max(all_eval_stats, key=lambda x: x[2])
@@ -191,35 +160,39 @@ def train_network(cfg: TrainingConfig):
     logger.info(f"Training took {timedelta(seconds=end_time - start_time)}")
     write_log(logs_path, f"Top1 accuracy {best_eval_epoch[2]:.2%} at epoch {best_eval_epoch[0]}")
 
+    best_epoch_file = os.path.join(logs_path, "models", f"epoch_{best_eval_epoch[0]}.pth")
+    best_file = os.path.join(logs_path, f"best.pth")
+    shutil.copy(best_epoch_file, best_file)
 
-def create_dataloaders(cfg):
+
+def create_dataloaders(cfg: GeneralConfig):
     augments = []
-    if cfg.use_scale_augment:
-        augments.append(RandomScale(cfg.scale_value))
+    if cfg.train_config.use_scale_augment:
+        augments.append(RandomScale(cfg.train_config.scale_value))
 
-    norm_func = create_norm_func(cfg.normalization_type, cfg.train_file)
+    norm_func = create_norm_func(cfg.normalization_type, cfg.train_config.train_file)
 
     train_sampler = Sampler(cfg.window_length, cfg.sampler_per_window)
     train_set = PoseDataset(
-        cfg.train_file,
+        cfg.train_config.train_file,
         cfg.features,
         train_sampler,
         augments,
         cfg.symmetry_processing,
         norm_func
     )
+    train_loader = DataLoader(train_set, cfg.train_config.train_batch_size, True, num_workers=4, pin_memory=True)
 
-    train_loader = DataLoader(train_set, cfg.train_batch_size, True, num_workers=4, pin_memory=True)
-    test_sampler = Sampler(cfg.window_length, cfg.sampler_per_window, True, cfg.test_clips_count)
+    test_sampler = Sampler(cfg.window_length, cfg.sampler_per_window, True, cfg.eval_config.test_clips_count)
     test_set = PoseDataset(
-        cfg.test_file,
+        cfg.eval_config.test_file,
         cfg.features,
         test_sampler,
         [],
         cfg.symmetry_processing,
         norm_func
     )
-    test_loader = DataLoader(test_set, cfg.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
+    test_loader = DataLoader(test_set, cfg.eval_config.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
     return test_loader, train_loader, test_set, train_set
 
 

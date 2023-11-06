@@ -1,6 +1,7 @@
 import datasets
-from procedures.preprocess_files import preprocess_files, PreprocessConfig, ntu_preprocess_cfg
-from procedures.training import train_network, TrainingConfig
+from procedures.config import PreprocessConfig, TrainingConfig, GeneralConfig
+from procedures.preprocess_files import preprocess_files
+from procedures.training import train_network
 
 # preprocess_files("/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
 #                  "/media/barny/SSD4/MasterThesis/Data/ntu_coco.f1.combined", PreprocessConfig())
@@ -47,7 +48,7 @@ if __name__ == "__main__2":
                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_knn_fill_bad", cfg, datasets.all_splits, 4,
                      False)
 
-if __name__ == "__main__":
+if __name__ == "__main__2":
     # Generation of NTU datasets from Alphapose skeleton while changing the skeleton type
     # cfg = PreprocessConfig()
     # cfg.transform_to_combined = True
@@ -125,3 +126,13 @@ if __name__ == "__main__2":
             train_network(cfg)
         except FileExistsError as er:
             print(er)
+
+if __name__ == "__main__":
+    cfg = GeneralConfig("default")
+    cfg = cfg.from_yaml_file("configs/general/default.yaml")
+
+    for samples_per_win in [64, 32, 16, 8, 4]:
+        cfg.name = f"default_64_{samples_per_win}"
+        cfg.sampler_per_window = samples_per_win
+        print(cfg.to_yaml())
+        train_network(cfg)
