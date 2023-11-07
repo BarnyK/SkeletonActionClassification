@@ -116,3 +116,21 @@ if __name__ == "__main__":
     x = x.from_yaml_file("../configs/general/default.yaml")
     x.name = "XDDD"
     print(x.to_yaml())
+
+
+@dataclass
+class PoseEstimationConfig(YAMLWizard, key_transform='SNAKE'):
+    device = "cuda:0"
+    skeleton_type = "coco17"
+    frame_interval: int = 1
+    detector_cfg: str = "./configs/detector/yolov3-spp.cfg"
+    detector_weights: str = "./weights/detector/yolov3-spp.weights"
+
+    estimation_cfg = "./configs/alphapose/256x192_res50_lr1e-3_1x.yaml"
+    estimation_weights: str = "./weights/alphapose/fast_res50_256x192.pth"
+
+    detector_batch_size: int = 8
+    detector_queue_size: int = 64
+
+    estimation_batch_size: int = 8
+    estimation_queue_size: int = 64

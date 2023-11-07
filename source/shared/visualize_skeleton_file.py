@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 
+from pose_estimation import every_nth_frame
 from shared.read_skeleton import read_skeleton
 from shared.skeletons import drawn_limbs_map, draw_preparation_func_map
 from shared.structs import SkeletonData
@@ -128,7 +129,7 @@ def draw_text_with_outline(image, point, text, font_size):
 
 
 def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, window_name: str = "visualization",
-              draw_bbox: bool = True, draw_frame_number: bool = False, draw_confidences: bool = False):
+              draw_bbox: bool = True, draw_frame_number: bool = False, draw_confidences: bool = False, skip_frames: bool = False):
     skeleton_type = skeleton_data.type
     limb_pairs = drawn_limbs_map.get(skeleton_type)
     if limb_pairs is None:
@@ -147,15 +148,29 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
     fps = video_stream.get(cv2.CAP_PROP_FPS)
     length = min(skeleton_data.length, skeleton_data.lengthB)
 
-    for i in range(length):
-        skel = skeleton_data.frames[i]
-        (grabbed, frame) = video_stream.read()
+    if skip_frames:
+        wrapped_stream = every_nth_frame(video_stream, skeleton_data.frame_interval)
+        interval = 1
+    else:
+        wrapped_stream = every_nth_frame(video_stream, 1)
+        interval = skeleton_data.frame_interval
+
+    i = -1
+    while True:
+        i += 1
+        (grabbed, frame) = next(wrapped_stream)
         if not grabbed:
             break
 
         if draw_frame_number:
             draw_text_with_outline(frame, (50, 50), str(i), 1)
 
+        if not skip_frames and i % interval != 0:
+            cv2.imshow(window_name, frame)
+            cv2.waitKey(wait_key)
+            continue
+
+        skel = skeleton_data.frames[i // interval]
         skeleton_color = (255, 0, 255)
         for body in skel.bodies:
             skeleton_color = (skeleton_color[1], skeleton_color[2], skeleton_color[0])

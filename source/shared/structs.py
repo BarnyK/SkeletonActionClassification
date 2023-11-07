@@ -72,6 +72,7 @@ class SkeletonData:
     frames: List[FrameData]
     lengthB: Optional[int] = None
     original_image_shape: Tuple[int, int] = None
+    frame_interval: int = 1
 
     def __post_init__(self):
         if isinstance(self.dataset_info, dict):
@@ -95,6 +96,7 @@ class SkeletonData:
             "frames": [fd.to_dict() for fd in self.frames],
             "lengthB": self.lengthB,
             "original_image_shape": self.original_image_shape,
+            "frame_interval": self.frame_interval,
         }
 
     def save(self, filename):
