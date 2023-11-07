@@ -128,11 +128,21 @@ if __name__ == "__main__2":
             print(er)
 
 if __name__ == "__main__":
+    cfg = GeneralConfig("default_100_100_0")
+    cfg = cfg.from_yaml_file("configs/general/default.yaml")
+    cfg.name = "default_100_100_0"
+    cfg.sampler_per_window = 100
+    cfg.window_length = 100
+    print(cfg.to_yaml())
+    train_network(cfg)
+
     cfg = GeneralConfig("default")
     cfg = cfg.from_yaml_file("configs/general/default.yaml")
+    for i in range(3):
+        for samples_per_win in [2, 4, 8, 16, 32, 64]:
+            cfg.name = f"default_64_{samples_per_win}_{i}"
+            cfg.sampler_per_window = samples_per_win
+            print(cfg.to_yaml())
+            train_network(cfg)
 
-    for samples_per_win in [64, 32, 16, 8, 4]:
-        cfg.name = f"default_64_{samples_per_win}"
-        cfg.sampler_per_window = samples_per_win
-        print(cfg.to_yaml())
-        train_network(cfg)
+

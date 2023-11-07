@@ -163,6 +163,10 @@ def train_network(cfg: GeneralConfig):
                 start_epoch = int(match) + 1
                 load_model(newest_file, model, optimizer, scheduler, device)
 
+    if start_epoch >= t_cfg.epochs:
+        logger.info("Training completed")
+        return
+
     os.makedirs(logs_path, exist_ok=True)
     os.makedirs(os.path.join(logs_path, "models"), exist_ok=True)
 
@@ -206,6 +210,7 @@ def train_network(cfg: GeneralConfig):
     best_epoch_file = os.path.join(logs_path, "models", f"epoch_{best_eval_epoch[0]}.pth")
     best_file = os.path.join(logs_path, f"best.pth")
     shutil.copy(best_epoch_file, best_file)
+    logger.info("Training completed")
 
 
 def create_dataloaders(cfg: GeneralConfig):
