@@ -1,9 +1,10 @@
 from models.stgcpp.stgcn import STGCN
 
 
-def create_stgcnpp(num_classes: int, channels: int, graph_cfg: dict = None):
-    if graph_cfg is None:
-        graph_cfg = {'layout': 'coco', 'mode': 'spatial'}
+def create_stgcnpp(num_classes: int, channels: int, skeleton_type: str):
+    if skeleton_type == "coco17":
+        skeleton_type = "coco"
+    graph_cfg = {'layout': skeleton_type, 'mode': 'spatial'}
     model = STGCN(graph_cfg, num_classes, in_channels=channels, gcn_adaptive="init", gcn_with_res=True,
                   tcn_type='mstcn')
     return model

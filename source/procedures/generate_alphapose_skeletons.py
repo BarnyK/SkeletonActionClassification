@@ -3,7 +3,7 @@ import os
 import torch
 from tqdm import tqdm
 
-from pose_estimation import read_configs, init_detector, init_pose_model, DetectionLoader, run_pose_worker
+from pose_estimation import read_ap_configs, init_detector, init_pose_model, DetectionLoader, run_pose_worker
 from shared.dataset_info import name_to_ntu_data, name_info_func_map
 from shared.structs import SkeletonData, FrameData
 
@@ -22,7 +22,7 @@ def gen_alphapose_skeletons(
     files = [os.path.join(input_folder, fn) for fn in files]
 
     device = torch.device("cuda:0")
-    gcfg, dcfg, opts = read_configs(skeleton_type, device)
+    gcfg, dcfg, opts = read_ap_configs(skeleton_type, device)
 
     detector = init_detector(opts, dcfg)
     detector.load_model()

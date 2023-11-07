@@ -412,7 +412,7 @@ def init_pose_model(device: torch.device, general_config: EasyDict, weights_file
     return pose_model
 
 
-def read_configs(
+def read_ap_configs(
         skeleton_type: str = "coco17", device: torch.device = torch.device("cuda:0")
 ):
     opts = EasyDict()

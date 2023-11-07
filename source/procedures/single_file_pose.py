@@ -1,9 +1,11 @@
 import os
+from dataclasses import dataclass
 
 import torch
+from dataclass_wizard import YAMLWizard
 from tqdm import tqdm
 
-from pose_estimation import run_pose_worker, DetectionLoader, init_pose_model, init_detector, read_configs
+from pose_estimation import run_pose_worker, DetectionLoader, init_pose_model, init_detector, read_ap_configs
 from shared.dataset_info import DatasetInfo
 from shared.structs import SkeletonData, FrameData
 
@@ -11,7 +13,7 @@ from shared.structs import SkeletonData, FrameData
 def single_file_pose(filename, device: torch.device, skeleton_type: str = "coco17"):
     assert os.path.isfile(filename)
 
-    gcfg, dcfg, opts = read_configs(skeleton_type, device)
+    gcfg, dcfg, opts = read_ap_configs(skeleton_type, device)
 
     detector = init_detector(opts, dcfg)
     detector.load_model()
@@ -42,6 +44,17 @@ def single_file_pose(filename, device: torch.device, skeleton_type: str = "coco1
         det_loader.frameSize,
     )
     # visualize(data, data.video_file, wait_key=1000//30, draw_bbox=True, draw_confidences=True, draw_frame_number=True)
+
+
+@dataclass
+class PoseEstimationConfig(YAMLWizard, key_transform='SNAKE'):
+    device = "cuda"
+    skeleton_type = "coco17"
+    detector_cfg: str = "./configs/detector/yolov3-spp.cfg"
+    detector_weights: str = "./weights/detector/yolov3-spp.weights"
+
+    estimation_cfg = "./configs/alphapose/256x192_res50_lr1e-3_1x.yaml"
+    estimation_weights: str = "./weights/alphapose/fast_res50_256x192.pth"
 
 
 if __name__ == "__main__":

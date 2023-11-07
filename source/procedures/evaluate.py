@@ -28,7 +28,7 @@ def evaluate(cfg: GeneralConfig):
     device = torch.device(cfg.device)
     channels = calculate_channels(cfg.features, 2)
     if cfg.model_type == "stgcnpp":
-        model = create_stgcnpp(test_set.num_classes(), channels)
+        model = create_stgcnpp(test_set.num_classes(), channels, cfg.skeleton_type)
     else:
         raise ValueError("2p-gcn not supported yet")
 

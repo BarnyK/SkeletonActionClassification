@@ -94,6 +94,7 @@ def ntu_preprocess_cfg():
 @dataclass
 class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
     name: str = "default"
+    skeleton_type: str = "coco17"
     model_type: str = "stgcnpp"  #: TODO: 2P-GCN
     device: str = "cuda:0"  #: could be "cuda:0" or "cpu"
     features: list[str] = field(default_factory=lambda: ['joints'])
