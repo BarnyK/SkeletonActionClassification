@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from typing import Iterable, Union
 
@@ -9,7 +10,6 @@ from dataclass_wizard import YAMLWizard
 @dataclass
 class EvalConfig(YAMLWizard, key_transform='SNAKE'):
     output_path: str = ""
-    model_file: str = ""
 
     test_file: str = ""
     test_batch_size: int = 128
@@ -93,7 +93,7 @@ def ntu_preprocess_cfg():
 
 @dataclass
 class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
-    name: str
+    name: str = "default"
     model_type: str = "stgcnpp"  #: TODO: 2P-GCN
     device: str = "cuda:0"  #: could be "cuda:0" or "cpu"
     features: list[str] = field(default_factory=lambda: ['joints'])
@@ -106,6 +106,12 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
     eval_config: EvalConfig = EvalConfig()
     log_folder: str = "logs"
 
+    def best_model_path(self):
+        return os.path.join(self.log_folder, self.name, "best.pth")
+
+
 if __name__ == "__main__":
     x = GeneralConfig("test")
-    x.to_yaml_file("../configs/general/default.yaml")
+    x = x.from_yaml_file("../configs/general/default.yaml")
+    x.name = "XDDD"
+    print(x.to_yaml())

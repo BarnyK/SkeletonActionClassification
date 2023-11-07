@@ -18,8 +18,8 @@ TODO:
 - [x] Support other skeletons
     - [x] Port all functions that use information about skeleton type to one module
 - [x] Support preprocessing from nturgb
-- [ ] Continue training(1. compare cfgs, 2. check epochs recorded in log, 3. load model)
-    -  [ ] Load model ensure works
+- [x] Continue training(1. compare cfgs, 2. check epochs recorded in log, 3. load model)
+    -  [x] Load model ensure works
 - [ ] Evaluation from loaded model
 - [ ] 2P-GCN
 - [ ] Fix for alignement in mutual (double the bodies up front)

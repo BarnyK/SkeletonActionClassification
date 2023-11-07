@@ -128,19 +128,38 @@ if __name__ == "__main__2":
             print(er)
 
 if __name__ == "__main__":
-    cfg = GeneralConfig("default_100_100_0")
-    cfg = cfg.from_yaml_file("configs/general/default.yaml")
-    cfg.name = "default_100_100_0"
-    cfg.sampler_per_window = 100
-    cfg.window_length = 100
-    print(cfg.to_yaml())
-    train_network(cfg)
-
-    cfg = GeneralConfig("default")
-    cfg = cfg.from_yaml_file("configs/general/default.yaml")
+    cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
+    cfg.window_length = 64
     for i in range(3):
-        for samples_per_win in [2, 4, 8, 16, 32, 64]:
-            cfg.name = f"default_64_{samples_per_win}_{i}"
+        for samples_per_win in [1, 2, 4, 8, 16, 32, 64]:
+            cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
+            cfg.sampler_per_window = samples_per_win
+            print(cfg.to_yaml())
+            train_network(cfg)
+
+    cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
+    cfg.window_length = 100
+    for i in range(3):
+        for samples_per_win in [1, 2, 4, 5, 10, 20, 25, 50, 100]:
+            cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
+            cfg.sampler_per_window = samples_per_win
+            print(cfg.to_yaml())
+            train_network(cfg)
+
+    cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
+    cfg.window_length = 32
+    for i in range(3):
+        for samples_per_win in [1, 2, 4, 8, 16, 32]:
+            cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
+            cfg.sampler_per_window = samples_per_win
+            print(cfg.to_yaml())
+            train_network(cfg)
+
+    cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
+    cfg.window_length = 16
+    for i in range(3):
+        for samples_per_win in [1, 2, 4, 8, 16]:
+            cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
             cfg.sampler_per_window = samples_per_win
             print(cfg.to_yaml())
             train_network(cfg)

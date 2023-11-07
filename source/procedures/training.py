@@ -123,9 +123,6 @@ def load_model(filename, model, optimizer, scheduler, device):
 def train_network(cfg: GeneralConfig):
     t_cfg = cfg.train_config
     e_cfg = cfg.eval_config
-    if cfg.name is None:
-        now = datetime.now()
-        cfg.name = now.strftime("%H_%M_%d_%m_%Y")
     logger.info("Starting training")
     logger.info(f"Using {cfg.features}")
 
@@ -163,15 +160,15 @@ def train_network(cfg: GeneralConfig):
                 start_epoch = int(match) + 1
                 load_model(newest_file, model, optimizer, scheduler, device)
 
-    if start_epoch >= t_cfg.epochs:
-        logger.info("Training completed")
-        return
-
     os.makedirs(logs_path, exist_ok=True)
     os.makedirs(os.path.join(logs_path, "models"), exist_ok=True)
 
     cfg.to_yaml_file(os.path.join(logs_path, "config.yaml"))
     write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
+
+    if start_epoch >= t_cfg.epochs:
+        logger.info("Training completed")
+        return
 
     start_time = time.time()
     all_eval_stats = []
@@ -208,8 +205,7 @@ def train_network(cfg: GeneralConfig):
     write_log(logs_path, f"Top1 accuracy {best_eval_epoch[2]:.2%} at epoch {best_eval_epoch[0]}")
 
     best_epoch_file = os.path.join(logs_path, "models", f"epoch_{best_eval_epoch[0]}.pth")
-    best_file = os.path.join(logs_path, f"best.pth")
-    shutil.copy(best_epoch_file, best_file)
+    shutil.copy(best_epoch_file, cfg.best_model_path())
     logger.info("Training completed")
 
 
