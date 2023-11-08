@@ -99,7 +99,7 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
     device: str = "cuda:0"  #: could be "cuda:0" or "cpu"
     features: list[str] = field(default_factory=lambda: ['joints'])
     window_length: int = 64
-    sampler_per_window: int = 32
+    samples_per_window: int = 32
     symmetry_processing: bool = False  #: Only works with 2p-GCN
     normalization_type: str = "spine_align"
 

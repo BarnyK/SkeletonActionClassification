@@ -14,7 +14,7 @@ from procedures.training import test_epoch, load_model
 
 def evaluate(cfg: GeneralConfig):
     norm_func = create_norm_func(cfg.normalization_type, cfg.train_config.train_file)
-    test_sampler = Sampler(cfg.window_length, cfg.sampler_per_window, True, cfg.eval_config.test_clips_count)
+    test_sampler = Sampler(cfg.window_length, cfg.samples_per_window, True, cfg.eval_config.test_clips_count)
     test_set = PoseDataset(
         cfg.eval_config.test_file,
         cfg.features,

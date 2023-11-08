@@ -127,13 +127,29 @@ if __name__ == "__main__2":
         except FileExistsError as er:
             print(er)
 
+
+def find_divisors(N):
+    return [i for i in range(1, N + 1) if N % i == 0]
+
+
 if __name__ == "__main__":
+    for i in range(3):
+        for win_length in [64, 100, 60, 32, 30, 16]:
+            cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
+            cfg.window_length = win_length
+            for samples_per_win in find_divisors(win_length):
+                cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
+                cfg.samples_per_window = samples_per_win
+                print(cfg.to_yaml())
+                print(cfg.name)
+                train_network(cfg)
+
     cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
     cfg.window_length = 64
     for i in range(3):
         for samples_per_win in [1, 2, 4, 8, 16, 32, 64]:
             cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
-            cfg.sampler_per_window = samples_per_win
+            cfg.samples_per_window = samples_per_win
             print(cfg.to_yaml())
             train_network(cfg)
 
@@ -142,7 +158,7 @@ if __name__ == "__main__":
     for i in range(3):
         for samples_per_win in [1, 2, 4, 5, 10, 20, 25, 50, 100]:
             cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
-            cfg.sampler_per_window = samples_per_win
+            cfg.samples_per_window = samples_per_win
             print(cfg.to_yaml())
             train_network(cfg)
 
@@ -151,7 +167,7 @@ if __name__ == "__main__":
     for i in range(3):
         for samples_per_win in [1, 2, 4, 8, 16, 32]:
             cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
-            cfg.sampler_per_window = samples_per_win
+            cfg.samples_per_window = samples_per_win
             print(cfg.to_yaml())
             train_network(cfg)
 
@@ -160,8 +176,6 @@ if __name__ == "__main__":
     for i in range(3):
         for samples_per_win in [1, 2, 4, 8, 16]:
             cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
-            cfg.sampler_per_window = samples_per_win
+            cfg.samples_per_window = samples_per_win
             print(cfg.to_yaml())
             train_network(cfg)
-
-

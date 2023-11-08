@@ -24,7 +24,7 @@ TODO:
 - [ ] 2P-GCN
 - [ ] Fix for alignement in mutual (double the bodies up front)
 - [ ] Single file + evaluation
-- [ ] Visualization with windowing
+- [x] Visualization with windowing
 - [ ] Figure out a way to fill missing joints if all other are missing
 
 GENERAL PIPELINE:

@@ -216,7 +216,7 @@ def create_dataloaders(cfg: GeneralConfig):
 
     norm_func = create_norm_func(cfg.normalization_type, cfg.train_config.train_file)
 
-    train_sampler = Sampler(cfg.window_length, cfg.sampler_per_window)
+    train_sampler = Sampler(cfg.window_length, cfg.samples_per_window)
     train_set = PoseDataset(
         cfg.train_config.train_file,
         cfg.features,
@@ -227,7 +227,7 @@ def create_dataloaders(cfg: GeneralConfig):
     )
     train_loader = DataLoader(train_set, cfg.train_config.train_batch_size, True, num_workers=4, pin_memory=True)
 
-    test_sampler = Sampler(cfg.window_length, cfg.sampler_per_window, True, cfg.eval_config.test_clips_count)
+    test_sampler = Sampler(cfg.window_length, cfg.samples_per_window, True, cfg.eval_config.test_clips_count)
     test_set = PoseDataset(
         cfg.eval_config.test_file,
         cfg.features,
