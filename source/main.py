@@ -134,7 +134,7 @@ def find_divisors(N):
 
 if __name__ == "__main__":
     for i in range(3):
-        for win_length in [64, 100, 60, 32, 30, 16]:
+        for win_length in [64, 100, 60, 16, 32, 30]:
             cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
             cfg.window_length = win_length
             for samples_per_win in find_divisors(win_length):

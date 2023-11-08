@@ -17,7 +17,7 @@ from datasets.pose_dataset import PoseDataset
 from datasets.sampler import Sampler
 from datasets.transform_wrappers import calculate_channels
 from models import create_stgcnpp
-from preprocessing.normalizations import create_norm_func
+from preprocessing.normalizations import create_norm_func, SpineNormalization, setup_norm_func, ScreenNormalization
 from procedures.config import TrainingConfig, GeneralConfig
 
 logging.basicConfig(level=logging.INFO)  # Set the logging level to INFO (or other level of your choice)
@@ -99,12 +99,14 @@ def write_log(logs_path, text):
         f.write(text + '\n')
 
 
-def save_model(filename, model, optimizer, scheduler):
+def save_model(filename, model, optimizer, scheduler, norm_func):
     data = {
         "net": model.state_dict(),
         "optimizer": optimizer.state_dict(),
         "scheduler": scheduler.state_dict(),
     }
+    if isinstance(norm_func, (SpineNormalization, ScreenNormalization)):
+        data['normalization'] = norm_func.state_dict()
     torch.save(data, filename)
 
 
@@ -118,6 +120,7 @@ def load_model(filename, model, optimizer, scheduler, device):
             scheduler.load_state_dict(data['scheduler'])
     else:
         model.load_state_dict(data)
+    return data
 
 
 def train_network(cfg: GeneralConfig):
@@ -126,8 +129,41 @@ def train_network(cfg: GeneralConfig):
     logger.info("Starting training")
     logger.info(f"Using {cfg.features}")
 
-    test_loader, train_loader, test_set, _ = create_dataloaders(cfg)
+    # Resume handling
+    start_epoch = 0
+    load_file = None
+    logs_path = os.path.join(cfg.log_folder, cfg.name)
+    if os.path.exists(logs_path):
+        existing_cfg_path = os.path.join(logs_path, "config.yaml")
+        existing_cfg = GeneralConfig.from_yaml_file(existing_cfg_path)
+        if existing_cfg != cfg:
+            raise ValueError("Existing config is different to the current one")
+        # load
+        models_folder = os.path.join(logs_path, "models")
+        if os.path.isdir(models_folder):
+            epoch_files = os.listdir(models_folder)
+            if epoch_files:
+                load_file = max([os.path.join(models_folder, x) for x in epoch_files], key=os.path.getctime)
+                match = re.findall("([0-9]*).pth", load_file)[-1]
+                start_epoch = int(match) + 1
 
+    # Create directories
+    os.makedirs(logs_path, exist_ok=True)
+    os.makedirs(os.path.join(logs_path, "models"), exist_ok=True)
+
+    # Write config
+    cfg.to_yaml_file(os.path.join(logs_path, "config.yaml"))
+    write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
+
+    # Return if training already complete
+    if start_epoch >= t_cfg.epochs:
+        logger.info("Training completed")
+        return
+
+    # Create dataloaders
+    test_loader, train_loader, test_set, _, norm_func = create_dataloaders(cfg)
+
+    # Create model
     device = torch.device(cfg.device)
     channels = calculate_channels(cfg.features, 2)
     if cfg.model_type == "stgcnpp":
@@ -136,40 +172,24 @@ def train_network(cfg: GeneralConfig):
     else:
         raise ValueError("2p-gcn not supported yet")
 
+    # Create training loss, optimizer and scheduler
     loss_func = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.SGD(model.parameters(), lr=t_cfg.sgd_lr, momentum=t_cfg.sgd_momentum,
                                 weight_decay=t_cfg.sgd_weight_decay, nesterov=t_cfg.sgd_nesterov)
     scheduler = CosineAnnealingLR(optimizer, T_max=t_cfg.epochs,
                                   eta_min=t_cfg.cosine_shed_eta_min)
-    start_epoch = 0
 
-    # Resume handling
-    logs_path = os.path.join(cfg.log_folder, cfg.name)
-    if os.path.exists(logs_path):
-        existing_cfg_path = os.path.join(logs_path, "config.yaml")
-        existing_cfg = GeneralConfig.from_yaml_file(existing_cfg_path)
-        if existing_cfg != cfg:
-            raise ValueError("Existing config is different to the current one")
-        # load 
-        models_folder = os.path.join(logs_path, "models")
-        if os.path.isdir(models_folder):
-            epoch_files = os.listdir(models_folder)
-            if epoch_files:
-                newest_file = max([os.path.join(models_folder, x) for x in epoch_files], key=os.path.getctime)
-                match = re.findall("([0-9]*).pth", newest_file)[-1]
-                start_epoch = int(match) + 1
-                load_model(newest_file, model, optimizer, scheduler, device)
+    # Load data if exists
+    if load_file is not None:
+        state_dict = load_model(load_file, model, optimizer, scheduler, device)
+        if norm_state_dict := state_dict.get("normalization"):
+            setup_norm_func(norm_func, state_dict=norm_state_dict)
+        else:
+            setup_norm_func(norm_func, train_file=cfg.train_config.train_file)
+    else:
+        setup_norm_func(norm_func, train_file=cfg.train_config.train_file)
 
-    os.makedirs(logs_path, exist_ok=True)
-    os.makedirs(os.path.join(logs_path, "models"), exist_ok=True)
-
-    cfg.to_yaml_file(os.path.join(logs_path, "config.yaml"))
-    write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
-
-    if start_epoch >= t_cfg.epochs:
-        logger.info("Training completed")
-        return
-
+    # Start training loop
     start_time = time.time()
     all_eval_stats = []
     for epoch in range(start_epoch, t_cfg.epochs):
@@ -192,7 +212,7 @@ def train_network(cfg: GeneralConfig):
 
         # Save model
         model_path = os.path.join(logs_path, "models", f"epoch_{epoch}.pth")
-        save_model(model_path, model, optimizer, scheduler)
+        save_model(model_path, model, optimizer, scheduler, norm_func)
 
         # Print ETA
         estimated_remaining_time = ((time.time() - start_time) / (epoch + 1)) * (t_cfg.epochs - (epoch + 1))
@@ -214,7 +234,7 @@ def create_dataloaders(cfg: GeneralConfig):
     if cfg.train_config.use_scale_augment:
         augments.append(RandomScale(cfg.train_config.scale_value))
 
-    norm_func = create_norm_func(cfg.normalization_type, cfg.train_config.train_file)
+    norm_func = create_norm_func(cfg.normalization_type)
 
     train_sampler = Sampler(cfg.window_length, cfg.samples_per_window)
     train_set = PoseDataset(
@@ -237,7 +257,7 @@ def create_dataloaders(cfg: GeneralConfig):
         norm_func
     )
     test_loader = DataLoader(test_set, cfg.eval_config.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
-    return test_loader, train_loader, test_set, train_set
+    return test_loader, train_loader, test_set, train_set, norm_func
 
 
 def main():
