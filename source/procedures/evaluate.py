@@ -7,13 +7,13 @@ from datasets.pose_dataset import PoseDataset
 from datasets.sampler import Sampler
 from datasets.transform_wrappers import calculate_channels
 from models import create_stgcnpp
-from preprocessing.normalizations import create_norm_func
+from preprocessing.normalizations import create_norm_func, setup_norm_func
 from procedures.config import EvalConfig, GeneralConfig
 from procedures.training import test_epoch, load_model
 
 
 def evaluate(cfg: GeneralConfig):
-    norm_func = create_norm_func(cfg.normalization_type, cfg.train_config.train_file)
+    norm_func = create_norm_func(cfg.normalization_type)
     test_sampler = Sampler(cfg.window_length, cfg.samples_per_window, True, cfg.eval_config.test_clips_count)
     test_set = PoseDataset(
         cfg.eval_config.test_file,
@@ -33,7 +33,11 @@ def evaluate(cfg: GeneralConfig):
         raise ValueError("2p-gcn not supported yet")
 
     # load
-    load_model(cfg.best_model_path(), model, None, None, device)
+    state_dict = load_model(cfg.best_model_path(), model, None, None, device)
+    if norm_state_dict := state_dict.get("normalization"):
+        setup_norm_func(norm_func, state_dict=norm_state_dict)
+    else:
+        setup_norm_func(norm_func, train_file=cfg.train_config.train_file)
     model.to(device)
 
     loss_func = torch.nn.CrossEntropyLoss()
@@ -42,8 +46,8 @@ def evaluate(cfg: GeneralConfig):
 
 
 if __name__ == "__main__":
-    cfg = GeneralConfig.from_yaml_file("../configs/general/default.yaml")
+    cfg = GeneralConfig.from_yaml_file("/media/barny/SSD4/MasterThesis/Data/logs/default_64_1_0/config.yaml")
     print(cfg)
-    cfg.device = "cpu"
+    cfg.device = "cuda"
     evaluate(cfg)
     #cfg = EvalConfig("stgcnpp", model_file, "cuda:0", ["joints"], 64, 32, )
