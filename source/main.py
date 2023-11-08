@@ -19,11 +19,7 @@ if __name__ == "__main__2":
     #     torch.device("cuda"),
     #     "coco17",
     # )
-    single_file_pose(
-        "/media/barny/SSD4/MasterThesis/Data/concatenated.avi",
-        torch.device("cuda"),
-        "coco17",
-    )
+    single_file_pose("/media/barny/SSD4/MasterThesis/Data/concatenated.avi", torch.device("cuda"))
 
 if __name__ == "__main__2":
     # Generation of NTU datasets from Alphapose skeletons

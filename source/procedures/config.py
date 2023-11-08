@@ -92,6 +92,25 @@ def ntu_preprocess_cfg():
 
 
 @dataclass
+class PoseEstimationConfig(YAMLWizard, key_transform='SNAKE'):
+    dataset_name = "ntu"
+    detector_cfg: str = "./configs/detector/yolov3-spp.cfg"
+    detector_weights: str = "./weights/detector/yolov3-spp.weights"
+
+    estimation_cfg = "./configs/alphapose/256x192_res50_lr1e-3_1x.yaml"
+    estimation_weights: str = "./weights/alphapose/fast_res50_256x192.pth"
+
+    detector_batch_size: int = 5
+    detector_queue_size: int = 256
+
+    estimation_batch_size: int = 8
+    estimation_queue_size: int = 64
+
+    input_folder: str = "/media/barny/SSD4/MasterThesis/Data/ntu_sample/"
+    output_folder: str = "/media/barny/SSD4/MasterThesis/Data/ntu_sample/"
+
+
+@dataclass
 class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
     name: str = "default"
     skeleton_type: str = "coco17"
@@ -100,11 +119,14 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
     features: list[str] = field(default_factory=lambda: ['joints'])
     window_length: int = 64
     samples_per_window: int = 32
+    interlace: int = 16
     symmetry_processing: bool = False  #: Only works with 2p-GCN
     normalization_type: str = "spine_align"
 
     train_config: TrainingConfig = TrainingConfig()
     eval_config: EvalConfig = EvalConfig()
+    pose_config: PoseEstimationConfig = PoseEstimationConfig()
+    prep_config: PreprocessConfig = PreprocessConfig()
     log_folder: str = "logs"
 
     def best_model_path(self):
@@ -116,21 +138,3 @@ if __name__ == "__main__":
     x = x.from_yaml_file("../configs/general/default.yaml")
     x.name = "XDDD"
     print(x.to_yaml())
-
-
-@dataclass
-class PoseEstimationConfig(YAMLWizard, key_transform='SNAKE'):
-    device = "cuda:0"
-    skeleton_type = "coco17"
-    frame_interval: int = 1
-    detector_cfg: str = "./configs/detector/yolov3-spp.cfg"
-    detector_weights: str = "./weights/detector/yolov3-spp.weights"
-
-    estimation_cfg = "./configs/alphapose/256x192_res50_lr1e-3_1x.yaml"
-    estimation_weights: str = "./weights/alphapose/fast_res50_256x192.pth"
-
-    detector_batch_size: int = 8
-    detector_queue_size: int = 64
-
-    estimation_batch_size: int = 8
-    estimation_queue_size: int = 64

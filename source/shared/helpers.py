@@ -34,3 +34,11 @@ def sparse_to_adjacency_matrix(point_list: List[Tuple[int, int]]) -> np.ndarray:
         res[x, y] = 1
         res[y, x] = 1
     return res
+
+
+def calculate_interval(length, samples):
+    i = 1
+    while samples < length:
+        samples *= 2
+        i += 1
+    return i

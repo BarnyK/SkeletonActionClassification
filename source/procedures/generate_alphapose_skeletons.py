@@ -6,30 +6,35 @@ from tqdm import tqdm
 from pose_estimation.detection_loader import DetectionLoader
 from pose_estimation.helpers import init_detector, init_pose_model, read_ap_configs
 from pose_estimation.pose_worker import run_pose_worker
-from shared.dataset_info import name_to_ntu_data, name_info_func_map
+from procedures.config import GeneralConfig
+from shared.dataset_info import name_info_func_map
 from shared.structs import SkeletonData, FrameData
 
 
 def gen_alphapose_skeletons(
-        input_folder: str, output_folder: str, skeleton_type: str = "coco17", name_to_info=name_to_ntu_data
+        cfg: GeneralConfig
 ):
     """
     Generates Alphapose skeleton files from videos
     input_folder should contain video files
     output_folder will contain skeleton frames dictionaries pickled
     """
-    assert os.path.isdir(input_folder)
-    assert os.path.isdir(output_folder)
-    files = os.listdir(input_folder)
-    files = [os.path.join(input_folder, fn) for fn in files]
+    pose_cfg = cfg.pose_config
+    name_to_info = name_info_func_map.get(pose_cfg.dataset_name, None)
+    if name_to_info is None:
+        print(f"Not supported dataset {pose_cfg.dataset_name}")
+    assert os.path.isdir(pose_cfg.input_folder)
+    assert os.path.isdir(pose_cfg.output_folder)
+    files = os.listdir(pose_cfg.input_folder)
+    files = [os.path.join(pose_cfg.input_folder, fn) for fn in files]
 
-    device = torch.device("cuda:0")
-    gcfg, dcfg, opts = read_ap_configs(skeleton_type, device)
+    device = torch.device(cfg.device)
+    ap_cfg, det_cfg, opts = read_ap_configs(cfg.skeleton_type, device)
 
-    detector = init_detector(opts, dcfg)
+    detector = init_detector(opts, det_cfg)
     detector.load_model()
 
-    pose = init_pose_model(device, gcfg, gcfg.weights_file)
+    pose = init_pose_model(device, ap_cfg, ap_cfg.weights_file)
 
     for file_i, file in tqdm(enumerate(files), total=len(files)):
         try:
@@ -38,14 +43,17 @@ def gen_alphapose_skeletons(
 
             dataset_info = name_to_info(file)
 
-            outfile = os.path.join(output_folder, dataset_info.to_filename() + f".{skeleton_type}.apskel.pkl")
+            outfile = os.path.join(pose_cfg.output_folder,
+                                   dataset_info.to_filename() + f".{cfg.skeleton_type}.apskel.pkl")
             if os.path.exists(outfile):
                 continue
 
-            det_loader = DetectionLoader(file, detector, gcfg, opts, "video", 5, 256)
+            det_loader = DetectionLoader(file, detector, ap_cfg, opts, "video", pose_cfg.detector_batch_size,
+                                         pose_cfg.detector_queue_size, 1)
             det_loader.start()
 
-            pose_data_queue = run_pose_worker(pose, det_loader, opts)
+            pose_data_queue = run_pose_worker(pose, det_loader, opts, pose_cfg.estimation_batch_size,
+                                              pose_cfg.estimation_queue_size)
 
             tq = tqdm(range(det_loader.datalen), dynamic_ncols=True, disable=True)
             frames = []
@@ -59,7 +67,7 @@ def gen_alphapose_skeletons(
 
             data = SkeletonData(
                 "estimated",
-                skeleton_type,
+                cfg.skeleton_type,
                 dataset_info,
                 file,
                 det_loader.datalen,
@@ -73,24 +81,20 @@ def gen_alphapose_skeletons(
             raise ex
 
 
-def generate_alphapose_dataset(input_folder: str, output_folder: str, skeleton_type: str, dataset_name: str):
-    name_func = name_info_func_map.get(dataset_name, None)
-    if name_func is None:
-        print(f"Not supported dataset {dataset_name}")
-    gen_alphapose_skeletons(input_folder, output_folder, skeleton_type, name_func)
-
-
 def testing():
     import time
     # UT
-    in_folder = "/media/barny/SSD4/MasterThesis/Data/ut_sample/"
-    out_folder = f"/tmp/{time.time()}/"
-    os.mkdir(out_folder)
-    generate_alphapose_dataset(in_folder, out_folder, "coco17", "ut")
+    cfg = GeneralConfig()
+    cfg.pose_config.dataset_name = "ut"
+    cfg.pose_config.input_folder = "/media/barny/SSD4/MasterThesis/Data/ut_sample/"
+    cfg.pose_config.output_folder = f"/tmp/{time.time()}/"
+    os.mkdir(cfg.pose_config.output_folder)
+    gen_alphapose_skeletons(cfg)
 
     # NTU
-    in_folder = "/media/barny/SSD4/MasterThesis/Data/ntu_sample/"
-    generate_alphapose_dataset(in_folder, out_folder, "coco17", "ntu")
+    cfg.pose_config.dataset_name = "ntu"
+    cfg.pose_config.input_folder = "/media/barny/SSD4/MasterThesis/Data/ntu_sample/"
+    gen_alphapose_skeletons(cfg)
 
 
 if __name__ == "__main__":
