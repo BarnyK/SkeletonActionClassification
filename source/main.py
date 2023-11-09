@@ -155,6 +155,7 @@ if __name__ == "__main__2":
     os.makedirs(output_folder, exist_ok=True)
     gen_alphapose_skeletons(input_folder, output_folder, cfg)
 
+
 def find_divisors(N):
     return [i for i in range(1, N + 1) if N % i == 0]
 

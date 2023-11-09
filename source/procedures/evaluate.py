@@ -8,7 +8,7 @@ from datasets.sampler import Sampler
 from datasets.transform_wrappers import calculate_channels
 from models import create_stgcnpp
 from preprocessing.normalizations import create_norm_func, setup_norm_func
-from procedures.config import EvalConfig, GeneralConfig
+from procedures.config import GeneralConfig
 from procedures.training import test_epoch, load_model
 
 
@@ -51,4 +51,3 @@ if __name__ == "__main__":
     cfg.device = "cuda"
     cfg.eval_config.test_batch_size = 1
     evaluate(cfg)
-    #cfg = EvalConfig("stgcnpp", model_file, "cuda:0", ["joints"], 64, 32, )

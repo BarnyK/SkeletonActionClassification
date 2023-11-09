@@ -110,7 +110,8 @@ class SpineNormalization:
         return result
 
     def state_dict(self):
-        return {"align": self.align, "skeleton_type": self.skeleton_type, "scale": self.scale, "use_mean": self.use_mean}
+        return {"align": self.align, "skeleton_type": self.skeleton_type, "scale": self.scale,
+                "use_mean": self.use_mean}
 
 
 def no_norm(mat):

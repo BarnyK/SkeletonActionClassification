@@ -131,7 +131,7 @@ class SkeletonData:
             return body.poseXY.shape
         raise ValueError("No bodies found")
 
-    def to_matrix(self) -> Union[np.ndarray, None] :
+    def to_matrix(self) -> Union[np.ndarray, None]:
         tids = self.get_all_tids()
         if len(tids) == 0:
             return None

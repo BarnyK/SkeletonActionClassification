@@ -53,6 +53,7 @@ def interpolation_fill(data: SkeletonData, tid: int, threshold: float = 0.3):
     for keypoint_index in range(keypoint_count):
         keypoint_interpolation_fill(bodies, keypoint_index, threshold)
 
+
 @ignore_warnings(category=ConvergenceWarning)
 def mice_fill(data: SkeletonData, tid: int, threshold: float = 0.3, max_iter: int = 15):
     bodies = []
@@ -73,6 +74,7 @@ def mice_fill(data: SkeletonData, tid: int, threshold: float = 0.3, max_iter: in
 
     for i, body in enumerate(bodies):
         body.poseXY = full_matrix[i, :, :]
+
 
 @ignore_warnings(category=ConvergenceWarning)
 def knn_fill(data: SkeletonData, tid: int, threshold: float = 0.3, neighbours: int = 8):

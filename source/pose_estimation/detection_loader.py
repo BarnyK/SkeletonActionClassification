@@ -30,6 +30,7 @@ def every_nth_frame(video_capture, n):
         if not ret:
             break
 
+
 class DetectionLoader:
     def __init__(
             self, input_source, detector, cfg, opt, mode="image", batch_size=1, queue_size=128, frame_interval=1

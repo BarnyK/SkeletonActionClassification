@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import os
 import time
 from collections import defaultdict
@@ -6,10 +7,8 @@ from copy import deepcopy
 from queue import Queue
 from threading import Thread
 
-import numpy as np
 import torch
 from tqdm import tqdm
-from typing import List
 
 from datasets.pose_dataset import solve_feature_transform_requirements, transform_to_2pgcn_input, \
     transform_to_stgcn_input
@@ -176,27 +175,6 @@ def single_file_classification(filename, cfg: GeneralConfig):
     for res in results: print(res)
     out = aggregate_results(window_results)
     print(out)
-    # tq = tqdm(range(det_loader.datalen), dynamic_ncols=True, disable=False)
-    # frames = []
-    # for i in tq:
-    #     data = pose_data_queue.get()
-    #     if data is None:
-    #         break
-    #     frame_data = FrameData(i, len(data), data)
-    #     frames.append(frame_data)
-    #
-    # data = SkeletonData(
-    #     "estimated",
-    #     cfg.skeleton_type,
-    #     DatasetInfo(),
-    #     filename,
-    #     det_loader.datalen,
-    #     frames,
-    #     len(frames),
-    #     det_loader.frameSize,
-    #     cfg.frame_interval
-    # )
-    # visualize(data, data.video_file, wait_key=1000//30, draw_bbox=True, draw_confidences=True, draw_frame_number=True)
 
 
 if __name__ == "__main__":

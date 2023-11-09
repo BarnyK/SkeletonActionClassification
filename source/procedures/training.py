@@ -5,7 +5,7 @@ import os
 import re
 import shutil
 import time
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR

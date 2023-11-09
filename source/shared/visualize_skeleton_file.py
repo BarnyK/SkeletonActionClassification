@@ -129,7 +129,8 @@ def draw_text_with_outline(image, point, text, font_size):
 
 
 def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, window_name: str = "visualization",
-              draw_bbox: bool = True, draw_frame_number: bool = False, draw_confidences: bool = False, skip_frames: bool = False):
+              draw_bbox: bool = True, draw_frame_number: bool = False, draw_confidences: bool = False,
+              skip_frames: bool = False):
     skeleton_type = skeleton_data.type
     limb_pairs = drawn_limbs_map.get(skeleton_type)
     if limb_pairs is None:
