@@ -1,6 +1,6 @@
 import pickle
 from dataclasses import dataclass
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Union
 
 import numpy as np
 
@@ -131,8 +131,10 @@ class SkeletonData:
             return body.poseXY.shape
         raise ValueError("No bodies found")
 
-    def to_matrix(self) -> np.ndarray:
+    def to_matrix(self) -> Union[np.ndarray, None] :
         tids = self.get_all_tids()
+        if len(tids) == 0:
+            return None
         M, T, (V, N) = len(tids), self.length, self.get_points_shape()
 
         mat = np.zeros((M, T, V, N), dtype=np.float32)

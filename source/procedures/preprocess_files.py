@@ -78,6 +78,9 @@ def preprocess_file(in_file: str, cfg: PreprocessConfig):
     try:
         mat = data.to_matrix()
         confMat = data.to_matrix_confidences()
+        if mat is None or confMat is None:
+            tqdm.write(f"Empty bodies in: {in_file}")
+            return in_file, None
     except ValueError:
         tqdm.write(f"Empty bodies in: {in_file}")
         return in_file, None
