@@ -113,13 +113,15 @@ def save_model(filename, model, optimizer, scheduler, norm_func):
 def load_model(filename, model, optimizer, scheduler, device):
     data = torch.load(filename, map_location=device)
     if "net" in data.keys():
-        model.load_state_dict(data['net'])
+        if model:
+            model.load_state_dict(data['net'])
         if optimizer:
             optimizer.load_state_dict(data['optimizer'])
         if scheduler:
             scheduler.load_state_dict(data['scheduler'])
     else:
-        model.load_state_dict(data)
+        if model:
+            model.load_state_dict(data)
     return data
 
 
@@ -225,7 +227,7 @@ def train_network(cfg: GeneralConfig):
     write_log(logs_path, f"Top1 accuracy {best_eval_epoch[2]:.2%} at epoch {best_eval_epoch[0]}")
 
     best_epoch_file = os.path.join(logs_path, "models", f"epoch_{best_eval_epoch[0]}.pth")
-    shutil.copy(best_epoch_file, cfg.best_model_path())
+    shutil.copy(best_epoch_file, cfg.best_model_path)
     logger.info("Training completed")
 
 

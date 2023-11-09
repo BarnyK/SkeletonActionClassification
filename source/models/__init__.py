@@ -1,7 +1,7 @@
 from models.stgcpp.stgcn import STGCN
 
 
-def create_stgcnpp(num_classes: int, channels: int, skeleton_type: str):
+def create_stgcnpp(num_classes: int, channels: int, skeleton_type: str) -> STGCN:
     if skeleton_type == "coco17":
         skeleton_type = "coco"
     graph_cfg = {'layout': skeleton_type, 'mode': 'spatial'}

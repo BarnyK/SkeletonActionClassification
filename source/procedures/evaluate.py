@@ -33,7 +33,7 @@ def evaluate(cfg: GeneralConfig):
         raise ValueError("2p-gcn not supported yet")
 
     # load
-    state_dict = load_model(cfg.best_model_path(), model, None, None, device)
+    state_dict = load_model(cfg.best_model_path, model, None, None, device)
     if norm_state_dict := state_dict.get("normalization"):
         setup_norm_func(norm_func, state_dict=norm_state_dict)
     else:
@@ -46,8 +46,9 @@ def evaluate(cfg: GeneralConfig):
 
 
 if __name__ == "__main__":
-    cfg = GeneralConfig.from_yaml_file("/media/barny/SSD4/MasterThesis/Data/logs/default_64_1_0/config.yaml")
+    cfg = GeneralConfig.from_yaml_file("/media/barny/SSD4/MasterThesis/Data/logs/default_64_32_0/config.yaml")
     print(cfg)
     cfg.device = "cuda"
+    cfg.eval_config.test_batch_size = 1
     evaluate(cfg)
     #cfg = EvalConfig("stgcnpp", model_file, "cuda:0", ["joints"], 64, 32, )

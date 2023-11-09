@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
+from typing import Union
 
 from dataclass_wizard import YAMLWizard
 
@@ -114,7 +115,7 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
     skeleton_type: str = "coco17"
     model_type: str = "stgcnpp"  #: TODO: 2P-GCN
     device: str = "cuda:0"  #: could be "cuda:0" or "cpu"
-    features: list[str] = field(default_factory=lambda: ['joints'])
+    features: Union[list[str], list[list[str]]] = field(default_factory=lambda: ['joints'])
     window_length: int = 64
     samples_per_window: int = 32
     interlace: int = 16
@@ -127,7 +128,8 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
     prep_config: PreprocessConfig = PreprocessConfig()
     log_folder: str = "logs"
 
-    def best_model_path(self):
+    @property
+    def best_model_path(self) -> str:
         return os.path.join(self.log_folder, self.name, "best.pth")
 
 
