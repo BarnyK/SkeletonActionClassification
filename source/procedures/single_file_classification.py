@@ -90,6 +90,14 @@ def single_file_classification(filename, cfg: GeneralConfig):
         if data.length != cfg.samples_per_window:
             fill_frames(data, cfg.samples_per_window)
         _preprocess_data_ap(data, cfg.prep_config)
+        # Frame preproc
+        # preproc part which is per frame
+        # deepcopy
+        # tracking
+        # selection
+        # fill
+        # mat form
+        # features
     et = time.time()
     print(wc / (et-st))
 

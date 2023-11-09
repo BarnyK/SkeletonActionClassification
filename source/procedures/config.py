@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import os
 from dataclasses import dataclass, field
-from typing import Iterable, Union
 
 from dataclass_wizard import YAMLWizard
+
+import datasets
 
 
 @dataclass
@@ -41,7 +42,7 @@ class TrainingConfig(YAMLWizard, key_transform='SNAKE'):
 class PreprocessConfig(YAMLWizard, key_transform='SNAKE'):
     processes: int = 0
     missing_file: str = ""
-    split_strategy: Union[str, Iterable[str]] = ("ntu_xsub",)
+    split_strategy: list[str] = field(default_factory=lambda: datasets.all_splits)
 
     use_box_conf: bool = True
     box_conf_threshold: float = 0.7
@@ -106,9 +107,6 @@ class PoseEstimationConfig(YAMLWizard, key_transform='SNAKE'):
     estimation_batch_size: int = 8
     estimation_queue_size: int = 64
 
-    input_folder: str = "/media/barny/SSD4/MasterThesis/Data/ntu_sample/"
-    output_folder: str = "/media/barny/SSD4/MasterThesis/Data/ntu_sample/"
-
 
 @dataclass
 class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
@@ -136,5 +134,6 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
 if __name__ == "__main__":
     x = GeneralConfig("test")
     x = x.from_yaml_file("../configs/general/default.yaml")
-    x.name = "XDDD"
+    # x.name = "XDDD"
     print(x.to_yaml())
+    x.to_yaml_file("../configs/general/default_ap_xview.yaml")

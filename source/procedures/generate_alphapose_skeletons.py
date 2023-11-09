@@ -12,6 +12,8 @@ from shared.structs import SkeletonData, FrameData
 
 
 def gen_alphapose_skeletons(
+        input_folder: str,
+        output_folder: str,
         cfg: GeneralConfig
 ):
     """
@@ -23,10 +25,10 @@ def gen_alphapose_skeletons(
     name_to_info = name_info_func_map.get(pose_cfg.dataset_name, None)
     if name_to_info is None:
         print(f"Not supported dataset {pose_cfg.dataset_name}")
-    assert os.path.isdir(pose_cfg.input_folder)
-    assert os.path.isdir(pose_cfg.output_folder)
-    files = os.listdir(pose_cfg.input_folder)
-    files = [os.path.join(pose_cfg.input_folder, fn) for fn in files]
+    assert os.path.isdir(input_folder)
+    assert os.path.isdir(output_folder)
+    files = os.listdir(input_folder)
+    files = [os.path.join(input_folder, fn) for fn in files]
 
     device = torch.device(cfg.device)
     ap_cfg, det_cfg, opts = read_ap_configs(cfg.skeleton_type, device)
@@ -43,7 +45,7 @@ def gen_alphapose_skeletons(
 
             dataset_info = name_to_info(file)
 
-            outfile = os.path.join(pose_cfg.output_folder,
+            outfile = os.path.join(output_folder,
                                    dataset_info.to_filename() + f".{cfg.skeleton_type}.apskel.pkl")
             if os.path.exists(outfile):
                 continue
@@ -86,15 +88,16 @@ def testing():
     # UT
     cfg = GeneralConfig()
     cfg.pose_config.dataset_name = "ut"
-    cfg.pose_config.input_folder = "/media/barny/SSD4/MasterThesis/Data/ut_sample/"
-    cfg.pose_config.output_folder = f"/tmp/{time.time()}/"
-    os.mkdir(cfg.pose_config.output_folder)
-    gen_alphapose_skeletons(cfg)
-
+    input_folder = "/media/barny/SSD4/MasterThesis/Data/ut_sample/"
+    output_folder = f"/tmp/{time.time()}/"
+    os.mkdir(output_folder)
+    gen_alphapose_skeletons(input_folder, output_folder, cfg)
+    print(cfg.to_yaml())
     # NTU
     cfg.pose_config.dataset_name = "ntu"
-    cfg.pose_config.input_folder = "/media/barny/SSD4/MasterThesis/Data/ntu_sample/"
-    gen_alphapose_skeletons(cfg)
+    input_folder = "/media/barny/SSD4/MasterThesis/Data/ntu_sample/"
+    gen_alphapose_skeletons(input_folder, output_folder, cfg)
+    print(cfg.to_yaml())
 
 
 if __name__ == "__main__":

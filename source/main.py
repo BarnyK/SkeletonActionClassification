@@ -1,5 +1,8 @@
+import os
+
 import datasets
 from procedures.config import PreprocessConfig, TrainingConfig, GeneralConfig
+from procedures.generate_alphapose_skeletons import gen_alphapose_skeletons
 from procedures.preprocess_files import preprocess_files
 from procedures.training import train_network
 
@@ -123,6 +126,34 @@ if __name__ == "__main__2":
         except FileExistsError as er:
             print(er)
 
+if __name__ == "__main__2":
+    cfg = GeneralConfig()
+    cfg.pose_config.dataset_name = "ntu"
+    input_folder = "/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb/"
+    output_folder = f"/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"
+    os.makedirs(output_folder, exist_ok=True)
+    gen_alphapose_skeletons(input_folder, output_folder, cfg)
+
+    cfg = GeneralConfig()
+    cfg.pose_config.dataset_name = "ntu"
+    input_folder = "/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb_120/"
+    output_folder = f"/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"
+    os.makedirs(output_folder, exist_ok=True)
+    gen_alphapose_skeletons(input_folder, output_folder, cfg)
+
+    cfg = GeneralConfig()
+    cfg.pose_config.dataset_name = "ut"
+    input_folder = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/segmented_set1"
+    output_folder = f"/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set1_coco"
+    os.makedirs(output_folder, exist_ok=True)
+    gen_alphapose_skeletons(input_folder, output_folder, cfg)
+
+    cfg = GeneralConfig()
+    cfg.pose_config.dataset_name = "ut"
+    input_folder = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/segmented_set2"
+    output_folder = f"/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set2_coco"
+    os.makedirs(output_folder, exist_ok=True)
+    gen_alphapose_skeletons(input_folder, output_folder, cfg)
 
 def find_divisors(N):
     return [i for i in range(1, N + 1) if N % i == 0]
@@ -131,7 +162,7 @@ def find_divisors(N):
 if __name__ == "__main__":
     for i in range(3):
         for win_length in [64, 100, 60, 16, 32, 30]:
-            cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
+            cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
             cfg.window_length = win_length
             for samples_per_win in find_divisors(win_length):
                 cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
