@@ -19,6 +19,7 @@ from datasets.transform_wrappers import calculate_channels
 from models import create_stgcnpp
 from preprocessing.normalizations import create_norm_func, SpineNormalization, setup_norm_func, ScreenNormalization
 from procedures.config import TrainingConfig, GeneralConfig
+from shared.helpers import parse_training_log
 
 logging.basicConfig(level=logging.INFO)  # Set the logging level to INFO (or other level of your choice)
 logger = logging.getLogger(__name__)
@@ -125,6 +126,31 @@ def load_model(filename, model, optimizer, scheduler, device):
     return data
 
 
+def keep_best_models(logs_path, keep_best_n):
+    # List epoch models with their numbers
+    models_dir = os.path.join(logs_path, "models")
+    epoch_models = [x for x in os.listdir(models_dir) if x.endswith(".pth") and ".epoch" not in x]
+    numbers = [int(re.search(r'\d+', filename).group()) for filename in epoch_models]
+    # Get evaluation stats
+    log_file = os.path.join(logs_path, "training.log")
+    train_stats, train_times, eval_stats, eval_times = parse_training_log(log_file)
+    eval_stats = sorted(eval_stats, key=lambda x: x[3], reverse=True)
+    best_epoch_ids = [x[0] for x in eval_stats[:keep_best_n]]
+
+    # Remove weak files
+    for epoch_id, file in zip(numbers, epoch_models):
+        if epoch_id not in best_epoch_ids:
+            print(f"Removing {file}")
+            os.remove(os.path.join(models_dir, file))
+        else:
+            print(f"Best file {file}")
+            old_file = os.path.join(models_dir, file)
+            new_file = os.path.join(models_dir, f"{best_epoch_ids.index(epoch_id) + 1}.{file}")
+            os.rename(old_file, new_file)
+
+    pass
+
+
 def train_network(cfg: GeneralConfig):
     t_cfg = cfg.train_config
     e_cfg = cfg.eval_config
@@ -133,6 +159,7 @@ def train_network(cfg: GeneralConfig):
 
     # Resume handling
     start_epoch = 0
+    finished = False
     load_file = None
     logs_path = os.path.join(cfg.log_folder, cfg.name)
     if os.path.exists(logs_path):
@@ -140,9 +167,11 @@ def train_network(cfg: GeneralConfig):
         existing_cfg = GeneralConfig.from_yaml_file(existing_cfg_path)
         if existing_cfg != cfg:
             raise ValueError("Existing config is different to the current one")
+        if os.path.exists(os.path.join(cfg.best_model_path)):
+            finished = True
         # load
         models_folder = os.path.join(logs_path, "models")
-        if os.path.isdir(models_folder):
+        if not finished and os.path.isdir(models_folder):
             epoch_files = os.listdir(models_folder)
             if epoch_files:
                 load_file = max([os.path.join(models_folder, x) for x in epoch_files], key=os.path.getctime)
@@ -158,7 +187,7 @@ def train_network(cfg: GeneralConfig):
     write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
 
     # Return if training already complete
-    if start_epoch >= t_cfg.epochs:
+    if start_epoch >= t_cfg.epochs or finished:
         logger.info("Training completed")
         return
 
@@ -217,8 +246,8 @@ def train_network(cfg: GeneralConfig):
         save_model(model_path, model, optimizer, scheduler, norm_func)
 
         # Print ETA
-        estimated_remaining_time = ((time.time() - start_time) / (epoch + 1)) * (t_cfg.epochs - (epoch + 1))
-        logger.info(f"Estimated remaining time: {timedelta(seconds=estimated_remaining_time)}")
+        remaining_time = ((time.time() - start_time) / (epoch - start_epoch + 1)) * (t_cfg.epochs - (epoch + 1))
+        logger.info(f"Estimated remaining time: {timedelta(seconds=remaining_time)}")
 
     end_time = time.time()
     best_eval_epoch = max(all_eval_stats, key=lambda x: x[2])
@@ -229,6 +258,7 @@ def train_network(cfg: GeneralConfig):
     best_epoch_file = os.path.join(logs_path, "models", f"epoch_{best_eval_epoch[0]}.pth")
     shutil.copy(best_epoch_file, cfg.best_model_path)
     logger.info("Training completed")
+    keep_best_models(logs_path, cfg.train_config.keep_best_n)
 
 
 def create_dataloaders(cfg: GeneralConfig):
@@ -268,3 +298,8 @@ def main():
                          "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl", 128, 8, 1, 0.1,
                          0.9, 0.0002, True, 0.00001)
     train_network(cfg)
+
+
+if __name__ == "__main__":
+    keep_best_models('/media/barny/SSD4/MasterThesis/Data/logs/default_16_1_0/', 5
+                     )

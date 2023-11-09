@@ -37,6 +37,7 @@ class TrainingConfig(YAMLWizard, key_transform='SNAKE'):
 
     use_scale_augment: bool = False
     scale_value: float = 0.2
+    keep_best_n: int = 5
 
 
 @dataclass
