@@ -184,7 +184,6 @@ def train_network(cfg: GeneralConfig):
 
     # Write config
     cfg.to_yaml_file(os.path.join(logs_path, "config.yaml"))
-    write_log(logs_path, f"Training with features: {', '.join(cfg.features)}")
 
     # Return if training already complete
     if start_epoch >= t_cfg.epochs or finished:
