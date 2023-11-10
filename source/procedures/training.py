@@ -140,10 +140,10 @@ def keep_best_models(logs_path, keep_best_n):
     # Remove weak files
     for epoch_id, file in zip(numbers, epoch_models):
         if epoch_id not in best_epoch_ids:
-            print(f"Removing {file}")
+            # Remove
             os.remove(os.path.join(models_dir, file))
         else:
-            print(f"Best file {file}")
+            # Rename
             old_file = os.path.join(models_dir, file)
             new_file = os.path.join(models_dir, f"{best_epoch_ids.index(epoch_id) + 1}.{file}")
             os.rename(old_file, new_file)
