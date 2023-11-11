@@ -5,6 +5,7 @@ from procedures.config import PreprocessConfig, TrainingConfig, GeneralConfig
 from procedures.generate_alphapose_skeletons import gen_alphapose_skeletons
 from procedures.preprocess_files import preprocess_files
 from procedures.training import train_network
+from shared.errors import DifferentConfigException
 
 # preprocess_files("/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
 #                  "/media/barny/SSD4/MasterThesis/Data/ntu_coco.f1.combined", PreprocessConfig())
@@ -67,7 +68,7 @@ if __name__ == "__main__2":
     #                  cfg,
     #                  datasets.all_splits, 6, False,
     #                  "/media/barny/SSD4/MasterThesis/Data/NTU_RGBD120_samples_with_missing_skeletons.txt")
-    cfg = PreprocessConfig()
+    cfg = GeneralConfig()
     cfg.remove_missing_from_file = True
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
@@ -77,19 +78,6 @@ if __name__ == "__main__2":
                      10,
                      False,
                      "/media/barny/SSD4/MasterThesis/Data/NTU_RGBD120_samples_with_missing_skeletons.txt")
-
-if __name__ == "__main__2":
-    norms = ["none", "mean_spine", "spine", "screen", "relative", "spine_align", "mean_spine_align"]
-    for norm_type in norms:
-        try:
-            print(norm_type)
-            cfg = TrainingConfig("xview_joints_" + norm_type, "stgcnpp", 80, "cuda:0", ["joints"], 64, 32,
-                                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.train.pkl", 64,
-                                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.test.pkl", 128, 8, 1,
-                                 20, norm_type, 0.1, 0.9, 0.0002, True, 0, "logs/augment_test2", True, 0.2, False)
-            train_network(cfg)
-        except FileExistsError as er:
-            print(er)
 
 if __name__ == "__main__2":
     sets = [
@@ -161,49 +149,18 @@ def find_divisors(N):
 
 
 if __name__ == "__main__":
-    for i in range(3):
-        for win_length in [64, 100, 60, 16, 32, 30]:
-            cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
-            cfg.window_length = win_length
-            for samples_per_win in find_divisors(win_length):
-                cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
-                cfg.samples_per_window = samples_per_win
-                print(cfg.to_yaml())
-                print(cfg.name)
-                train_network(cfg)
+    import torch
 
-    cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
-    cfg.window_length = 64
     for i in range(3):
-        for samples_per_win in [1, 2, 4, 8, 16, 32, 64]:
-            cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
-            cfg.samples_per_window = samples_per_win
-            print(cfg.to_yaml())
-            train_network(cfg)
-
-    cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
-    cfg.window_length = 100
-    for i in range(3):
-        for samples_per_win in [1, 2, 4, 5, 10, 20, 25, 50, 100]:
-            cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
-            cfg.samples_per_window = samples_per_win
-            print(cfg.to_yaml())
-            train_network(cfg)
-
-    cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
-    cfg.window_length = 32
-    for i in range(3):
-        for samples_per_win in [1, 2, 4, 8, 16, 32]:
-            cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
-            cfg.samples_per_window = samples_per_win
-            print(cfg.to_yaml())
-            train_network(cfg)
-
-    cfg = GeneralConfig.from_yaml_file("configs/general/default.yaml")
-    cfg.window_length = 16
-    for i in range(3):
-        for samples_per_win in [1, 2, 4, 8, 16]:
-            cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
-            cfg.samples_per_window = samples_per_win
-            print(cfg.to_yaml())
-            train_network(cfg)
+        for win_length in [16, 30, 32, 60, 64, 100]:
+            try:
+                cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
+                cfg.window_length = win_length
+                for samples_per_win in find_divisors(win_length):
+                    cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"
+                    cfg.samples_per_window = samples_per_win
+                    print(cfg.name)
+                    train_network(cfg)
+                    torch.cuda.empty_cache()
+            except DifferentConfigException as ex:
+                print(ex)

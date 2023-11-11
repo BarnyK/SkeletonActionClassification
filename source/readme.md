@@ -20,10 +20,10 @@ TODO:
 - [x] Support preprocessing from nturgb
 - [x] Continue training(1. compare cfgs, 2. check epochs recorded in log, 3. load model)
     -  [x] Load model ensure works
-- [ ] Evaluation from loaded model
+- [x] Evaluation from loaded model
 - [ ] 2P-GCN
 - [ ] Fix for alignement in mutual (double the bodies up front)
-- [ ] Single file + evaluation
+- [x] Single file + evaluation
 - [x] Visualization with windowing
 - [ ] Figure out a way to fill missing joints if all other are missing
 
@@ -31,5 +31,6 @@ GENERAL PIPELINE:
 
 - Generate skeletons
 - Preprocess skeletons
-- Train/Classify/Evaluate
+- Train
+- Classify/Evaluate
 

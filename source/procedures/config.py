@@ -1,7 +1,8 @@
 from __future__ import annotations
+from __future__ import annotations
 
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields, is_dataclass
 from typing import Union
 
 from dataclass_wizard import YAMLWizard
@@ -42,7 +43,7 @@ class TrainingConfig(YAMLWizard, key_transform='SNAKE'):
 
 @dataclass
 class PreprocessConfig(YAMLWizard, key_transform='SNAKE'):
-    processes: int = 0
+    processes: int = 12
     missing_file: str = ""
     split_strategy: list[str] = field(default_factory=lambda: datasets.all_splits)
 
@@ -132,6 +133,25 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
     @property
     def best_model_path(self) -> str:
         return os.path.join(self.log_folder, self.name, "best.pth")
+
+    @staticmethod
+    def compare(instance1: GeneralConfig, instance2: GeneralConfig) -> list[str]:
+        diffs = []
+        class_fields = fields(instance1)
+        for field_ in class_fields:
+            field_name = field_.name
+            value1 = getattr(instance1, field_name)
+            value2 = getattr(instance2, field_name)
+
+            if value1 != value2:
+                if is_dataclass(value1):
+                    diffs_nested = GeneralConfig.compare(value1, value2)
+                    diffs_nested = [f"{field_name}.{diff}" for diff in diffs_nested]
+                    diffs.extend(diffs_nested)
+                else:
+                    diffs.append(f"{field_name}: {value1} != {value2}")
+
+        return diffs
 
 
 if __name__ == "__main__":

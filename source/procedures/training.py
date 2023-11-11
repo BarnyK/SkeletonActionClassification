@@ -6,6 +6,7 @@ import re
 import shutil
 import time
 from datetime import timedelta
+from typing import Union
 
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
@@ -18,11 +19,11 @@ from datasets.sampler import Sampler
 from datasets.transform_wrappers import calculate_channels
 from models import create_stgcnpp
 from preprocessing.normalizations import create_norm_func, SpineNormalization, setup_norm_func, ScreenNormalization
-from procedures.config import TrainingConfig, GeneralConfig
+from procedures.config import GeneralConfig
+from shared.errors import DifferentConfigException
 from shared.helpers import parse_training_log
 
 logging.basicConfig(level=logging.INFO)  # Set the logging level to INFO (or other level of your choice)
-logger = logging.getLogger(__name__)
 
 
 def train_epoch(model, loss_func, loader, optimizer, scheduler, device):
@@ -89,15 +90,17 @@ def test_epoch(model, loader, loss_func, device):
     top1_accuracy = top1_count / sample_count
     top5_accuracy = top5_count / sample_count
     mean_loss = running_loss / len(loader)
-    logger.info(f"Top1 accuracy: {top1_accuracy:.2%}")
-    logger.info(f"Top5 accuracy: {top5_accuracy:.2%}")
-    logger.info(f"Mean loss: {mean_loss:.2}")
+
     return mean_loss, top1_accuracy, top5_accuracy
 
 
-def write_log(logs_path, text):
+def write_log(logs_path, texts: Union[str, list[str]]):
     with open(os.path.join(logs_path, "training.log", ), "a+") as f:
-        f.write(text + '\n')
+        if isinstance(texts, str):
+            f.write(texts + '\n')
+        elif isinstance(texts, list):
+            for text in texts:
+                f.write(text + '\n')
 
 
 def save_model(filename, model, optimizer, scheduler, norm_func):
@@ -154,6 +157,8 @@ def keep_best_models(logs_path, keep_best_n):
 def train_network(cfg: GeneralConfig):
     t_cfg = cfg.train_config
     e_cfg = cfg.eval_config
+
+    logger = logging.getLogger(cfg.name)
     logger.info("Starting training")
     logger.info(f"Using {cfg.features}")
 
@@ -166,7 +171,8 @@ def train_network(cfg: GeneralConfig):
         existing_cfg_path = os.path.join(logs_path, "config.yaml")
         existing_cfg = GeneralConfig.from_yaml_file(existing_cfg_path)
         if existing_cfg != cfg:
-            raise ValueError("Existing config is different to the current one")
+            diffs = GeneralConfig.compare(existing_cfg, cfg)
+            raise DifferentConfigException(f"Existing config is different to the current one - {', '.join(diffs)}")
         if os.path.exists(os.path.join(cfg.best_model_path)):
             finished = True
         # load
@@ -223,26 +229,32 @@ def train_network(cfg: GeneralConfig):
     start_time = time.time()
     all_eval_stats = []
     for epoch in range(start_epoch, t_cfg.epochs):
+        log_queue = []
         logger.info(f"Current epoch: {epoch + 1}/{t_cfg.epochs}")
         train_start_time = time.time()
         training_stats = train_epoch(model, loss_func, train_loader, optimizer, scheduler, device)
         train_end_time = time.time()
 
-        write_log(logs_path, f"[{epoch}] - training stats - {','.join([str(x) for x in training_stats])}")
-        write_log(logs_path, f"[{epoch}] - training time - {timedelta(seconds=train_end_time - train_start_time)}")
+        log_queue.append(f"[{epoch}] - training stats - {','.join([str(x) for x in training_stats])}")
+        log_queue.append(f"[{epoch}] - training time - {timedelta(seconds=train_end_time - train_start_time)}")
 
         if (epoch + 1) % e_cfg.eval_interval == 0 or t_cfg.epochs - epoch - 1 < e_cfg.eval_last_n:
             eval_start_time = time.time()
             eval_stats = test_epoch(model, test_loader, loss_func, device)
             eval_end_time = time.time()
             all_eval_stats.append((epoch, *eval_stats))
+            logger.info(f"Top1 accuracy: {eval_stats[1]:.2%}")
+            logger.info(f"Top5 accuracy: {eval_stats[2]:.2%}")
+            logger.info(f"Mean loss: {eval_stats[0]:.2}")
 
-            write_log(logs_path, f"[{epoch}] - eval stats - {','.join([str(x) for x in eval_stats])}")
-            write_log(logs_path, f"[{epoch}] - eval time - {timedelta(seconds=eval_end_time - eval_start_time)}")
+            log_queue.append(f"[{epoch}] - eval stats - {','.join([str(x) for x in eval_stats])}")
+            log_queue.append(f"[{epoch}] - eval time - {timedelta(seconds=eval_end_time - eval_start_time)}")
 
         # Save model
         model_path = os.path.join(logs_path, "models", f"epoch_{epoch}.pth")
         save_model(model_path, model, optimizer, scheduler, norm_func)
+
+        write_log(logs_path, log_queue)
 
         # Print ETA
         remaining_time = ((time.time() - start_time) / (epoch - start_epoch + 1)) * (t_cfg.epochs - (epoch + 1))
@@ -289,16 +301,3 @@ def create_dataloaders(cfg: GeneralConfig):
     )
     test_loader = DataLoader(test_set, cfg.eval_config.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
     return test_loader, train_loader, test_set, train_set, norm_func
-
-
-def main():
-    cfg = TrainingConfig("base_joints", "stgcnpp", 80, "cuda:0", ["joints"], 64, 32,
-                         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.train.pkl", 64,
-                         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xsub.test.pkl", 128, 8, 1, 0.1,
-                         0.9, 0.0002, True, 0.00001)
-    train_network(cfg)
-
-
-if __name__ == "__main__":
-    keep_best_models('/media/barny/SSD4/MasterThesis/Data/logs/default_16_1_0/', 5
-                     )

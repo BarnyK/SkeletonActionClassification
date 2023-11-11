@@ -1,0 +1,2 @@
+class DifferentConfigException(Exception):
+    pass
