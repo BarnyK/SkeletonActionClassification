@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Union
+
 import torch
 from torch.utils.data import DataLoader
 
@@ -12,7 +14,7 @@ from procedures.config import GeneralConfig
 from procedures.training import test_epoch, load_model
 
 
-def evaluate(cfg: GeneralConfig):
+def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None):
     norm_func = create_norm_func(cfg.normalization_type)
     test_sampler = Sampler(cfg.window_length, cfg.samples_per_window, True, cfg.eval_config.test_clips_count)
     test_set = PoseDataset(
@@ -33,7 +35,9 @@ def evaluate(cfg: GeneralConfig):
         raise ValueError("2p-gcn not supported yet")
 
     # load
-    state_dict = load_model(cfg.best_model_path, model, None, None, device)
+    if model_path is None:
+        model_path = cfg.best_model_path
+    state_dict = load_model(model_path, model, None, None, device)
     if norm_state_dict := state_dict.get("normalization"):
         setup_norm_func(norm_func, state_dict=norm_state_dict)
     else:
@@ -50,4 +54,4 @@ if __name__ == "__main__":
     print(cfg)
     cfg.device = "cuda"
     cfg.eval_config.test_batch_size = 1
-    evaluate(cfg)
+    evaluate(cfg, None)
