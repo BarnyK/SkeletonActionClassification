@@ -1,5 +1,5 @@
-from argparse import Namespace
 import os
+from argparse import Namespace
 
 import torch
 from tqdm import tqdm

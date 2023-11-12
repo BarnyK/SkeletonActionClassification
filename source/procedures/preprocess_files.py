@@ -103,6 +103,7 @@ def preprocess_files_to_file(files: list[str], output_path: str, cfg: Preprocess
             continue
         data.save(out_file)
 
+
 def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: PreprocessConfig):
     assert os.path.isdir(output_path)
     files = []

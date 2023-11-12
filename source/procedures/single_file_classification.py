@@ -77,7 +77,7 @@ def aggregate_results(window_results: list[tuple[int, int, torch.Tensor], ...]) 
     return out
 
 
-def single_file_classification(filename, cfg: GeneralConfig,  model_path: Union[str, None] = None):
+def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[str, None] = None):
     assert os.path.isfile(filename)
 
     # Setup
@@ -175,7 +175,8 @@ def single_file_classification(filename, cfg: GeneralConfig,  model_path: Union[
 
     et = time.time()
     print(wc / (et - st))
-    for res in results: print(res)
+    for res in results:
+        print(res)
     out = aggregate_results(window_results)
     print(out)
 
@@ -197,6 +198,6 @@ if __name__ == "__main__":
     config = GeneralConfig.from_yaml_file("/media/barny/SSD4/MasterThesis/Data/logs/default_64_32_0/config.yaml")
     config.interlace = 16
     single_file_classification("/media/barny/SSD4/MasterThesis/Data/concatenated.1.avi", config)
-    single_file_classification("/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb/S001C001P001R001A006_rgb.avi", config)
+    # single_file_classification("/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb/S001C001P001R001A006_rgb.avi", config)
     # single_file_classification("/media/barny/SSD4/MasterThesis/Data/concatenated.2.avi", config)
     # single_file_classification("/media/barny/SSD4/MasterThesis/Data/concatenated.2.avi", config)

@@ -62,7 +62,6 @@ def handle_eval(args: Namespace):
 
     evaluate(cfg, args.model)
 
-
 # if __name__ == "__main__":
 #     cfg = GeneralConfig.from_yaml_file("/media/barny/SSD4/MasterThesis/Data/logs/default_64_32_0/config.yaml")
 #     print(cfg)

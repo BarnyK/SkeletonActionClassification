@@ -129,6 +129,7 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
     pose_config: PoseEstimationConfig = PoseEstimationConfig()
     prep_config: PreprocessConfig = PreprocessConfig()
     log_folder: str = "logs"
+    dataset: str = "ntu"
 
     @property
     def best_model_path(self) -> str:
