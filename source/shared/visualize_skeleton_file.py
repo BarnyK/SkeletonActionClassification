@@ -70,7 +70,8 @@ def draw_text_with_outline(image, point, text, font_size):
 
 def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, window_name: str = "visualization",
               draw_bbox: bool = False, draw_frame_number: bool = False, draw_confidences: bool = False,
-              skip_frames: bool = False, save_file: str = None, draw_point_number: bool = False):
+              skip_frames: bool = False, save_file: str = None, draw_point_number: bool = False,
+              print_frame_text: bool = False):
     skeleton_type = skeleton_data.type
     limb_pairs = drawn_limbs_map.get(skeleton_type)
     if limb_pairs is None:
@@ -127,9 +128,11 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
             cv2.waitKey(wait_key)
             continue
 
-        skel = skeleton_data.frames[i // interval]
+        frame_data = skeleton_data.frames[i // interval]
+        if print_frame_text and frame_data.text:
+            draw_text_with_outline(frame, (50, 50), frame_data.text, 1)
         skeleton_color = (255, 0, 255)
-        for body in skel.bodies:
+        for body in frame_data.bodies:
             skeleton_color = (skeleton_color[1], skeleton_color[2], skeleton_color[0])
             if body.tid is not None:
                 skeleton_color = tracking_colors[body.tid % len(tracking_colors)]

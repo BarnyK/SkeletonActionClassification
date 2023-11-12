@@ -44,6 +44,7 @@ class FrameData:
     seqId: int
     count: int
     bodies: List[Body]
+    text: str = ""  #: used for visualization
 
     def __post_init__(self):
         def assert_body(x) -> Body:

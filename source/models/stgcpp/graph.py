@@ -1,6 +1,8 @@
 import numpy as np
 import torch
 
+from shared.skeletons import ntu_coco, coco, ntu
+
 
 def k_adjacency(A, k, with_self=False, self_factor=1):
     # A is a 2D square array
@@ -83,7 +85,7 @@ class Graph:
         self.nx_node = nx_node
 
         assert nx_node == 1 or mode == 'random', "nx_node can be > 1 only if mode is 'random'"
-        assert layout in ['openpose', 'nturgb+d', 'coco', 'handmp']
+        assert layout in ['ntu', 'coco17', 'ntu_coco']
 
         self.get_layout(layout)
         self.hop_dis = get_hop_distance(self.num_node, self.inward, max_hop)
@@ -95,40 +97,18 @@ class Graph:
         return self.A
 
     def get_layout(self, layout):
-        if layout == 'openpose':
-            self.num_node = 18
-            self.inward = [
-                (4, 3), (3, 2), (7, 6), (6, 5), (13, 12), (12, 11), (10, 9),
-                (9, 8), (11, 5), (8, 2), (5, 1), (2, 1), (0, 1), (15, 0),
-                (14, 0), (17, 15), (16, 14)
-            ]
-            self.center = 1
-        elif layout == 'nturgb+d':
-            self.num_node = 25
-            neighbor_base = [
-                (1, 2), (2, 21), (3, 21), (4, 3), (5, 21), (6, 5), (7, 6),
-                (8, 7), (9, 21), (10, 9), (11, 10), (12, 11), (13, 1),
-                (14, 13), (15, 14), (16, 15), (17, 1), (18, 17), (19, 18),
-                (20, 19), (22, 8), (23, 8), (24, 12), (25, 12)
-            ]
-            self.inward = [(i - 1, j - 1) for (i, j) in neighbor_base]
-            self.center = 21 - 1
-        elif layout == 'coco':
-            self.num_node = 17
-            self.inward = [
-                (15, 13), (13, 11), (16, 14), (14, 12), (11, 5), (12, 6),
-                (9, 7), (7, 5), (10, 8), (8, 6), (5, 0), (6, 0),
-                (1, 0), (3, 1), (2, 0), (4, 2)
-            ]
-            self.center = 0
-        elif layout == 'handmp':
-            self.num_node = 21
-            self.inward = [
-                (1, 0), (2, 1), (3, 2), (4, 3), (5, 0), (6, 5), (7, 6), (8, 7),
-                (9, 0), (10, 9), (11, 10), (12, 11), (13, 0), (14, 13),
-                (15, 14), (16, 15), (17, 0), (18, 17), (19, 18), (20, 19)
-            ]
-            self.center = 0
+        if layout == 'ntu':
+            self.num_node = ntu.num_nodes
+            self.inward = ntu.edges
+            self.center = ntu.center
+        elif layout == 'coco17':
+            self.num_node = coco.num_nodes
+            self.inward = coco.edges
+            self.center = coco.center
+        elif layout == "ntu_coco":
+            self.num_node = ntu_coco.num_nodes
+            self.inward = ntu_coco.edges
+            self.center = ntu_coco.center
         else:
             raise ValueError(f'Do Not Exist This Layout: {layout}')
         self.self_link = [(i, i) for i in range(self.num_node)]

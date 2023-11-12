@@ -1,6 +1,5 @@
 import os
 
-import datasets
 import shared.datasets
 from procedures.config import PreprocessConfig, TrainingConfig, GeneralConfig
 from procedures.generate_alphapose_skeletons import gen_alphapose_skeletons
@@ -151,6 +150,32 @@ def find_divisors(N):
     return [i for i in range(1, N + 1) if N % i == 0]
 
 
+
+
+if __name__ == "__main__":
+    import torch
+
+    for i in range(2):
+        cfg = GeneralConfig.from_yaml_file("configs/general/ntu_xview.yaml")
+        cfg.name = cfg.name + f"_{i}"
+        train_network(cfg)
+        torch.cuda.empty_cache()
+
+        cfg = GeneralConfig.from_yaml_file("configs/general/ntu_xsub.yaml")
+        cfg.name = cfg.name + f"_{i}"
+        train_network(cfg)
+        torch.cuda.empty_cache()
+
+        cfg = GeneralConfig.from_yaml_file("configs/general/ntu_transform_xview.yaml")
+        cfg.name = cfg.name + f"_{i}"
+        train_network(cfg)
+        torch.cuda.empty_cache()
+
+        cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_transformed_xview.yaml")
+        cfg.name = cfg.name + f"_{i}"
+        train_network(cfg)
+        torch.cuda.empty_cache()
+
 if __name__ == "__main__":
     import torch
 
@@ -158,6 +183,8 @@ if __name__ == "__main__":
         for win_length in [16, 30, 32, 60, 64, 100]:
             try:
                 cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
+                cfg.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/window_tests/"
+                cfg.eval_config.output_path = "/media/barny/SSD4/MasterThesis/Data/logs/window_tests/"
                 cfg.window_length = win_length
                 for samples_per_win in find_divisors(win_length):
                     cfg.name = f"default_{cfg.window_length}_{samples_per_win}_{i}"

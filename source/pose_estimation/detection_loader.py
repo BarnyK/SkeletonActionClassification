@@ -29,7 +29,7 @@ def every_nth_frame(video_capture, n):
 
         if not ret:
             break
-
+    yield False, None
 
 class DetectionLoader:
     def __init__(

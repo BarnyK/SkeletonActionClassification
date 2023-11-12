@@ -21,9 +21,10 @@ from preprocessing.normalizations import create_norm_func, setup_norm_func
 from procedures.config import GeneralConfig
 from procedures.preprocess_files import _preprocess_data_ap
 from procedures.training import load_model
+from shared.datasets import adjusted_actions_maps
 from shared.helpers import calculate_interval
-from shared.statics import all_actions
 from shared.structs import SkeletonData, FrameData
+from shared.visualize_skeleton_file import visualize
 
 
 def window_worker(
@@ -36,6 +37,7 @@ def window_worker(
             break
         x = FrameData(i, len(data), data)
         window.append(x)
+        tqdm.write(f"{len(window)}")
         if len(window) == length:
             q.put(window)
             window = window[-interlace:]
@@ -135,10 +137,14 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     wc = 0
     results = []
     window_results = []
+    unique_frames = []
     while True:
         frames: list[FrameData] = window_queue.get()
         if frames is None:
             break
+        for frame in frames:
+            if frame.seqId not in [x.seqId for x in unique_frames]:
+                unique_frames.append(deepcopy(frame))
         start_frame, end_frame = frames[0].seqId, frames[-1].seqId
         wc += 1
         data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
@@ -147,7 +153,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
         if data.length != cfg.samples_per_window:
             fill_frames(data, cfg.samples_per_window)
         _preprocess_data_ap(data, cfg.prep_config)
-        points = points = data.to_matrix()
+        points = data.to_matrix()
         if points is None:
             continue
         points = norm_func(points)
@@ -170,15 +176,23 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
             out = model(features)
             top5 = torch.topk(out, 5)[1]
         # Save result
-        results.append(tuple(all_actions[x + 1] for x in top5[0].tolist()))
+        results.append(tuple(x for x in top5[0].tolist()))
         window_results.append((start_frame, end_frame, out[0].cpu()))
 
+    action_map = adjusted_actions_maps[cfg.dataset]
     et = time.time()
     print(wc / (et - st))
     for res in results:
-        print(res)
+        print([action_map[x] for x in res])
     out = aggregate_results(window_results)
     print(out)
+
+    total_data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
+                              len(unique_frames), unique_frames, len(unique_frames), det_loader.frameSize,
+                              frame_interval)
+    for frame, action_id in zip(total_data.frames, out):
+        frame.text = action_map[action_id]
+    visualize(total_data, total_data.video_file, 1000//15,print_frame_text=True, skip_frames=True)
 
 
 def handle_classify(args: Namespace):
@@ -195,9 +209,11 @@ def handle_classify(args: Namespace):
 
 
 if __name__ == "__main__":
-    config = GeneralConfig.from_yaml_file("/media/barny/SSD4/MasterThesis/Data/logs/default_64_32_0/config.yaml")
+    config = GeneralConfig.from_yaml_file("/media/barny/SSD4/MasterThesis/Data/logs/default_64_32_2/config.yaml")
     config.interlace = 16
-    single_file_classification("/media/barny/SSD4/MasterThesis/Data/concatenated.1.avi", config)
+    #single_file_classification("/media/barny/SSD4/MasterThesis/Data/concatenated.1.avi", config)
+    single_file_classification("/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq1.avi", config)
+
     # single_file_classification("/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb/S001C001P001R001A006_rgb.avi", config)
     # single_file_classification("/media/barny/SSD4/MasterThesis/Data/concatenated.2.avi", config)
     # single_file_classification("/media/barny/SSD4/MasterThesis/Data/concatenated.2.avi", config)
