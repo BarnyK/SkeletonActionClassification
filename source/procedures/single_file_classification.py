@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import os
 import time
+from argparse import Namespace
 from collections import defaultdict
 from copy import deepcopy
 from queue import Queue
 from threading import Thread
+from typing import Union
 
 import torch
 from tqdm import tqdm
@@ -60,7 +62,7 @@ def fill_frames(data: SkeletonData, size: int):
     data.length = data.lengthB = size
 
 
-def aggregate_results(window_results: tuple[int, int, torch.Tensor]) -> list[int, ...]:
+def aggregate_results(window_results: list[tuple[int, int, torch.Tensor], ...]) -> list[int, ...]:
     per_frame = defaultdict(list)
     for start_frame, end_frame, data in window_results:
         for fi in range(start_frame, end_frame + 1):
@@ -75,7 +77,7 @@ def aggregate_results(window_results: tuple[int, int, torch.Tensor]) -> list[int
     return out
 
 
-def single_file_classification(filename, cfg: GeneralConfig):
+def single_file_classification(filename, cfg: GeneralConfig,  model_path: Union[str, None] = None):
     assert os.path.isfile(filename)
 
     # Setup
@@ -105,8 +107,9 @@ def single_file_classification(filename, cfg: GeneralConfig):
 
     # Classification
     norm_func = create_norm_func(cfg.normalization_type)
-
-    state_dict = load_model(cfg.best_model_path, None, None, None, device)
+    if not model_path:
+        model_path = cfg.best_model_path
+    state_dict = load_model(model_path, None, None, None, device)
     num_classes = state_dict['net'][[x for x in state_dict['net'].keys()][-1]].shape[0]
 
     channels = calculate_channels(cfg.features, 2)
@@ -175,6 +178,19 @@ def single_file_classification(filename, cfg: GeneralConfig):
     for res in results: print(res)
     out = aggregate_results(window_results)
     print(out)
+
+
+def handle_classify(args: Namespace):
+    cfg = GeneralConfig.from_yaml_file(args.config)
+    if not os.path.isfile(args.video_file):
+        print(f"{args.video_file} does not exist")
+        return False
+    if args.model and not os.path.isfile(args.model):
+        print(f"{args.model} does not exist")
+        return False
+
+    ## TODO method mean/window
+    single_file_classification(args.video_file, cfg)
 
 
 if __name__ == "__main__":

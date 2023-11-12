@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import os
+from argparse import Namespace
 from typing import Union
 
 import torch
@@ -35,7 +37,7 @@ def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None):
         raise ValueError("2p-gcn not supported yet")
 
     # load
-    if model_path is None:
+    if not model_path:
         model_path = cfg.best_model_path
     state_dict = load_model(model_path, model, None, None, device)
     if norm_state_dict := state_dict.get("normalization"):
@@ -49,9 +51,21 @@ def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None):
     print(stats)
 
 
-if __name__ == "__main__":
-    cfg = GeneralConfig.from_yaml_file("/media/barny/SSD4/MasterThesis/Data/logs/default_64_32_0/config.yaml")
-    print(cfg)
-    cfg.device = "cuda"
-    cfg.eval_config.test_batch_size = 1
-    evaluate(cfg, None)
+def handle_eval(args: Namespace):
+    cfg = GeneralConfig.from_yaml_file(args.config)
+    if not os.path.isfile(args.video_file):
+        print(f"{args.video_file} does not exist")
+        return False
+    if args.model and not os.path.isfile(args.model):
+        print(f"{args.model} does not exist")
+        return False
+
+    evaluate(cfg, args.model)
+
+
+# if __name__ == "__main__":
+#     cfg = GeneralConfig.from_yaml_file("/media/barny/SSD4/MasterThesis/Data/logs/default_64_32_0/config.yaml")
+#     print(cfg)
+#     cfg.device = "cuda"
+#     cfg.eval_config.test_batch_size = 1
+#     evaluate(cfg, None)
