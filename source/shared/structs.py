@@ -135,7 +135,7 @@ class SkeletonData:
         tids = self.get_all_tids()
         if len(tids) == 0:
             return None
-        M, T, (V, N) = len(tids), self.length, self.get_points_shape()
+        M, T, (V, N) = len(tids), self.lengthB, self.get_points_shape()
 
         mat = np.zeros((M, T, V, N), dtype=np.float32)
         for i, tid in enumerate(tids):
@@ -154,7 +154,7 @@ class SkeletonData:
 
     def to_matrix_confidences(self) -> np.ndarray:
         tids = self.get_all_tids()
-        M, T, (V, _) = len(tids), self.length, self.get_points_shape()
+        M, T, (V, _) = len(tids), self.lengthB, self.get_points_shape()
 
         mat = np.zeros((M, T, V, 1), dtype=np.float32)
         for i, tid in enumerate(tids):

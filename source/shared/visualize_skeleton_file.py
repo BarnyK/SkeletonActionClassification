@@ -7,66 +7,6 @@ from shared.skeletons import drawn_limbs_map, draw_preparation_func_map
 from shared.structs import SkeletonData
 
 limbs = {
-    "coco17": [
-        (0, 1),
-        (0, 2),
-        (1, 3),
-        (2, 4),
-        (5, 6),
-        (5, 7),
-        (7, 9),
-        (6, 8),
-        (8, 10),
-        (17, 11),
-        (17, 12),
-        (11, 13),
-        (12, 14),
-        (13, 15),
-        (14, 16),
-    ],
-    "mpii": [
-        (8, 9),
-        (11, 12),
-        (11, 10),
-        (2, 1),
-        (1, 0),
-        (13, 14),
-        (14, 15),
-        (3, 4),
-        (4, 5),
-        (8, 7),
-        (7, 6),
-        (6, 2),
-        (6, 3),
-        (8, 12),
-        (8, 13),
-    ],
-    "ntu": [
-        (0, 1),
-        (1, 20),
-        (2, 20),
-        (2, 3),
-        (0, 16),
-        (16, 17),
-        (17, 18),
-        (18, 19),
-        (20, 8),
-        (8, 9),
-        (9, 10),
-        (10, 11),
-        (11, 24),
-        (23, 24),
-        (20, 4),
-        (4, 5),
-        (5, 6),
-        (6, 7),
-        (7, 22),
-        (22, 21),
-        (0, 12),
-        (12, 13),
-        (13, 14),
-        (14, 15)
-    ],
     "halpe": [
         (0, 1),
         (0, 2),
@@ -130,7 +70,7 @@ def draw_text_with_outline(image, point, text, font_size):
 
 def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, window_name: str = "visualization",
               draw_bbox: bool = True, draw_frame_number: bool = False, draw_confidences: bool = False,
-              skip_frames: bool = False):
+              skip_frames: bool = False, save_file: str = None, draw_point_number: bool = False):
     skeleton_type = skeleton_data.type
     limb_pairs = drawn_limbs_map.get(skeleton_type)
     if limb_pairs is None:
@@ -147,7 +87,10 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
         int(video_stream.get(cv2.CAP_PROP_FRAME_HEIGHT)),
     )
     fps = video_stream.get(cv2.CAP_PROP_FPS)
-    length = min(skeleton_data.length, skeleton_data.lengthB)
+    out_stream = None
+    if save_file:
+        fourcc = cv2.VideoWriter_fourcc(*'XVID')
+        out_stream = cv2.VideoWriter(save_file, fourcc, fps, frame_size)
 
     if skip_frames:
         wrapped_stream = every_nth_frame(video_stream, skeleton_data.frame_interval)
@@ -166,7 +109,20 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
         if draw_frame_number:
             draw_text_with_outline(frame, (50, 50), str(i), 1)
 
+        # Skip skeleton frame
         if not skip_frames and i % interval != 0:
+            if save_file:
+                out_stream.write(frame)
+                continue
+            cv2.imshow(window_name, frame)
+            cv2.waitKey(wait_key)
+            continue
+
+        # Frames from skeleton data ended
+        if i // interval >= len(skeleton_data.frames):
+            if save_file:
+                out_stream.write(frame)
+                continue
             cv2.imshow(window_name, frame)
             cv2.waitKey(wait_key)
             continue
@@ -210,17 +166,23 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
             # Draw points
             for ii, point in enumerate(points):
                 point = (int(point[0]), int(point[1]))
-                draw_text_with_outline(frame, point, str(ii), 5 / 10)
+                if draw_point_number:
+                    draw_text_with_outline(frame, point, str(ii), 5 / 10)
 
                 if ii in []:
                     cv2.circle(frame, point, 10, (0, 0, 255), -1)
                 else:
                     cv2.circle(frame, point, 4, skeleton_color, -1)
 
+        if save_file:
+            out_stream.write(frame)
+            continue
         cv2.imshow(window_name, frame)
         cv2.waitKey(wait_key)
 
     video_stream.release()
+    if save_file:
+        out_stream.release()
     cv2.destroyAllWindows()
 
 

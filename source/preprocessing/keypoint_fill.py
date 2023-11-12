@@ -47,7 +47,7 @@ def interpolation_fill(data: SkeletonData, tid: int, threshold: float = 0.3):
             if body.tid == tid:
                 bodies.append(body)
                 break
-    assert len(bodies) == data.length
+    assert len(bodies) == data.lengthB
 
     keypoint_count = bodies[0].poseXY.shape[0]
     for keypoint_index in range(keypoint_count):

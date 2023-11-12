@@ -1,4 +1,5 @@
 import datasets.ntu_splits
+import datasets.ut_splits
 from datasets.transform_wrappers import TransformsList, TransformsDict, TransformsNameList
 
 split_map = {
@@ -10,5 +11,7 @@ split_map = {
     "ntu_mutual_xview": ntu_splits.ntu_mutual_xview_split,
     "ntu120_mutual_xset": ntu_splits.ntu120_mutual_xset_split,
     "ntu120_mutual_xsub": ntu_splits.ntu120_mutual_xsub_split,
+    "ut_whole_train": ut_splits.ut_whole_train,
+    "ut_whole_test": ut_splits.ut_whole_test,
 }
 all_splits = [x for x in split_map.keys()]

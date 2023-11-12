@@ -66,7 +66,7 @@ def _preprocess_data_ap(data: SkeletonData, cfg: PreprocessConfig) -> SkeletonDa
     return data
 
 
-def preprocess_file(in_file: str, cfg: PreprocessConfig):
+def preprocess_file(in_file: str, cfg: PreprocessConfig, return_raw_data: bool = False):
     if cfg.alphapose_skeletons:
         data = SkeletonData.load(in_file)
         _preprocess_data_ap(data, cfg)
@@ -86,9 +86,22 @@ def preprocess_file(in_file: str, cfg: PreprocessConfig):
     except ValueError:
         tqdm.write(f"Empty bodies in: {in_file}")
         return in_file, None
+
     # Should be of shape, M, T, V, C
+    if return_raw_data:
+        return data
     return data.dataset_info, mat, confMat, data.type, data.original_image_shape
 
+
+def preprocess_files_to_file(files: list[str], output_path: str, cfg: PreprocessConfig):
+    assert os.path.isdir(output_path)
+    for file in files:
+        out_file = os.path.join(output_path, os.path.split(file)[-1])
+        data = preprocess_file(file, cfg, True)
+        if not isinstance(data, SkeletonData):
+            print("Something went wrong during preprocessing")
+            continue
+        data.save(out_file)
 
 def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: PreprocessConfig):
     assert os.path.isdir(output_path)
@@ -134,12 +147,12 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: P
         tqdm.write(f"\tTrain: {len(train_split['action'])}")
         tqdm.write(f"\tTest: {len(test_split['action'])}")
 
-        if len(train_split) > 0:
+        if len(train_split['action']) > 0:
             train_filename = os.path.join(output_path, f"{strategy}.train.pkl")
             with open(train_filename, "wb") as f:
                 pickle.dump(train_split, f)
 
-        if len(test_split) > 0:
+        if len(test_split['action']) > 0:
             test_filename = os.path.join(output_path, f"{strategy}.test.pkl")
             with open(test_filename, "wb") as f:
                 pickle.dump(test_split, f)
@@ -158,8 +171,8 @@ def handle_preprocess(args: Namespace):
         preprocess_files(args.inputs, args.save_path, cfg.prep_config)
         return True
     elif all(file_check):
-        raise NotImplementedError  # TODO
-        # handle all files
+        preprocess_files_to_file(args.inputs, args.save_path, cfg.prep_config)
+        return True
     else:
         print("Inputs are invalid.")
         if any(file_check) or any(dir_check):
@@ -167,3 +180,12 @@ def handle_preprocess(args: Namespace):
         else:
             print("Some of the paths are invalid")
         return False
+
+
+if __name__ == "__main__":
+    cfg = GeneralConfig.from_yaml_file("./configs/general/ut_test_conf.yaml")
+    cfg.prep_config.processes = 0
+    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set1_coco",
+                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set2_coco"],
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_ut_test1",
+                     cfg.prep_config)

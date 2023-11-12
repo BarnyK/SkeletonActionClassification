@@ -62,7 +62,7 @@ def main():
     visualize_parser.add_argument("skeleton_file", help="Input file. Can be NTU or Alphapose skeleton file")
     visualize_parser.add_argument("video_file", help="Video file that will be played with skeletons")
     # TODO ARG
-    visualize_parser.add_argument("--save", default="", help="Save video file")
+    visualize_parser.add_argument("--save-file", default="", help="Save video file to file")
 
     args = parser.parse_args()
     print(args)
