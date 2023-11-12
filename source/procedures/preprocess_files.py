@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from argparse import Namespace
 import multiprocessing
 import os
 import pickle
+from argparse import Namespace
 from functools import partial
 from typing import Union
 
@@ -134,13 +134,15 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: P
         tqdm.write(f"\tTrain: {len(train_split['action'])}")
         tqdm.write(f"\tTest: {len(test_split['action'])}")
 
-        train_filename = os.path.join(output_path, f"{strategy}.train.pkl")
-        with open(train_filename, "wb") as f:
-            pickle.dump(train_split, f)
+        if len(train_split) > 0:
+            train_filename = os.path.join(output_path, f"{strategy}.train.pkl")
+            with open(train_filename, "wb") as f:
+                pickle.dump(train_split, f)
 
-        test_filename = os.path.join(output_path, f"{strategy}.test.pkl")
-        with open(test_filename, "wb") as f:
-            pickle.dump(test_split, f)
+        if len(test_split) > 0:
+            test_filename = os.path.join(output_path, f"{strategy}.test.pkl")
+            with open(test_filename, "wb") as f:
+                pickle.dump(test_split, f)
 
 
 def handle_preprocess(args: Namespace):
@@ -165,17 +167,3 @@ def handle_preprocess(args: Namespace):
         else:
             print("Some of the paths are invalid")
         return False
-
-
-if __name__ == '__main__':
-    from procedures.config import GeneralConfig
-
-    # ./configs/general/ntu_xview.yaml ~/MasterThesis/Data/nturgb+d_skeletons/ ~/MasterThesis/Data/nturgb+d_skeletons_120/ --save-path /media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test2
-    cfg = GeneralConfig.from_yaml_file("./configs/general/ntu_xview.yaml")
-    print(cfg.prep_config.to_yaml())
-    cfg.prep_config.transform_to_combined = True
-    cfg.prep_config.processes = 0
-    preprocess_files(["/home/barny/MasterThesis/Data/nturgb+d_skeletons",
-                      "/home/barny/MasterThesis/Data/nturgb+d_skeletons_120/"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test3",
-                     cfg.prep_config)

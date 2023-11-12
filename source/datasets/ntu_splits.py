@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import numpy as np
 
+from shared.helpers import tuple_list_to_dict
+
 NTU_ACTIONS = set([i + 1 for i in range(60)])
 NTU120_ACTIONS = set([i + 1 for i in range(120)])
 MUTUAL_ACTIONS = set([i for i in range(50, 61)] + [i for i in range(106, 121)])
@@ -13,13 +15,6 @@ XSUB = {
 }
 XVIEW = {2, 3}
 XSET = set(range(2, 33, 2))
-
-
-def __tuplist_to_dict(lista: list[tuple], keys: list[str]):
-    res = {}
-    for i, key in enumerate(keys):
-        res[key] = [x[i] for x in lista]
-    return res
 
 
 def ntu_split_factory(ntu_ver: int, param_key: str, train_set: set[int], mutual: bool = False):
@@ -47,10 +42,10 @@ def ntu_split_factory(ntu_ver: int, param_key: str, train_set: set[int], mutual:
             else:
                 test_split.append(tup_data)
 
-        train_split = __tuplist_to_dict(train_split, keys)
+        train_split = tuple_list_to_dict(train_split, keys)
         train_split['skeleton_type'] = data[0][3]
         train_split['im_shape'] = data[0][4]
-        test_split = __tuplist_to_dict(test_split, keys)
+        test_split = tuple_list_to_dict(test_split, keys)
         test_split['skeleton_type'] = data[0][3]
         test_split['im_shape'] = data[0][4]
         return train_split, test_split
@@ -67,3 +62,8 @@ ntu_mutual_xsub_split = ntu_split_factory(60, "person", XSUB, True)
 ntu_mutual_xview_split = ntu_split_factory(60, "camera", XVIEW, True)
 ntu120_mutual_xset_split = ntu_split_factory(120, "set", XSET, True)
 ntu120_mutual_xsub_split = ntu_split_factory(120, "person", XSUB, True)
+
+ntu_whole_train = ntu_split_factory(60, "action", NTU_ACTIONS)
+ntu_whole_test = ntu_split_factory(60, "person", set())
+ntu120_whole_train = ntu_split_factory(120, "action", NTU120_ACTIONS)
+ntu120_whole_test = ntu_split_factory(120, "person", set())

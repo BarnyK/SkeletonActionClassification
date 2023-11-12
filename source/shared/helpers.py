@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 from os import path
 from typing import List, Tuple
@@ -78,3 +80,10 @@ def folder_check(folder: str):
             print(ex)
             return False
     return True
+
+
+def tuple_list_to_dict(lista: list[tuple], keys: list[str]):
+    res = {}
+    for i, key in enumerate(keys):
+        res[key] = [x[i] for x in lista]
+    return res
