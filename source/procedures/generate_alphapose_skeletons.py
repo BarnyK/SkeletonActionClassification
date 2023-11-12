@@ -1,3 +1,4 @@
+from argparse import Namespace
 import os
 
 import torch
@@ -8,6 +9,7 @@ from pose_estimation.helpers import init_detector, init_pose_model, read_ap_conf
 from pose_estimation.pose_worker import run_pose_worker
 from procedures.config import GeneralConfig
 from shared.dataset_info import name_info_func_map
+from shared.helpers import folder_check
 from shared.structs import SkeletonData, FrameData
 
 
@@ -81,6 +83,16 @@ def gen_alphapose_skeletons(
         except Exception as ex:
             print(file, file_i, ex)
             raise ex
+
+
+def handle_generate(args: Namespace):
+    if not os.path.isdir(args.input_folder):
+        print(f"{args.input_folder} does not exist")
+        return False
+    if not folder_check(args.output_folder):
+        return False
+    cfg = GeneralConfig.from_yaml_file(args.config)
+    gen_alphapose_skeletons(args.input_folder, args.output_folder, cfg)
 
 
 def testing():

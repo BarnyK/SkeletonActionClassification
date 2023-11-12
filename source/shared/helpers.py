@@ -67,3 +67,14 @@ def parse_training_log(filename):
     eval_times = [x for x in times if "eval" in x[1]]
 
     return train_stats, train_times, eval_stats, eval_times
+
+
+def folder_check(folder: str):
+    if not os.path.isdir(folder):
+        try:
+            os.mkdir(folder)
+        except (FileExistsError, FileNotFoundError) as ex:
+            print(f"{folder} does not exist and couldn't have been created")
+            print(ex)
+            return False
+    return True

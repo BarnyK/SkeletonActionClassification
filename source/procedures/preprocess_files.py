@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from argparse import Namespace
 import multiprocessing
 import os
 import pickle
@@ -14,9 +15,10 @@ from preprocessing.keypoint_fill import keypoint_fill
 from preprocessing.nms import nms
 from preprocessing.tracking import pose_track, select_tracks_by_motion, assign_tids_by_order, select_by_order, \
     select_by_confidence, select_by_size, ntu_track_selection
-from procedures.config import PreprocessConfig
+from procedures.config import PreprocessConfig, GeneralConfig
 from shared import ntu_loader
 from shared.dataset_info import name_to_ntu_data
+from shared.helpers import folder_check
 from shared.skeletons import ntu_coco
 from shared.structs import SkeletonData
 
@@ -139,6 +141,30 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: P
         test_filename = os.path.join(output_path, f"{strategy}.test.pkl")
         with open(test_filename, "wb") as f:
             pickle.dump(test_split, f)
+
+
+def handle_preprocess(args: Namespace):
+    cfg = GeneralConfig.from_yaml_file(args.config)
+    if args.processes != -1:
+        cfg.prep_config.processes = args.processes
+    dir_check = [os.path.isdir(x) for x in args.inputs]
+    file_check = [os.path.isfile(x) for x in args.inputs]
+
+    if not folder_check(args.save_path):
+        return False
+    if all(dir_check):
+        preprocess_files(args.inputs, args.save_path, cfg.prep_config)
+        return True
+    elif all(file_check):
+        raise NotImplementedError  # TODO
+        # handle all files
+    else:
+        print("Inputs are invalid.")
+        if any(file_check) or any(dir_check):
+            print("Inputs contain both files and directories")
+        else:
+            print("Some of the paths are invalid")
+        return False
 
 
 if __name__ == '__main__':
