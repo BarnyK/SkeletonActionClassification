@@ -30,7 +30,7 @@ def handle_visualize(args: Namespace):
     if args.save_file and not os.path.isdir(os.path.split(args.save_file)[0]):
         print(f"Folder for {args.save_file} does not exist")
         return False
-    visualize_skeleton(args.skeleton_file, args.video_file, save_file=args.save_file)
+    visualize_skeleton(args.skeleton_file, args.video_file, save_file=args.save_file, draw_bbox=args.draw_bbox)
 
 
 if __name__ == "__main__":
