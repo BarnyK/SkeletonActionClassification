@@ -1,3 +1,5 @@
+from shared.datasets import ntu_splits, ut_splits, ntu_actions, ut_actions
+
 split_map = {
     "ntu_xsub": ntu_splits.ntu_xsub_split,
     "ntu_xview": ntu_splits.ntu_xview_split,
@@ -11,3 +13,19 @@ split_map = {
     "ut_whole_test": ut_splits.ut_whole_test,
 }
 all_splits = [x for x in split_map.keys()]
+
+actions_maps = {
+    "ntu": ntu_actions.ntu_actions,
+    "ntu120": ntu_actions.all_actions,
+    "ntu_mutual": ntu_actions.ntu_mutual,
+    "ntu120_mutual": ntu_actions.mutual,
+    "ut": ut_actions.all_actions
+}
+
+
+def zero_adjust_map(mapping: dict):
+    keys = sorted(list(mapping.keys()))
+    return {keys.index(x): y for x, y in mapping.items()}
+
+
+adjusted_actions_maps = {x: zero_adjust_map(y) for x, y in actions_maps.items()}
