@@ -9,7 +9,7 @@ from typing import Union
 
 from tqdm import tqdm
 
-import datasets
+import shared.datasets
 from preprocessing import skeleton_filters
 from preprocessing.keypoint_fill import keypoint_fill
 from preprocessing.nms import nms
@@ -142,7 +142,7 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: P
     results = [x for x in results if x[1] is not None]
 
     for strategy in cfg.split_strategy:
-        split_func = datasets.split_map[strategy]
+        split_func = shared.datasets.split_map[strategy]
         train_split, test_split = split_func(results)
         tqdm.write(f"{strategy}: {len(train_split['action']) + len(test_split['action'])}")
         tqdm.write(f"\tTrain: {len(train_split['action'])}")

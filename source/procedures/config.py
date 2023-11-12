@@ -7,7 +7,7 @@ from typing import Union
 
 from dataclass_wizard import YAMLWizard
 
-import datasets
+import shared.datasets
 
 
 @dataclass
@@ -45,7 +45,7 @@ class TrainingConfig(YAMLWizard, key_transform='SNAKE'):
 class PreprocessConfig(YAMLWizard, key_transform='SNAKE'):
     processes: int = 12
     missing_file: str = ""
-    split_strategy: list[str] = field(default_factory=lambda: datasets.all_splits)
+    split_strategy: list[str] = field(default_factory=lambda: shared.datasets.all_splits)
 
     use_box_conf: bool = True
     box_conf_threshold: float = 0.7

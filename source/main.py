@@ -1,6 +1,7 @@
 import os
 
 import datasets
+import shared.datasets
 from procedures.config import PreprocessConfig, TrainingConfig, GeneralConfig
 from procedures.generate_alphapose_skeletons import gen_alphapose_skeletons
 from procedures.preprocess_files import preprocess_files
@@ -38,14 +39,16 @@ if __name__ == "__main__2":
     cfg.keypoint_fill_type = "mice"
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_mice_fill_bad", cfg, datasets.all_splits, 4,
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_mice_fill_bad", cfg,
+                     shared.datasets.all_splits, 4,
                      False)
 
     cfg = PreprocessConfig()
     cfg.keypoint_fill_type = "knn"
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_knn_fill_bad", cfg, datasets.all_splits, 4,
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_knn_fill_bad", cfg,
+                     shared.datasets.all_splits, 4,
                      False)
 
 if __name__ == "__main__2":
@@ -74,7 +77,7 @@ if __name__ == "__main__2":
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_no_missing",
                      cfg,
-                     datasets.all_splits,
+                     shared.datasets.all_splits,
                      10,
                      False,
                      "/media/barny/SSD4/MasterThesis/Data/NTU_RGBD120_samples_with_missing_skeletons.txt")
