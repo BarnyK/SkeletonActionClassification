@@ -100,7 +100,7 @@ def get_valid_bodies(bodies: list[Body], ratio: float = 0.8) -> list[Body]:
         min_y = ys.min()
         max_y = ys.max()
 
-        if (max_x - min_x) / (max_y - min_y) <= ratio:
+        if (max_y - min_y) > 0 and (max_x - min_x) / (max_y - min_y) <= ratio:
             good_bodies.append(body)
 
     return good_bodies

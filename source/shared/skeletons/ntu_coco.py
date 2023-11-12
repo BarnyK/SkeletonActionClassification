@@ -66,7 +66,7 @@ def from_skeleton_data(data: SkeletonData) -> SkeletonData:
     if data.type == "coco17":
         func = from_coco
     elif data.type == "ntu":
-        func = from_coco
+        func = from_ntu
     else:
         raise KeyError(f"not supported type {data.type}")
     for frame in data.frames:

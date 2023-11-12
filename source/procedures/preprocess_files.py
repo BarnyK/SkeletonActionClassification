@@ -89,6 +89,7 @@ def preprocess_file(in_file: str, cfg: PreprocessConfig):
 
 
 def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: PreprocessConfig):
+    assert os.path.isdir(output_path)
     files = []
     if isinstance(input_path, str):
         files = [os.path.join(input_path, f) for f in os.listdir(input_path)]
@@ -122,7 +123,6 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: P
         pool.close()
         pool.join()
 
-    os.makedirs(output_path, exist_ok=False)
     results = [x for x in results if x[1] is not None]
 
     for strategy in cfg.split_strategy:
@@ -140,30 +140,16 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: P
         with open(test_filename, "wb") as f:
             pickle.dump(test_split, f)
 
-# if __name__ == '__main__':
-#     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
-#                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-#                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
-#                      PreprocessConfig(),
-#                      datasets.all_splits,
-#                      12,
-#                      True)
-#     cfg = PreprocessConfig()
-#     cfg.keypoint_fill_type = "mice"
-#     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
-#                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-#                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_mice_fill_bad",
-#                      cfg,
-#                      datasets.all_splits,
-#                      3,
-#                      True)
-#
-#     cfg = ntu_preprocess_cfg()
-#     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons",
-#                       "/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons_120"],
-#                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test1",
-#                      cfg,
-#                      datasets.all_splits,
-#                      3,
-#                      True
-#                      )
+
+if __name__ == '__main__':
+    from procedures.config import GeneralConfig
+
+    # ./configs/general/ntu_xview.yaml ~/MasterThesis/Data/nturgb+d_skeletons/ ~/MasterThesis/Data/nturgb+d_skeletons_120/ --save-path /media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test2
+    cfg = GeneralConfig.from_yaml_file("./configs/general/ntu_xview.yaml")
+    print(cfg.prep_config.to_yaml())
+    cfg.prep_config.transform_to_combined = True
+    cfg.prep_config.processes = 0
+    preprocess_files(["/home/barny/MasterThesis/Data/nturgb+d_skeletons",
+                      "/home/barny/MasterThesis/Data/nturgb+d_skeletons_120/"],
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test3",
+                     cfg.prep_config)
