@@ -102,7 +102,7 @@ class SpineNormalization:
         self.align_func = align_func_map.get(self.skeleton_type)
         self.use_mean = state_dict['use_mean']
 
-    def __call__(self, mat: np.ndarray, ):
+    def __call__(self, mat: np.ndarray):
         result = mat / self.scale
         if self.align:
             align_value = self.align_func(result[..., 0, 0, :, :])
