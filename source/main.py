@@ -176,6 +176,17 @@ if __name__ == "__main__":
         train_network(cfg)
         torch.cuda.empty_cache()
 
+    for i in range(2):
+        try:
+            cfg = GeneralConfig.from_yaml_file("configs/general/ntu_3d_xview.yaml")
+            cfg.name = cfg.name + f"_{i}"
+            train_network(cfg)
+            torch.cuda.empty_cache()
+        except Exception as ex:
+            print(ex)
+
+
+
 if __name__ == "__main__":
     import torch
 

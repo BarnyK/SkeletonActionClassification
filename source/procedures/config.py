@@ -73,9 +73,10 @@ class PreprocessConfig(YAMLWizard, key_transform='SNAKE'):
     transform_to_combined: bool = False
     alphapose_skeletons: bool = True
     remove_missing_from_file: bool = False
+    use_3d_points: bool = False
 
 
-def ntu_preprocess_cfg():
+def ntu_preprocess_cfg() -> PreprocessConfig:
     return PreprocessConfig(
         use_box_conf=False,
         use_max_pose_conf=False,

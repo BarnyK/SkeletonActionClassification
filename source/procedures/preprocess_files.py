@@ -30,6 +30,11 @@ def _preprocess_data_ntu(data: SkeletonData, cfg: PreprocessConfig):
     if data.no_bodies():
         return data
 
+    if cfg.use_3d_points:
+        for tid in data.get_all_tids():
+            for body in data.get_all_bodies_for_tid(tid):
+                body.poseXY = body.poseXYZ
+
     ntu_track_selection(data, cfg.max_body_count)
     keypoint_fill(data, cfg.keypoint_fill_type)
     return data
@@ -184,9 +189,8 @@ def handle_preprocess(args: Namespace):
 
 
 if __name__ == "__main__":
-    cfg = GeneralConfig.from_yaml_file("./configs/general/ut_test_conf.yaml")
+    cfg = GeneralConfig.from_yaml_file("./configs/general/ntu_xview.yaml")
     cfg.prep_config.processes = 0
-    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set1_coco",
-                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set2_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_ut_test1",
+    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons"],
+                     "/tmp/",
                      cfg.prep_config)
