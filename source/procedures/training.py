@@ -201,7 +201,7 @@ def train_network(cfg: GeneralConfig):
 
     # Create model
     device = torch.device(cfg.device)
-    channels = calculate_channels(cfg.features, 2)
+    channels = calculate_channels(cfg.features, test_set.points[0].shape[-1])
     if cfg.model_type == "stgcnpp":
         model = create_stgcnpp(test_set.num_classes(), channels, cfg.skeleton_type)
         model.to(device)
