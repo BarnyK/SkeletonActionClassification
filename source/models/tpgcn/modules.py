@@ -2,13 +2,8 @@ import logging
 
 from torch import nn
 
-
-def import_class(name):
-    components = name.split('.')
-    mod = __import__(components[0])
-    for comp in components[1:]:
-        mod = getattr(mod, comp)
-    return mod
+from .blocks import Spatial_Basic_Block, Temporal_Basic_Block, Temporal_MultiScale_Block, Spatial_AAGCN_Block, \
+    Spatial_CTRGCN_Block
 
 
 class ResGCN_Module(nn.Module):
@@ -43,8 +38,17 @@ class ResGCN_Module(nn.Module):
                 nn.BatchNorm2d(out_channels),
             )
 
-        spatial_block = import_class('src.model.TPGCN.blocks.Spatial_{}_Block'.format(spatial_block))
-        temporal_block = import_class('src.model.TPGCN.blocks.Temporal_{}_Block'.format(temporal_block))
+        if spatial_block == "Basic":
+            spatial_block = Spatial_Basic_Block
+        elif spatial_block == "AAGCN":
+            spatial_block = Spatial_AAGCN_Block
+        elif spatial_block == "CTRGCN":
+            spatial_block = Spatial_CTRGCN_Block
+        if temporal_block == "Basic":
+            temporal_block = Temporal_Basic_Block
+        elif temporal_block == "MultiScale":
+            temporal_block = Temporal_MultiScale_Block
+
         if initial and 'adaptive' in kwargs:
             kwargs['adaptive'] == False
         self.scn = spatial_block(in_channels, out_channels, max_graph_distance, A, block_res, **kwargs)
@@ -84,8 +88,17 @@ class AttGCN_Module(nn.Module):
                 nn.BatchNorm2d(out_channels),
             )
 
-        spatial_block = import_class('src.model.TPGCN.blocks.Spatial_{}_Block'.format(spatial_block))
-        temporal_block = import_class('src.model.TPGCN.blocks.Temporal_{}_Block'.format(temporal_block))
+        if spatial_block == "Basic":
+            spatial_block = Spatial_Basic_Block
+        elif spatial_block == "AAGCN":
+            spatial_block = Spatial_AAGCN_Block
+        elif spatial_block == "CTRGCN":
+            spatial_block = Spatial_CTRGCN_Block
+        if temporal_block == "Basic":
+            temporal_block = Temporal_Basic_Block
+        elif temporal_block == "MultiScale":
+            temporal_block = Temporal_MultiScale_Block
+
         self.scn = spatial_block(in_channels, out_channels, max_graph_distance, A, block_res, **kwargs)
         self.tcn = temporal_block(out_channels, temporal_window_size, stride, block_res, **kwargs)
         self.att = attention(out_channels, **kwargs)
