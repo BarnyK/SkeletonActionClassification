@@ -33,6 +33,14 @@ edges = [(15, 13), (13, 11), (16, 14), (14, 12), (11, 5), (12, 6),
 
 center = 0
 
+parts = [
+    np.array([6, 8, 10]),  # Left arm
+    np.array([5, 7, 9]),  # right arm,
+    np.array([11, 13, 15]),  # left leg
+    np.array([12, 14, 16]),  # right leg
+    np.array([0, 1, 2, 3, 4]),  # Head
+]
+
 
 def prepare_draw_keypoints(points: np.ndarray) -> np.ndarray:
     # Add points between shoulders

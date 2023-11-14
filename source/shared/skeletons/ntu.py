@@ -66,6 +66,12 @@ edges = [(0, 1), (1, 20), (2, 20), (3, 2), (4, 20), (5, 4), (6, 5), (7, 6), (8, 
 
 center = 20
 
+parts = [np.array([4, 5, 6, 7, 21, 22]),
+         np.array([8, 9, 10, 11, 23, 24]),
+         np.array([12, 13, 14, 15]),
+         np.array([16, 17, 18, 19]),
+         np.array([0, 1, 2, 3, 20])]
+
 
 def prepare_draw_keypoints(points: np.ndarray) -> np.ndarray:
     return points

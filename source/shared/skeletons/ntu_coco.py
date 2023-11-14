@@ -24,6 +24,14 @@ edges = [(0, 1), (2, 1), (3, 2), (4, 3), (5, 1), (6, 5),
 
 center = 1
 
+parts = [
+    np.array([2, 3, 4]),  # Left arm
+    np.array([5, 5, 7]),  # right arm,
+    np.array([9, 10, 11]),  # left leg
+    np.array([12, 13, 14]),  # right leg
+    np.array([0, 1, 8]),  # Torso
+]
+
 
 def prepare_draw_keypoints(points: np.ndarray) -> np.ndarray:
     return points

@@ -44,3 +44,9 @@ align_func_map = {
     "ntu": ntu.alignment_keypoint_value,
     "ntu_coco": ntu_coco.alignment_keypoint_value,
 }
+
+parts_map = {
+    "coco17": coco.parts,
+    "ntu": ntu.parts,
+    "ntu_coco": ntu_coco.parts,
+}
