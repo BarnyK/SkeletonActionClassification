@@ -1,5 +1,6 @@
 from . import blocks
 from .attentions import *
+from .graph import Graph
 from .modules import ResGCN_Module, AttGCN_Module
 from .nets import TPGCN
 

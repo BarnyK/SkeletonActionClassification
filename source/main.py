@@ -147,12 +147,17 @@ if __name__ == "__main__2":
 
 
 def find_divisors(N):
-    return [i for i in range(1, N + 1) if N % i == 0]
+    return [i for i in range(1, N + 1) if N % i == 0 and i > 2]
 
 
+if __name__ == "__main__2":
+    cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
+    cfg.train_config.train_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_mutual_xsub.train.pkl"
+    cfg.eval_config.test_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_mutual_xsub.test.pkl"
+    cfg.name = "mutual_test1"
+    train_network(cfg)
 
-
-if __name__ == "__main__":
+if __name__ == "__main__2":
     import torch
 
     for i in range(2):
@@ -185,13 +190,11 @@ if __name__ == "__main__":
         except Exception as ex:
             print(ex)
 
-
-
-if __name__ == "__main__":
+if __name__ == "__main__2":
     import torch
 
     for i in range(3):
-        for win_length in [16, 30, 32, 60, 64, 100]:
+        for win_length in [16, 30, 32, 50, 60, 64, 100]:
             try:
                 cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
                 cfg.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/window_tests/"
@@ -205,3 +208,8 @@ if __name__ == "__main__":
                     torch.cuda.empty_cache()
             except DifferentConfigException as ex:
                 print(ex)
+
+if __name__ == "__main__":
+    cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ap_xview.yaml")
+    cfg.name = "2pgcn_test_1"
+    train_network(cfg)

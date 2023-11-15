@@ -17,7 +17,7 @@ from datasets.augments import RandomScale
 from datasets.pose_dataset import PoseDataset
 from datasets.sampler import Sampler
 from datasets.transform_wrappers import calculate_channels
-from models import create_stgcnpp
+from models import create_stgcnpp, create_tpgcn
 from preprocessing.normalizations import create_norm_func, SpineNormalization, setup_norm_func, ScreenNormalization
 from procedures.config import GeneralConfig
 from shared.errors import DifferentConfigException
@@ -206,7 +206,9 @@ def train_network(cfg: GeneralConfig):
         model = create_stgcnpp(test_set.num_classes(), channels, cfg.skeleton_type)
         model.to(device)
     else:
-        raise ValueError("2p-gcn not supported yet")
+        model = create_tpgcn(test_set.num_classes(), len(cfg.features), channels, cfg.symmetry_processing,
+                             cfg.skeleton_type)
+        model.to(device)
 
     # Create training loss, optimizer and scheduler
     loss_func = torch.nn.CrossEntropyLoss()

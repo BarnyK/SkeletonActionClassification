@@ -77,7 +77,8 @@ class TPGCN(nn.Module):
         x = x.view(N, M, -1).mean(dim=1)
         x = self.fcn(x)
 
-        return x, feature
+        #return x, feature
+        return x
 
 
 def init_param(modules):

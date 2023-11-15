@@ -10,12 +10,7 @@ from torch.utils.data import Dataset
 from datasets.sampler import Sampler
 from datasets.transform_wrappers import TransformsDict, PoseTransform, TransformsList
 from preprocessing.normalizations import no_norm
-
-
-def flatten_list(in_list):
-    if len(in_list) == 0 or not isinstance(in_list[0], list):
-        return in_list
-    return [x for hid_list in in_list for x in hid_list]
+from shared.helpers import flatten_list
 
 
 def solve_feature_transform_requirements(feature_list):
@@ -53,29 +48,41 @@ def transform_to_stgcn_input(feature_dictionary, feature_list):
     return features
 
 
-def transform_to_2pgcn_input(feature_dictionary, feature_list, symmetry):
-    out_data = []
+def transform_to_tpgcn_input(feature_dictionary, feature_list, symmetry):
     og_features = feature_dictionary['joints']
-    for s in range(og_features.shape[0]):
-        # Number of branches
-        B = len(feature_list)
-        # Number of channels in branch
-        C = sum([feature_dictionary[k].shape[-1] for k in feature_list[0]])
-        *_, T, V, _ = og_features.shape
-        M = 2 if symmetry else 1
-        new_features = np.zeros((B, C, T, V * 2, M), dtype=np.float32)
-        for bi, branch in enumerate(feature_list):
+    if og_features.ndim == 4:
+        return create_tpgcn_branches(feature_dictionary, feature_list, og_features, symmetry)
+    else:
+        # Sampling creates new dimension
+        out_data = []
+        for s in range(og_features.shape[0]):
+            new_features = create_tpgcn_branches(feature_dictionary, feature_list, og_features, symmetry, s)
+            out_data.append(new_features)
+        features = np.stack(out_data)
+        return features
+
+
+def create_tpgcn_branches(feature_dictionary, feature_list, og_features, symmetry, s=None):
+    # Number of branches
+    B = len(feature_list)
+    # Number of channels in branch
+    C = sum([feature_dictionary[k].shape[-1] for k in feature_list[0]])
+    *_, T, V, _ = og_features.shape
+    M = 2 if symmetry else 1
+    new_features = np.zeros((B, C, T, V * 2, M), dtype=np.float32)
+    for bi, branch in enumerate(feature_list):
+        if s is not None:
             branch_features = [feature_dictionary[k][s] for k in branch]
-            branch_features = np.concatenate(branch_features, axis=-1)
-            branch_features = branch_features.transpose(3, 1, 2, 0)  # C, T, V, M
-            new_features[bi, :, :, :V, 0] = branch_features[..., :, 0]
-            new_features[bi, :, :, V:, 0] = branch_features[..., :, 1]
-            if symmetry:
-                new_features[bi, :, :, V:, 1] = branch_features[..., :, 0]
-                new_features[bi, :, :, :V, 1] = branch_features[..., :, 1]
-        out_data.append(new_features)
-    features = np.stack(out_data)
-    return features
+        else:
+            branch_features = [feature_dictionary[k] for k in branch]
+        branch_features = np.concatenate(branch_features, axis=-1)
+        branch_features = branch_features.transpose(3, 1, 2, 0)  # C, T, V, M
+        new_features[bi, :, :, :V, 0] = branch_features[..., :, 0]
+        new_features[bi, :, :, V:, 0] = branch_features[..., :, 1]
+        if symmetry:
+            new_features[bi, :, :, V:, 1] = branch_features[..., :, 0]
+            new_features[bi, :, :, :V, 1] = branch_features[..., :, 1]
+    return new_features
 
 
 class PoseDataset(Dataset):
@@ -87,8 +94,16 @@ class PoseDataset(Dataset):
         # Data should be a dict with keys "labels", "points", "confidences", "image_shape"
         self.labels = data['action']
         self.points = data['poseXY']
-
         self.dataset_info = data['dataset_info']
+
+        if isinstance(feature_list[0], list):
+            for i in range(len(self.points), 0, -1):
+                i -= 1
+                if self.points[i].shape[0] != 2:
+                    self.points.pop(i)
+                    self.labels.pop(i)
+                    self.dataset_info.pop(i)
+                    print(f"Removed {i}")
 
         self.confidences = data['poseConf']
         self.image_shape = data.get("im_shape", (1920, 1080))
@@ -146,7 +161,7 @@ class PoseDataset(Dataset):
             features = transform_to_stgcn_input(feature_dictionary, self.feature_list)
 
         if isinstance(self.feature_list[0], list):
-            features = transform_to_2pgcn_input(feature_dictionary, self.feature_list, self.symmetry)
+            features = transform_to_tpgcn_input(feature_dictionary, self.feature_list, self.symmetry)
 
         features = torch.from_numpy(features).float()
         if self.return_info:

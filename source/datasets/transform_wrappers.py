@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Type
+from typing import Type, Union
 
 import numpy as np
 
@@ -191,7 +191,9 @@ TransformsDict: dict[str, Type[PoseTransform]] = {
 }
 
 
-def calculate_channels(features: list[str], input_chan: int):
+def calculate_channels(features: Union[list[str], list[list[str], ...]], input_chan: int):
+    if isinstance(features[0], list):
+        features = features[0]
     channel_sum = 0
     for feat in features:
         channel_sum += TransformsDict[feat].calculate_channels(input_chan)

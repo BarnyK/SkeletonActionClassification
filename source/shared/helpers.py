@@ -88,3 +88,9 @@ def tuple_list_to_dict(lista: list[tuple], keys: list[str]):
     for i, key in enumerate(keys):
         res[key] = [x[i] for x in lista]
     return res
+
+
+def flatten_list(in_list):
+    if len(in_list) == 0 or not isinstance(in_list[0], list):
+        return in_list
+    return [x for hid_list in in_list for x in hid_list]

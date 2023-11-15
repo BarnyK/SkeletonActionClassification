@@ -1,7 +1,10 @@
 import logging
-import numpy as np
 import os
+
+import numpy as np
+
 from shared.skeletons import ntu, ntu_coco, coco
+
 
 # Thanks to YAN Sijie for the released code on Github (https://github.com/yysijie/st-gcn)
 class Graph:
@@ -21,7 +24,7 @@ class Graph:
         self.threshold = threshold
 
         # get edges
-        self.num_node, self.edge, self.connect_joint, self.parts, self.center = self._get_edge()
+        self.num_node, self.edge, self.parts, self.center = self._get_edge()
 
         # get adjacency matrix
         self.A = self._get_adjacency()
@@ -31,123 +34,62 @@ class Graph:
 
     def _get_edge(self):
         if self.layout == "coco17":
-            num_node = coco.num_nodes
-            neighbor_link = coco.edges
-            connect_joint = 0
-            parts = coco.parts
-            center = coco.center
-        elif self.layout == 'kinetics':
-            num_node = 18
-            neighbor_link = [(4, 3), (3, 2), (7, 6), (6, 5), (13, 12), (12, 11),
-                             (10, 9), (9, 8), (11, 5), (8, 2), (5, 1), (2, 1),
-                             (0, 1), (15, 0), (14, 0), (17, 15), (16, 14), (8, 11)]
-            connect_joint = np.array([1, 1, 1, 2, 3, 1, 5, 6, 2, 8, 9, 5, 11, 12, 0, 0, 14, 15])
-            parts = [
-                np.array([5, 6, 7]),  # left_arm
-                np.array([2, 3, 4]),  # right_arm
-                np.array([11, 12, 13]),  # left_leg
-                np.array([8, 9, 10]),  # right_leg
-                np.array([0, 1, 14, 15, 16, 17])  # torso
-            ]
-            center = 1
-        elif self.layout in ['ntu', 'ntu120', 'ntu_mutual', 'ntu120_mutual', 'ntu_original']:
             if self.graph == 'physical':
-                num_node = 25
-                neighbor_1base = [(1, 2), (2, 21), (3, 21), (4, 3), (5, 21),
-                                  (6, 5), (7, 6), (8, 7), (9, 21), (10, 9),
-                                  (11, 10), (12, 11), (13, 1), (14, 13), (15, 14),
-                                  (16, 15), (17, 1), (18, 17), (19, 18), (20, 19),
-                                  (22, 23), (23, 8), (24, 25), (25, 12)]
-                neighbor_link = [(i - 1, j - 1) for (i, j) in neighbor_1base]
-                connect_joint = np.array(
-                    [2, 2, 21, 3, 21, 5, 6, 7, 21, 9, 10, 11, 1, 13, 14, 15, 1, 17, 18, 19, 2, 23, 8, 25, 12]) - 1
-                parts = [
-                    np.array([5, 6, 7, 8, 22, 23]) - 1,  # left_arm
-                    np.array([9, 10, 11, 12, 24, 25]) - 1,  # right_arm
-                    np.array([13, 14, 15, 16]) - 1,  # left_leg
-                    np.array([17, 18, 19, 20]) - 1,  # right_leg
-                    np.array([1, 2, 3, 4, 21]) - 1  # torso
-                ]
-                center = 21 - 1
+                num_node = coco.num_nodes
+                neighbor_link = coco.edges
+                parts = coco.parts
+                center = coco.center
             elif self.graph == 'mutual':
-                num_node = 50
-                neighbor_1base = [(1, 2), (2, 21), (3, 21), (4, 3), (5, 21),
-                                  (6, 5), (7, 6), (8, 7), (9, 21), (10, 9),
-                                  (11, 10), (12, 11), (13, 1), (14, 13), (15, 14),
-                                  (16, 15), (17, 1), (18, 17), (19, 18), (20, 19),
-                                  (22, 23), (23, 8), (24, 25), (25, 12)] + \
-                                 [(26, 27), (27, 46), (28, 46), (29, 28), (30, 46),
-                                  (31, 30), (32, 31), (33, 32), (34, 46), (35, 34),
-                                  (36, 35), (37, 36), (38, 26), (39, 38), (40, 39),
-                                  (41, 40), (42, 26), (43, 42), (44, 43), (45, 44),
-                                  (47, 48), (48, 33), (49, 50), (50, 37)] + \
-                                 [(21, 46)]
-                neighbor_link = [(i - 1, j - 1) for (i, j) in neighbor_1base]
-                connect_joint = np.array(
-                    [1, 1, 20, 2, 20, 4, 5, 6, 20, 8, 9, 10, 0, 12, 13, 14, 0, 16, 17, 18, 1, 22, 7, 24, 11, 26, 26, 45,
-                     27, 45, 29, 30, 31, 45, 33, 34, 35, 25, 37, 38, 39, 25, 41, 42, 43, 26, 47, 32, 49, 36])
-                parts = [
-                    # left_arm
-                    np.array([5, 6, 7, 8, 22, 23]) - 1,
-                    np.array([5, 6, 7, 8, 22, 23]) + 25 - 1,
-                    # right_arm
-                    np.array([9, 10, 11, 12, 24, 25]) - 1,
-                    np.array([9, 10, 11, 12, 24, 25]) + 25 - 1,
-                    # left_leg
-                    np.array([13, 14, 15, 16]) - 1,
-                    np.array([13, 14, 15, 16]) + 25 - 1,
-                    # right_leg
-                    np.array([17, 18, 19, 20]) - 1,
-                    np.array([17, 18, 19, 20]) + 25 - 1,
-                    # torso
-                    np.array([1, 2, 3, 4, 21]) - 1,
-                    np.array([1, 2, 3, 4, 21]) + 25 - 1
-                ]
-                center = 21 - 1
+                num_node = coco.num_nodes * 2
+                neighbor_link = coco.edges + [(x + coco.num_nodes, y + coco.num_nodes) for x, y in coco.edges]
+                neighbor_link += [(coco.center, coco.center + ntu_coco.num_nodes) ] # Link between centers
+                parts = coco.parts + [x + coco.num_nodes for x in coco.parts]
+                center = coco.center
+            else:
+                raise ValueError()
+        elif self.layout == "ntu_coco":
+            if self.graph == 'physical':
+                num_node = ntu_coco.num_nodes
+                neighbor_link = ntu_coco.edges
+                parts = ntu_coco.parts
+                center = ntu_coco.center
+            elif self.graph == 'mutual':
+                num_node = ntu_coco.num_nodes * 2
+                neighbor_link = ntu_coco.edges + [(x + ntu_coco.num_nodes, y + ntu_coco.num_nodes) for x, y in
+                                                  ntu_coco.edges]
+                neighbor_link += [(ntu_coco.center, ntu_coco.center + ntu_coco.num_nodes) ] # Link between centers
+                parts = ntu_coco.parts + [x + ntu_coco.num_nodes for x in ntu_coco.parts]
+                center = ntu_coco.center
+            else:
+                raise ValueError()
+        elif self.layout == "ntu":
+            if self.graph == 'physical':
+                num_node = ntu.num_nodes
+                neighbor_link = ntu.edges
+                parts = ntu.parts
+                center = ntu.center
+            elif self.graph == 'mutual':
+                num_node = ntu.num_nodes * 2
+                neighbor_link = ntu.edges + [(x + ntu.num_nodes, y + ntu.num_nodes) for x, y in ntu.edges]
+                neighbor_link += [(ntu.center, ntu.center + ntu.num_nodes)]
+                parts = ntu.parts + [x + ntu.num_nodes for x in ntu.parts]
+                center = ntu.center
             elif self.graph == 'mutual-inter':
-                num_node = 50
-                neighbor_1base = [(1, 2), (2, 21), (3, 21), (4, 3), (5, 21),
-                                  (6, 5), (7, 6), (8, 7), (9, 21), (10, 9),
-                                  (11, 10), (12, 11), (13, 1), (14, 13), (15, 14),
-                                  (16, 15), (17, 1), (18, 17), (19, 18), (20, 19),
-                                  (22, 23), (23, 8), (24, 25), (25, 12)] + \
-                                 [(26, 27), (27, 46), (28, 46), (29, 28), (30, 46),
-                                  (31, 30), (32, 31), (33, 32), (34, 46), (35, 34),
-                                  (36, 35), (37, 36), (38, 26), (39, 38), (40, 39),
-                                  (41, 40), (42, 26), (43, 42), (44, 43), (45, 44),
-                                  (47, 48), (48, 33), (49, 50), (50, 37)] + \
-                                 [(21, 46)] + \
-                                 [(23, 25), (48, 50), (23, 48), (25, 50)]
-                neighbor_link = [(i - 1, j - 1) for (i, j) in neighbor_1base]
-                connect_joint = np.array(
-                    [1, 1, 20, 2, 20, 4, 5, 6, 20, 8, 9, 10, 0, 12, 13, 14, 0, 16, 17, 18, 1, 22, 7, 24, 11, 26, 26, 45,
-                     27, 45, 29, 30, 31, 45, 33, 34, 35, 25, 37, 38, 39, 25, 41, 42, 43, 26, 47, 32, 49, 36])
-                parts = [
-                    # left_arm
-                    np.array([5, 6, 7, 8, 22, 23]) - 1,
-                    np.array([5, 6, 7, 8, 22, 23]) + 25 - 1,
-                    # right_arm
-                    np.array([9, 10, 11, 12, 24, 25]) - 1,
-                    np.array([9, 10, 11, 12, 24, 25]) + 25 - 1,
-                    # left_leg
-                    np.array([13, 14, 15, 16]) - 1,
-                    np.array([13, 14, 15, 16]) + 25 - 1,
-                    # right_leg
-                    np.array([17, 18, 19, 20]) - 1,
-                    np.array([17, 18, 19, 20]) + 25 - 1,
-                    # torso
-                    np.array([1, 2, 3, 4, 21]) - 1,
-                    np.array([1, 2, 3, 4, 21]) + 25 - 1
-                ]
+                num_node = ntu.num_nodes * 2
+                neighbor_link = ntu.edges + [(x + ntu.num_nodes, y + ntu.num_nodes) for x, y in ntu.edges]
+                neighbor_link += [(ntu.center, ntu.center + ntu.num_nodes)]
+                neighbor_link += [(22, 24), (47, 49), (22, 47), (24, 49)]
+                parts = ntu.parts + [x + ntu.num_nodes for x in ntu.parts]
                 center = 21 - 1
-
+            else:
+                raise ValueError()
         else:
             logging.info('')
             logging.error('Error: Do NOT exist this dataset: {}!'.format(self.layout))
             raise ValueError()
         self_link = [(i, i) for i in range(num_node)]
         edge = self_link + neighbor_link
-        return num_node, edge, connect_joint, parts, center
+        return num_node, edge, parts, center
 
     def _get_hop_distance(self):
         A = np.zeros((self.num_node, self.num_node))

@@ -12,7 +12,7 @@ from typing import Union
 import torch
 from tqdm import tqdm
 
-from datasets.pose_dataset import solve_feature_transform_requirements, transform_to_2pgcn_input, \
+from datasets.pose_dataset import solve_feature_transform_requirements, transform_to_tpgcn_input, \
     transform_to_stgcn_input
 from datasets.transform_wrappers import calculate_channels, TransformsDict
 from models import create_stgcnpp
@@ -166,7 +166,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
         if isinstance(cfg.features[0], str):
             features = transform_to_stgcn_input(feature_dictionary, cfg.features)
         elif isinstance(cfg.features[0], list):
-            features = transform_to_2pgcn_input(feature_dictionary, cfg.features, cfg.symmetry_processing)
+            features = transform_to_tpgcn_input(feature_dictionary, cfg.features, cfg.symmetry_processing)
         else:
             raise KeyError("features are wrong")
         features = torch.from_numpy(features).float().unsqueeze(0)

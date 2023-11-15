@@ -2,10 +2,12 @@ from __future__ import annotations
 from __future__ import annotations
 
 import os
+from copy import deepcopy
 from dataclasses import dataclass, field, fields, is_dataclass
-from typing import Union
+from typing import Union, Type, Optional, List, AnyStr, TextIO, BinaryIO
 
 from dataclass_wizard import YAMLWizard
+from dataclass_wizard.type_def import T, Encoder, Decoder
 
 import shared.datasets
 
@@ -114,6 +116,28 @@ class PoseEstimationConfig(YAMLWizard, key_transform='SNAKE'):
 
 @dataclass
 class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
+    @classmethod
+    def from_yaml(cls: Type[T], string_or_stream: Union[AnyStr, TextIO, BinaryIO], *, decoder: Optional[Decoder] = None,
+                  **decoder_kwargs) -> Union[T, List[T]]:
+        tmp = super().from_yaml(string_or_stream, decoder=decoder, **decoder_kwargs)
+        if not isinstance(tmp, list):
+            for i, feat in enumerate(tmp.features):
+                x = [x.strip() for x in feat.split(",")]
+                tmp.features[i] = x
+        return tmp
+
+    def to_yaml(self: T, *, encoder: Optional[Encoder] = None, **encoder_kwargs) -> AnyStr:
+        tmp = deepcopy(self)
+        if tmp.features:
+            for i, _ in enumerate(tmp.features):
+                if isinstance(tmp.features[i], list):
+                    tmp.features[i] = ",".join(tmp.features[i])
+
+        return tmp.to_yaml_(encoder=encoder, **encoder_kwargs)
+
+    def to_yaml_(self: T, *, encoder: Optional[Encoder] = None, **encoder_kwargs) -> AnyStr:
+        return super().to_yaml(encoder=encoder, **encoder_kwargs)
+
     name: str = "default"
     skeleton_type: str = "coco17"
     model_type: str = "stgcnpp"  #: TODO: 2P-GCN
