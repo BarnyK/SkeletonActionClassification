@@ -123,7 +123,8 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
         if not isinstance(tmp, list):
             for i, feat in enumerate(tmp.features):
                 x = [x.strip() for x in feat.split(",")]
-                tmp.features[i] = x
+                if len(x) > 1:
+                    tmp.features[i] = x
         return tmp
 
     def to_yaml(self: T, *, encoder: Optional[Encoder] = None, **encoder_kwargs) -> AnyStr:

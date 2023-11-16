@@ -54,7 +54,6 @@ class TestFeatures(TestCase):
         swapped_mat2 = np.stack([mat2[1], mat2[0]])
         x = (mat - swapped_mat2)
 
-
     def test_swapped_to_angles(self):
         mat = to_angles(self.mat, self.data.type)
         swapped_mat = np.stack([self.mat[1], self.mat[0]])

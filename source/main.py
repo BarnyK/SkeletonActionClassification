@@ -317,5 +317,3 @@ if __name__ == "__main__":
             train_network(cfg)
             torch.cuda.empty_cache()
         files = [files[0]]
-
-

@@ -104,7 +104,7 @@ class PoseDataset(Dataset):
                     self.points.pop(i)
                     self.labels.pop(i)
                     self.dataset_info.pop(i)
-                    #print(f"Removed {i}")
+                    # print(f"Removed {i}")
 
         self.confidences = data['poseConf']
         self.image_shape = data.get("im_shape", (1920, 1080))

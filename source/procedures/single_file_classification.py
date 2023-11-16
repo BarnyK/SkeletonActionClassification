@@ -9,6 +9,7 @@ from queue import Queue
 from threading import Thread
 from typing import Union
 
+import numpy as np
 import torch
 from tqdm import tqdm
 
@@ -37,7 +38,6 @@ def window_worker(
             break
         x = FrameData(i, len(data), data)
         window.append(x)
-        tqdm.write(f"{len(window)}")
         if len(window) == length:
             q.put(window)
             window = window[-interlace:]
@@ -138,6 +138,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     results = []
     window_results = []
     unique_frames = []
+    pp_times = []
     while True:
         frames: list[FrameData] = window_queue.get()
         if frames is None:
@@ -152,7 +153,9 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
 
         if data.length != cfg.samples_per_window:
             fill_frames(data, cfg.samples_per_window)
+        pp_time = time.time()
         _preprocess_data_ap(data, cfg.prep_config)
+        pp_times.append(time.time() - pp_time)
         points = data.to_matrix()
         if points is None:
             continue
@@ -178,7 +181,8 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
         # Save result
         results.append(tuple(x for x in top5[0].tolist()))
         window_results.append((start_frame, end_frame, out[0].cpu()))
-
+    print("pptimes ",pp_times)
+    print("pptimes sum ",np.sum(pp_times))
     action_map = adjusted_actions_maps[cfg.dataset]
     et = time.time()
     print(wc / (et - st))
@@ -192,7 +196,9 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
                               frame_interval)
     for frame, action_id in zip(total_data.frames, out):
         frame.text = action_map[action_id]
-    visualize(total_data, total_data.video_file, 1000//15,print_frame_text=True, skip_frames=True)
+
+    fps = 30 * cfg.samples_per_window / cfg.window_length
+    #visualize(total_data, total_data.video_file, int(1000 / 30), print_frame_text=True, skip_frames=True)
 
 
 def handle_classify(args: Namespace):
@@ -209,11 +215,9 @@ def handle_classify(args: Namespace):
 
 
 if __name__ == "__main__":
-    config = GeneralConfig.from_yaml_file("/media/barny/SSD4/MasterThesis/Data/logs/default_64_32_2/config.yaml")
+    config = GeneralConfig.from_yaml_file(
+        "/media/barny/SSD4/MasterThesis/Data/logs/window_tests/default_64_32_2/config.yaml")
     config.interlace = 16
-    #single_file_classification("/media/barny/SSD4/MasterThesis/Data/concatenated.1.avi", config)
-    single_file_classification("/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq1.avi", config)
-
-    # single_file_classification("/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb/S001C001P001R001A006_rgb.avi", config)
-    # single_file_classification("/media/barny/SSD4/MasterThesis/Data/concatenated.2.avi", config)
-    # single_file_classification("/media/barny/SSD4/MasterThesis/Data/concatenated.2.avi", config)
+    single_file_classification("/media/godchama/ssd/hoshimatic.cut2.mp4", config)
+    # single_file_classification("/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq1.avi",
+    #                            config)
