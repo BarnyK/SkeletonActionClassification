@@ -8,7 +8,9 @@ import numpy as np
 import torch
 import torch.multiprocessing as mp
 from alphapose.models import builder
+from alphapose.utils.bbox import _box_to_center_scale, _center_scale_to_box
 from alphapose.utils.presets import SimpleTransform
+from alphapose.utils.transforms import get_affine_transform, im_to_torch
 from tqdm import tqdm
 
 
@@ -161,7 +163,8 @@ class DetectionLoader:
     def wait_and_put(self, queue, item):
         queue.put(item)
 
-    def wait_and_get(self, queue):
+    def wait_and_get(self, queue, name=""):
+        # print(name, queue.qsize())
         return queue.get()
 
     def image_preprocess(self):
@@ -269,7 +272,7 @@ class DetectionLoader:
     def image_detection(self):
         # Reads batches of images from image_queue and performs detection on them
         for i in range(self.num_batches):
-            imgs, orig_imgs, im_names, im_dim_list = self.wait_and_get(self.image_queue)
+            imgs, orig_imgs, im_names, im_dim_list = self.wait_and_get(self.image_queue, "image")
             if imgs is None or self.stopped:
                 self.wait_and_put(
                     self.det_queue, (None, None, None, None, None, None, None)
@@ -342,7 +345,7 @@ class DetectionLoader:
                     ids,
                     inps,
                     cropped_boxes,
-                ) = self.wait_and_get(self.det_queue)
+                ) = self.wait_and_get(self.det_queue, "det")
                 if orig_img is None or self.stopped:
                     self.wait_and_put(
                         self.pose_queue, (None, None, None, None, None, None, None)
@@ -357,9 +360,7 @@ class DetectionLoader:
                 # imght = orig_img.shape[0]
                 # imgwidth = orig_img.shape[1]
                 for i, box in enumerate(boxes):
-                    inps[i], cropped_box = self.transformation.test_transform(
-                        orig_img, box
-                    )
+                    inps[i], cropped_box = self.test_transform_mine(orig_img, box)
                     cropped_boxes[i] = torch.FloatTensor(cropped_box)
 
                 # inps, cropped_boxes = self.transformation.align_transform(orig_img, boxes)
@@ -371,7 +372,8 @@ class DetectionLoader:
         tqdm.write("Finished post processing")
 
     def read(self):
-        return self.wait_and_get(self.pose_queue)
+        # print("pose", self.pose_queue.qsize())
+        return self.wait_and_get(self.pose_queue, "pose")
 
     @property
     def stopped(self):
@@ -384,25 +386,61 @@ class DetectionLoader:
     def length(self):
         return self.datalen
 
-# def window_worker(
-#         q: Queue, datalen: int, pose_data_queue: Queue, length: int, interlace: int
-# ):
-#     window = []
-#     for i in range(datalen):
-#         data = pose_data_queue.get()
-#         window.append(data)
-#         if len(window) == length:
-#             q.put(window)
-#             window = window[:interlace]
-#     return window
-#
-#
-# def run_window_worker(
-#         datalen: int, pose_data_queue: Queue, length: int, interlace: int
-# ):
-#     q = Queue(5)
-#     window_worker_thread = Thread(
-#         target=window_worker, args=(q, datalen, pose_data_queue, length, interlace)
-#     )
-#     window_worker_thread.start()
-#     return q
+    def test_transform_mine(self, src, bbox, interp=1):
+        input_size = self._input_size
+        inp_h, inp_w = input_size
+        xmin, ymin, xmax, ymax = bbox
+
+        xmin2, ymin2, xmax2, ymax2 = calc_new_box(xmin, ymin, xmax - xmin, ymax - ymin, inp_w / inp_h)
+        xmin2, ymin2, xmax2, ymax2 = int(xmin2), int(ymin2), int(xmax2), int(ymax2)
+
+        cropped_image = src[max(0, ymin2):min(src.shape[0], ymax2), max(0, xmin2):min(src.shape[1], xmax2), :]
+
+        # Calculate padding if bounding box is outside the array
+        pad_top = max(0 - ymin2, 0)
+        pad_bottom = max(ymax2 - src.shape[0], 0)
+        pad_left = max(0 - xmin2, 0)
+        pad_right = max(xmax2 - src.shape[1], 0)
+
+        padded_image = np.pad(cropped_image, ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0)), mode='constant')
+
+        img = cv2.resize(padded_image, (192, 256), interpolation=interp)
+
+        img2 = im_to_torch(img)
+        img2[0].add_(-0.406)
+        img2[1].add_(-0.457)
+        img2[2].add_(-0.480)
+
+        return img2, [xmin2, ymin2, xmax2, ymax2]
+
+    def test_transform(self, src, bbox):
+        xmin, ymin, xmax, ymax = bbox
+        input_size = self._input_size
+        inp_h, inp_w = input_size
+        center, scale = _box_to_center_scale(
+            xmin, ymin, xmax - xmin, ymax - ymin, inp_w / inp_h)
+        scale = scale * 1.0
+
+        trans = get_affine_transform(center, scale, 0, [inp_w, inp_h])
+        img = cv2.warpAffine(src, trans, (int(inp_w), int(inp_h)), flags=cv2.INTER_LINEAR)
+        bbox = _center_scale_to_box(center, scale)
+
+        img = im_to_torch(img)
+        img[0].add_(-0.406)
+        img[1].add_(-0.457)
+        img[2].add_(-0.480)
+
+        return img, bbox
+
+
+def calc_new_box(xmin, ymin, w, h, aspect):
+    if w > aspect * h:
+        return [xmin - 0.125 * w,
+                ymin + 0.5 * h - 0.625 * w / aspect,
+                xmin + 1.125 * w,
+                ymin + 0.5 * h + 0.625 * w / aspect]
+    else:
+        return [xmin + 0.5 * w - 0.625 * h * aspect,
+                ymin - 0.125 * h,
+                xmin + 0.5 * w + 0.625 * h * aspect,
+                ymin + 1.125 * h]
