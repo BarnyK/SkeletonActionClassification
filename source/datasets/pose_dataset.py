@@ -96,6 +96,7 @@ class PoseDataset(Dataset):
         self.points = data['poseXY']
         self.dataset_info = data['dataset_info']
 
+        # Remove mutuals that do not have both bodies
         if isinstance(feature_list[0], list):
             for i in range(len(self.points), 0, -1):
                 i -= 1
@@ -103,7 +104,7 @@ class PoseDataset(Dataset):
                     self.points.pop(i)
                     self.labels.pop(i)
                     self.dataset_info.pop(i)
-                    print(f"Removed {i}")
+                    #print(f"Removed {i}")
 
         self.confidences = data['poseConf']
         self.image_shape = data.get("im_shape", (1920, 1080))

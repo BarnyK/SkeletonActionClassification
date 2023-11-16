@@ -42,7 +42,15 @@ class Graph:
             elif self.graph == 'mutual':
                 num_node = coco.num_nodes * 2
                 neighbor_link = coco.edges + [(x + coco.num_nodes, y + coco.num_nodes) for x, y in coco.edges]
-                neighbor_link += [(coco.center, coco.center + ntu_coco.num_nodes) ] # Link between centers
+                neighbor_link += [(coco.center, coco.center + coco.num_nodes)]  # Link between centers
+                parts = coco.parts + [x + coco.num_nodes for x in coco.parts]
+                center = coco.center
+            elif self.graph == 'mutual-inter':
+                num_node = coco.num_nodes * 2
+                neighbor_link = coco.edges + [(x + coco.num_nodes, y + coco.num_nodes) for x, y in coco.edges]
+                neighbor_link += [(coco.center, coco.center + coco.num_nodes)]
+                neighbor_link += [(9, 10), (9 + coco.num_nodes, 10 + coco.num_nodes),
+                                  (9, 9 + coco.num_nodes), (10, 10 + coco.num_nodes)]
                 parts = coco.parts + [x + coco.num_nodes for x in coco.parts]
                 center = coco.center
             else:
@@ -57,8 +65,17 @@ class Graph:
                 num_node = ntu_coco.num_nodes * 2
                 neighbor_link = ntu_coco.edges + [(x + ntu_coco.num_nodes, y + ntu_coco.num_nodes) for x, y in
                                                   ntu_coco.edges]
-                neighbor_link += [(ntu_coco.center, ntu_coco.center + ntu_coco.num_nodes) ] # Link between centers
+                neighbor_link += [(ntu_coco.center, ntu_coco.center + ntu_coco.num_nodes)]  # Link between centers
                 parts = ntu_coco.parts + [x + ntu_coco.num_nodes for x in ntu_coco.parts]
+                center = ntu_coco.center
+            elif self.graph == 'mutual-inter':
+                num_node = ntu_coco.num_nodes * 2
+                neighbor_link = ntu_coco.edges + [(x + ntu_coco.num_nodes, y + ntu_coco.num_nodes) for x, y in
+                                                  ntu_coco.edges]
+                neighbor_link += [(ntu_coco.center, ntu_coco.center + ntu_coco.num_nodes)]
+                neighbor_link += [(4, 7), (4 + ntu_coco.num_nodes, 7 + ntu_coco.num_nodes),
+                                  (4, 4 + ntu_coco.num_nodes), (7, 7 + ntu_coco.num_nodes)]
+                parts = ntu_coco.parts + [x + ntu_coco.num_nodes for x in ntu.parts]
                 center = ntu_coco.center
             else:
                 raise ValueError()
@@ -80,7 +97,7 @@ class Graph:
                 neighbor_link += [(ntu.center, ntu.center + ntu.num_nodes)]
                 neighbor_link += [(22, 24), (47, 49), (22, 47), (24, 49)]
                 parts = ntu.parts + [x + ntu.num_nodes for x in ntu.parts]
-                center = 21 - 1
+                center = ntu.center
             else:
                 raise ValueError()
         else:

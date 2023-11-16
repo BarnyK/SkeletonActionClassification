@@ -210,6 +210,112 @@ if __name__ == "__main__2":
                 print(ex)
 
 if __name__ == "__main__":
-    cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ap_xview.yaml")
-    cfg.name = "2pgcn_test_1"
-    train_network(cfg)
+    import torch
+
+    files = ["/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_mutual_xview.train.pkl",
+             "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_mutual_xsub.train.pkl",
+             "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu120_mutual_xsub.train.pkl",
+             "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu120_mutual_xset.train.pkl"]
+    ntu_files = ["/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test2/ntu_mutual_xview.train.pkl",
+                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test2/ntu_mutual_xsub.train.pkl",
+                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test2/ntu120_mutual_xsub.train.pkl",
+                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test2/ntu120_mutual_xset.train.pkl"]
+    for i in range(3):
+        for file in ntu_files:
+            name = os.path.split(file)[-1].split(".")[0]
+            test_file = file.replace("train", "test")
+            cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ntu_xview.yaml")
+            cfg.name = f"2pgcn_ntu_{name}_{i}"
+            cfg.train_config.train_file = file
+            cfg.eval_config.test_file = test_file
+            train_network(cfg)
+            torch.cuda.empty_cache()
+        ntu_files = ntu_files[0]
+
+        for file in files:
+            name = os.path.split(file)[-1].split(".")[0]
+            test_file = file.replace("train", "test")
+            cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ap_xview.yaml")
+            cfg.name = f"2pgcn_{name}_{i}"
+            cfg.train_config.train_file = file
+            cfg.eval_config.test_file = test_file
+            train_network(cfg)
+            torch.cuda.empty_cache()
+
+            name = os.path.split(file)[-1].split(".")[0]
+            test_file = file.replace("train", "test")
+            cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ap_xview.yaml")
+            cfg.symmetry_processing = True
+            cfg.name = f"2pgcn_sym_{name}_{i}"
+            cfg.train_config.train_file = file
+            cfg.eval_config.test_file = test_file
+            train_network(cfg)
+            torch.cuda.empty_cache()
+
+            name = os.path.split(file)[-1].split(".")[0]
+            test_file = file.replace("train", "test")
+            cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ap_xview.yaml")
+            cfg.labeling = "spatial"
+            cfg.name = f"2pgcn_spatial_{name}_{i}"
+            cfg.train_config.train_file = file
+            cfg.eval_config.test_file = test_file
+            train_network(cfg)
+            torch.cuda.empty_cache()
+
+            name = os.path.split(file)[-1].split(".")[0]
+            test_file = file.replace("train", "test")
+            cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ap_xview.yaml")
+            cfg.graph_type = "mutual-inter"
+            cfg.name = f"2pgcn_inter_{name}_{i}"
+            cfg.train_config.train_file = file
+            cfg.eval_config.test_file = test_file
+            train_network(cfg)
+            torch.cuda.empty_cache()
+
+            name = os.path.split(file)[-1].split(".")[0]
+            test_file = file.replace("train", "test")
+            cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ap_xview.yaml")
+            cfg.graph_type = "mutual-inter"
+            cfg.labeling = "spatial"
+            cfg.name = f"2pgcn_inter_spat_{name}_{i}"
+            cfg.train_config.train_file = file
+            cfg.eval_config.test_file = test_file
+            train_network(cfg)
+            torch.cuda.empty_cache()
+
+            name = os.path.split(file)[-1].split(".")[0]
+            test_file = file.replace("train", "test")
+            cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ap_xview.yaml")
+            cfg.train_config.train_batch_size = 16
+            cfg.eval_config.test_batch_size = 64
+            cfg.name = f"2pgcn_b16_{name}_{i}"
+            cfg.train_config.train_file = file
+            cfg.eval_config.test_file = test_file
+            train_network(cfg)
+            torch.cuda.empty_cache()
+
+            name = os.path.split(file)[-1].split(".")[0]
+            test_file = file.replace("train", "test")
+            cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ap_xview.yaml")
+            cfg.train_config.train_batch_size = 16
+            cfg.eval_config.test_batch_size = 64
+            cfg.train_config.epochs = 65
+            cfg.name = f"2pgcn_e65_b16_{name}_{i}"
+            cfg.train_config.train_file = file
+            cfg.eval_config.test_file = test_file
+            train_network(cfg)
+            torch.cuda.empty_cache()
+
+            name = os.path.split(file)[-1].split(".")[0]
+            test_file = file.replace("train", "test")
+            cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ap_xview.yaml")
+            cfg.train_config.train_batch_size = 32
+            cfg.eval_config.test_batch_size = 64
+            cfg.name = f"2pgcn_b32_{name}_{i}"
+            cfg.train_config.train_file = file
+            cfg.eval_config.test_file = test_file
+            train_network(cfg)
+            torch.cuda.empty_cache()
+        files = [files[0]]
+
+

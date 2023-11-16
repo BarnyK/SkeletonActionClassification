@@ -140,13 +140,15 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
 
     name: str = "default"
     skeleton_type: str = "coco17"
-    model_type: str = "stgcnpp"  #: TODO: 2P-GCN
+    model_type: str = "stgcnpp"
     device: str = "cuda:0"  #: could be "cuda:0" or "cpu"
     features: Union[list[str], list[list[str]]] = field(default_factory=lambda: ['joints'])
     window_length: int = 64
     samples_per_window: int = 32
     interlace: int = 16
     symmetry_processing: bool = False  #: Only works with 2p-GCN
+    labeling: str = "distance"  #: Only works with 2P-GCN
+    graph_type: str = "mutual"  #: Only works with 2P-GCN
     normalization_type: str = "spine_align"
 
     train_config: TrainingConfig = TrainingConfig()
