@@ -275,7 +275,7 @@ class DetectionLoader:
             imgs, orig_imgs, im_names, im_dim_list = self.wait_and_get(self.image_queue, "image")
             if imgs is None or self.stopped:
                 self.wait_and_put(
-                    self.det_queue, (None, None, None, None, None, None, None)
+                    self.det_queue, (None, None, None, None, None)
                 )
                 return
 
@@ -292,7 +292,7 @@ class DetectionLoader:
                     for k in range(len(orig_imgs)):
                         self.wait_and_put(
                             self.det_queue,
-                            (orig_imgs[k], im_names[k], None, None, None, None, None),
+                            (orig_imgs[k], None, None, None, None),
                         )
                     continue
                 if isinstance(dets, np.ndarray):
@@ -310,26 +310,23 @@ class DetectionLoader:
                 if isinstance(boxes_k, int) or boxes_k.shape[0] == 0:
                     self.wait_and_put(
                         self.det_queue,
-                        (orig_imgs[k], im_names[k], None, None, None, None, None),
+                        (orig_imgs[k], None, None, None, None),
                     )
                     continue
                 inps = torch.zeros(boxes_k.size(0), 3, *self._input_size)
-                cropped_boxes = torch.zeros(boxes_k.size(0), 4)
 
                 self.wait_and_put(
                     self.det_queue,
                     (
                         orig_imgs[k],
-                        im_names[k],
                         boxes_k,
                         scores[dets[:, 0] == k],
                         ids[dets[:, 0] == k],
                         inps,
-                        cropped_boxes,
                     ),
                 )
         self.wait_and_put(
-            self.det_queue, (None, None, None, None, None, None, None)
+            self.det_queue, (None, None, None, None, None, None)
         )
         tqdm.write("Finished detection")
 
@@ -339,26 +336,25 @@ class DetectionLoader:
             with torch.no_grad():
                 (
                     orig_img,
-                    im_name,
                     boxes,
                     scores,
                     ids,
                     inps,
-                    cropped_boxes,
                 ) = self.wait_and_get(self.det_queue, "det")
                 if orig_img is None or self.stopped:
                     self.wait_and_put(
-                        self.pose_queue, (None, None, None, None, None, None, None)
+                        self.pose_queue, (None, None, None, None)
                     )
                     return
                 if boxes is None or boxes.nelement() == 0:
                     self.wait_and_put(
                         self.pose_queue,
-                        (None, orig_img, im_name, boxes, scores, ids, None),
+                        (None, boxes, scores, None),
                     )
                     continue
                 # imght = orig_img.shape[0]
                 # imgwidth = orig_img.shape[1]
+                cropped_boxes = torch.zeros(boxes.size(0), 4)
                 for i, box in enumerate(boxes):
                     inps[i], cropped_box = self.test_transform_mine(orig_img, box)
                     cropped_boxes[i] = torch.FloatTensor(cropped_box)
@@ -367,7 +363,7 @@ class DetectionLoader:
 
                 self.wait_and_put(
                     self.pose_queue,
-                    (inps, orig_img, im_name, boxes, scores, ids, cropped_boxes),
+                    (inps, boxes, scores, cropped_boxes),
                 )
         tqdm.write("Finished post processing")
 

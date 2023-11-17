@@ -18,14 +18,11 @@ def pose_worker(
         with torch.no_grad():
             (
                 inps,
-                orig_img,
-                im_name,
                 boxes,
                 scores,
-                ids,
                 cropped_boxes,
             ) = det_loader.read()
-            if orig_img is None:
+            if scores is None:
                 break
             if boxes is None or boxes.nelement() == 0:
                 # Empty frame with no detection
