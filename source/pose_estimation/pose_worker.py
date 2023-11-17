@@ -31,6 +31,23 @@ def pose_worker(
                 # Empty frame with no detection
                 pose_queue.put([])
                 continue
+            #
+            # ## Threshold boxes
+            # to_remove = []
+            # left = []
+            # for i in range(inps.shape[0]):
+            #     if scores[i] < 0.7:
+            #         to_remove = [i] + to_remove
+            #     else:
+            #         left.append(i)
+            #
+            # inps = inps[left]
+            # boxes = boxes[left]
+            # scores = scores[left]
+            # ids = ids[left]
+            # cropped_boxes = cropped_boxes[left]
+            # for i in to_remove:
+            #     orig_img.
 
             inps = inps.to(opts.device, non_blocking=True)
             datalen = inps.size(0)

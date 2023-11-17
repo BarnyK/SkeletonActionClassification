@@ -230,7 +230,7 @@ if __name__ == "__main__":
             cfg.eval_config.test_file = test_file
             train_network(cfg)
             torch.cuda.empty_cache()
-        ntu_files = ntu_files[0]
+        ntu_files = [ntu_files[0]]
 
         for file in files:
             name = os.path.split(file)[-1].split(".")[0]

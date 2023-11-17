@@ -1,4 +1,4 @@
-from shared.structs import SkeletonData
+from shared.structs import SkeletonData, FrameData
 
 
 def remove_by_max_pose_confidence(data: SkeletonData, threshold: float = 0.3):
@@ -30,7 +30,7 @@ def remove_by_max_possible_pose_confidence(data: SkeletonData, threshold: float 
 
 
 def remove_bodies_by_box_confidence(data: SkeletonData, threshold: float = 0.5, max_total: float = 1.0,
-                                    max_frames: float = 1.0):
+                                    max_frames: float = 1.0) -> bool:
     """
     Remove
     :param data: SkeletonData
@@ -67,3 +67,20 @@ def remove_bodies_by_box_confidence(data: SkeletonData, threshold: float = 0.5, 
     for fi, bi in to_remove:
         data.frames[fi].bodies.pop(bi)
     return True
+
+
+def remove_bodies_by_box_confidence_frame(frame: FrameData, threshold: float = 0.5):
+    """
+    Remove
+    :param data: SkeletonData
+    :param threshold: box confidence threshold
+    :return:
+    """
+    to_remove = []
+    for bi, _ in enumerate(frame.bodies):
+        if frame.bodies[bi].boxConf.sum() < threshold:
+            to_remove = [bi] + to_remove  # prepend
+
+    # Remove bodies
+    for bi in to_remove:
+        frame.bodies.pop(bi)

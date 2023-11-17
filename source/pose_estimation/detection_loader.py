@@ -372,7 +372,6 @@ class DetectionLoader:
         tqdm.write("Finished post processing")
 
     def read(self):
-        # print("pose", self.pose_queue.qsize())
         return self.wait_and_get(self.pose_queue, "pose")
 
     @property

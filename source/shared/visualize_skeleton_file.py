@@ -88,10 +88,7 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
         int(video_stream.get(cv2.CAP_PROP_FRAME_HEIGHT)),
     )
     fps = video_stream.get(cv2.CAP_PROP_FPS)
-    out_stream = None
-    if save_file:
-        fourcc = cv2.VideoWriter_fourcc(*'XVID')
-        out_stream = cv2.VideoWriter(save_file, fourcc, fps, frame_size)
+
 
     if skip_frames:
         wrapped_stream = every_nth_frame(video_stream, skeleton_data.frame_interval)
@@ -99,6 +96,12 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
     else:
         wrapped_stream = every_nth_frame(video_stream, 1)
         interval = skeleton_data.frame_interval
+
+    out_stream = None
+    if save_file:
+        fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+        out_stream = cv2.VideoWriter(save_file, fourcc, 24, frame_size)
+        out_stream.set(cv2.VIDEOWRITER_PROP_QUALITY, 1)
 
     i = -1
     while True:

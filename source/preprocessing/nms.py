@@ -444,18 +444,10 @@ def test_nms(skeleton_file):
     et = time.time()
     print(et - st)
 
-    data = SkeletonData.load(skeleton_file)
-    st = time.time()
-    concurrent_nms(data, True)
-    et = time.time()
-    print(et - st)
     # visualize(frames, frames.video_file, 1000//30, "Alphapose ppose nms")
 
 
 if __name__ == "__main__":
-    test_nms(
-        "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_halpe/S009C003P025R001A060_rgb.halpe.apskel.pkl")
-    test_nms(
-        "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_halpe/S001C001P001R001A053_rgb.halpe.apskel.pkl")
-    test_nms(
-        "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_halpe/S001C002P001R001A037_rgb.halpe.apskel.pkl")
+    for i in range(50,61):
+        test_nms(f"/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco/S009C003P025R001A0{i}.coco17.apskel.pkl")
+
