@@ -1,6 +1,7 @@
 import os
 
 import shared.datasets
+from datasets import TransformsNameList
 from procedures.config import PreprocessConfig, TrainingConfig, GeneralConfig
 from procedures.generate_alphapose_skeletons import gen_alphapose_skeletons
 from procedures.preprocess_files import preprocess_files
@@ -317,3 +318,66 @@ if __name__ == "__main__":
             train_network(cfg)
             torch.cuda.empty_cache()
         files = [files[0]]
+
+    ntu_files = ["/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test2/ntu_mutual_xview.train.pkl",
+                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test2/ntu_mutual_xsub.train.pkl",
+                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test2/ntu120_mutual_xsub.train.pkl",
+                 "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test2/ntu120_mutual_xset.train.pkl"]
+    for i in range(3):
+        for file in ntu_files:
+            name = os.path.split(file)[-1].split(".")[0]
+            test_file = file.replace("train", "test")
+            cfg = GeneralConfig.from_yaml_file("configs/general/2pgcn_ntu_xview.yaml")
+            cfg.name = f"2pgcn_ntu_b32_sym_{name}_{i}"
+            cfg.train_config.train_file = file
+            cfg.eval_config.test_file = test_file
+            cfg.symmetry_processing = True
+            cfg.train_config.train_batch_size = 32
+            cfg.eval_config.test_batch_size = 64
+            train_network(cfg)
+            torch.cuda.empty_cache()
+
+
+def shortfeat(feat):
+    return "".join(x[:2] for x in feat.split("_"))
+
+
+if __name__ == "__main__":
+    import itertools
+
+    files = ["/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_xview.train.pkl",
+             "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_xsub.train.pkl",
+             "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu120_xsub.train.pkl",
+             "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu120_xset.train.pkl"]
+    all_features = TransformsNameList[:]
+    combs = [list(comb) for comb in itertools.combinations(all_features, 2)]
+    for i in range(3):
+        for file in files:
+            for features in combs:
+                feat_shorted = "-".join([shortfeat(x) for x in features])
+                name = os.path.split(file)[-1].split(".")[0]
+                test_file = file.replace("train", "test")
+                cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
+                cfg.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/feature_test"
+                cfg.features = features
+                cfg.name = f"stgcn_{feat_shorted}_{name}_{i}"
+                cfg.train_config.train_file = file
+                cfg.eval_config.test_file = test_file
+                train_network(cfg)
+                torch.cuda.empty_cache()
+    files = [files[0]]
+    combs = [list(comb) for comb in itertools.combinations(all_features, 3)]
+    for i in range(3):
+        for file in files:
+            for features in combs:
+                feat_shorted = "-".join([shortfeat(x) for x in features])
+                name = os.path.split(file)[-1].split(".")[0]
+                test_file = file.replace("train", "test")
+                cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
+                cfg.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/feature_test"
+                cfg.features = features
+                cfg.name = f"stgcn_{feat_shorted}_{name}_{i}"
+                cfg.train_config.train_file = file
+                cfg.eval_config.test_file = test_file
+                train_network(cfg)
+                torch.cuda.empty_cache()

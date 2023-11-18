@@ -34,14 +34,18 @@ from shared.structs import SkeletonData, FrameData
 from shared.visualize_skeleton_file import visualize
 
 
+def listdiff(x,y):
+    return [a-b for a,b in zip(x,y)]
 def queue_size_printer(queues: list[Queue, ...], names):
-    prev = ""
+    prev = [0,0,0,0]
     while True:
         sizes = [q.qsize() for q in queues]
-        cur = "".join(f"{s:4} " for s in sizes)
-        if prev != cur:
-            tqdm.write(cur)
-        prev = cur
+        if prev != sizes:
+            s = "".join(f"{s:4} " for s in sizes)
+            tqdm.write(s)
+            diff = [b-a for a,b in zip(prev,sizes)]
+            tqdm.write("".join(f"{d:4} " for d in diff))
+        prev = sizes
         time.sleep(1)
 
 
