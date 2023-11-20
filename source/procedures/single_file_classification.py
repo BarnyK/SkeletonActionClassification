@@ -34,16 +34,18 @@ from shared.structs import SkeletonData, FrameData
 from shared.visualize_skeleton_file import visualize
 
 
-def listdiff(x,y):
-    return [a-b for a,b in zip(x,y)]
+def listdiff(x, y):
+    return [a - b for a, b in zip(x, y)]
+
+
 def queue_size_printer(queues: list[Queue, ...], names):
-    prev = [0,0,0,0]
+    prev = [0, 0, 0, 0]
     while True:
         sizes = [q.qsize() for q in queues]
         if prev != sizes:
             s = "".join(f"{s:4} " for s in sizes)
             tqdm.write(s)
-            diff = [b-a for a,b in zip(prev,sizes)]
+            diff = [b - a for a, b in zip(prev, sizes)]
             tqdm.write("".join(f"{d:4} " for d in diff))
         prev = sizes
         time.sleep(1)
@@ -56,17 +58,12 @@ def run_qsp(queues, names):
     qsp_thread.start()
 
 
-def get_from_queue(queue: Queue, name=""):
-    # print(name, queue.qsize())
-    return queue.get()
-
-
 def window_worker(
         q: Queue, datalen: int, pose_data_queue: Queue, length: int, interlace: int
 ):
     window = []
     for i in tqdm(range(datalen), disable=True):
-        data = get_from_queue(pose_data_queue, "window")
+        data = pose_data_queue.get()
         if data is None:
             break
         fd = FrameData(i, len(data), data)
