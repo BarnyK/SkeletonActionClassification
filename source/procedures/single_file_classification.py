@@ -28,6 +28,7 @@ from preprocessing.tracking import select_by_size, select_by_confidence, select_
 from procedures.config import GeneralConfig, PreprocessConfig
 from procedures.preprocess_files import _preprocess_data_ap
 from procedures.training import load_model
+from shared import visualize
 from shared.datasets import adjusted_actions_maps
 from shared.helpers import calculate_interval, run_qsp, fill_frames
 from shared.skeletons import ntu_coco
@@ -38,7 +39,7 @@ def window_worker(
         q: Queue, datalen: int, pose_data_queue: Queue, length: int, interlace: int
 ):
     window = []
-    for i in tqdm(range(datalen), disable=True):
+    for i in tqdm(range(datalen), disable=False):
         data = pose_data_queue.get()
         if data is None:
             break
@@ -215,7 +216,8 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
         ct = datetime.datetime.now()
         for i in range(ab, frames[0].seqId):
             action_name = adjusted_actions_maps[cfg.dataset].get(frame_results[i])
-            print(f"{i:4}{ct.__str__():30}{action_name}")
+            unique_frames[i].text = action_name
+            #print(f"{i:4}{ct.__str__():30}{action_name}")
             ct = ct + datetime.timedelta(seconds=1 / (30 * cfg.samples_per_window / cfg.window_length))
 
     frame_results, _ = calculate_frame_results(frame_results, len(frame_windows_mapping), frame_windows_mapping,
@@ -227,22 +229,19 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     print(f"fps:        {fps:.4}")
     print(f"Total time: {end_time - start_time:.4}")
 
-    # for res in results:
-    #     print([action_map[x] for x in res])
-    # out = aggregate_results(window_results)
-    # print(out)
+
     #
     # #
-    # total_data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
-    #                           len(unique_frames), unique_frames, len(unique_frames), det_loader.frameSize,
-    #                           frame_interval)
+    total_data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
+                              len(unique_frames), unique_frames, len(unique_frames), det_loader.frameSize,
+                              frame_interval)
     #
     # pose_track(total_data.frames)
-    # for frame, action_id in zip(total_data.frames, out):
-    #     frame.text = action_map[action_id]
-    # fps = 30 * cfg.samples_per_window / cfg.window_length
-    # visualize(total_data, total_data.video_file, int(1000 / fps), print_frame_text=False, skip_frames=True,
-    #           save_file="/home/barny/naaaaaaah.mp4", draw_bbox=True)
+    for frame, action_id in zip(total_data.frames, out):
+        frame.text = action_map[frame_results[frame.seqId]]
+    fps = 30 * cfg.samples_per_window / cfg.window_length
+    visualize(total_data, total_data.video_file, int(1000 / fps), print_frame_text=False, skip_frames=True,
+              save_file="/home/barny/naaaaaaah.mp4", draw_bbox=True)
 
     for q in [det_loader.image_queue, det_loader.det_queue, det_loader.pose_queue, window_queue]:
         while True:
@@ -332,11 +331,12 @@ if __name__ == "__main__":
     times = []
     for i in range(1):
         st = time.time()
-        x = single_file_classification("/media/godchama/ssd/hoshimatic.20.30.avi", config)
+        #x = single_file_classification("/media/godchama/ssd/hoshimatic.20.30.avi", config)
+        x=0
         et = time.time()
         times.append(et - st)
         fpses.append(x)
-    # single_file_classification("/media/godchama/ssd/hoshimatic.40.30.avi", config)
+    single_file_classification("/media/godchama/hdd/gura.short.mp4", config)
     # single_file_classification("/media/godchama/ssd/hoshimatic.60.30.avi", config)
     # single_file_classification("/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq1.avi",
     #                            config)

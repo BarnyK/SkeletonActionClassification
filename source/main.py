@@ -351,7 +351,7 @@ if __name__ == "__main__":
              "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu120_xset.train.pkl"]
     all_features = TransformsNameList[:]
     combs = [list(comb) for comb in itertools.combinations(all_features, 2)]
-    for i in range(3):
+    for i in range(1):
         for file in files:
             for features in combs:
                 feat_shorted = "-".join([shortfeat(x) for x in features])
@@ -367,7 +367,7 @@ if __name__ == "__main__":
                 torch.cuda.empty_cache()
 
     combs = [list(comb) for comb in itertools.combinations(all_features, 1)]
-    for i in range(3):
+    for i in range(1):
         for file in files:
             for features in combs:
                 feat_shorted = "-".join([shortfeat(x) for x in features])
@@ -384,7 +384,7 @@ if __name__ == "__main__":
 
     files = [files[0]]
     combs = [list(comb) for comb in itertools.combinations(all_features, 3)]
-    for i in range(3):
+    for i in range(1):
         for file in files:
             for features in combs:
                 feat_shorted = "-".join([shortfeat(x) for x in features])

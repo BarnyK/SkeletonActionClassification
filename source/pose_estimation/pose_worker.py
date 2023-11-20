@@ -47,10 +47,10 @@ def pose_worker_batch_filling(pose_model, det_loader: DetectionLoader, pose_queu
     results = {}
     with torch.no_grad():
         for frame_id in range(det_loader.datalen):
-            (inputs, boxes, scores, cropped_boxes) = det_loader.read()
-            if scores is None:
+            (inputs, orig_img, boxes, scores, cropped_boxes) = det_loader.read()
+            if orig_img is None:
                 # send current batch
-                pass
+                break
             if boxes is None or boxes.nelement() == 0:
                 # empty bodies idk how to deal with this
                 results[frame_id] = ResultStore(frame_id,0, [], [], [], )
@@ -74,12 +74,13 @@ def pose_worker_batch_filling(pose_model, det_loader: DetectionLoader, pose_queu
                 pose_queue.put(bodies)
 
         send_batch(data_list, opts, pose_model, results)
-
+        res_keys = sorted(results.keys())
         for key in res_keys:
             data = results.pop(key)
             bodies = data.to_bodies()
             pose_queue.put(bodies)
-
+    pose_queue.put(None)
+    tqdm.write("Finished pose")
     pass
 
 
@@ -102,11 +103,12 @@ def pose_worker(
         with torch.no_grad():
             (
                 inps,
+                orig_img,
                 boxes,
                 scores,
                 cropped_boxes,
             ) = det_loader.read()
-            if scores is None:
+            if orig_img is None:
                 break
             if boxes is None or boxes.nelement() == 0:
                 # Empty frame with no detection

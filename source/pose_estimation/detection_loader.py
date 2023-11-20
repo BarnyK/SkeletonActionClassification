@@ -343,13 +343,13 @@ class DetectionLoader:
                 ) = self.wait_and_get(self.det_queue, "det")
                 if orig_img is None or self.stopped:
                     self.wait_and_put(
-                        self.pose_queue, (None, None, None, None)
+                        self.pose_queue, (None, None, None, None, None)
                     )
                     return
                 if boxes is None or boxes.nelement() == 0:
                     self.wait_and_put(
                         self.pose_queue,
-                        (None, boxes, scores, None),
+                        (None, orig_img, boxes, scores, None),
                     )
                     continue
                 # imght = orig_img.shape[0]
@@ -363,7 +363,7 @@ class DetectionLoader:
 
                 self.wait_and_put(
                     self.pose_queue,
-                    (inps, boxes, scores, cropped_boxes),
+                    (inps, orig_img, boxes, scores, cropped_boxes),
                 )
         tqdm.write("Finished post processing")
 
