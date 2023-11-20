@@ -6,34 +6,7 @@ from shared.read_skeleton import read_skeleton
 from shared.skeletons import drawn_limbs_map, draw_preparation_func_map
 from shared.structs import SkeletonData
 
-limbs = {
-    "halpe": [
-        (0, 1),
-        (0, 2),
-        (1, 3),
-        (2, 4),  # Head
-        (5, 18),
-        (6, 18),
-        (5, 7),
-        (7, 9),
-        (6, 8),
-        (8, 10),  # Body
-        (17, 18),
-        (18, 19),
-        (19, 11),
-        (19, 12),
-        (11, 13),
-        (12, 14),
-        (13, 15),
-        (14, 16),
-        (20, 24),
-        (21, 25),
-        (23, 25),
-        (22, 24),
-        (15, 24),
-        (16, 25),  # Foot
-    ],
-}
+
 
 tracking_colors = {
     0: (128, 128, 0),
