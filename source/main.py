@@ -365,6 +365,23 @@ if __name__ == "__main__":
                 cfg.eval_config.test_file = test_file
                 train_network(cfg)
                 torch.cuda.empty_cache()
+
+    combs = [list(comb) for comb in itertools.combinations(all_features, 1)]
+    for i in range(3):
+        for file in files:
+            for features in combs:
+                feat_shorted = "-".join([shortfeat(x) for x in features])
+                name = os.path.split(file)[-1].split(".")[0]
+                test_file = file.replace("train", "test")
+                cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
+                cfg.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/feature_test"
+                cfg.features = features
+                cfg.name = f"stgcn_{feat_shorted}_{name}_{i}"
+                cfg.train_config.train_file = file
+                cfg.eval_config.test_file = test_file
+                train_network(cfg)
+                torch.cuda.empty_cache()
+
     files = [files[0]]
     combs = [list(comb) for comb in itertools.combinations(all_features, 3)]
     for i in range(3):

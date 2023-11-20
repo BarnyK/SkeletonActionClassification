@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import datetime
 import os
 import time
 from argparse import Namespace
@@ -28,34 +29,9 @@ from procedures.config import GeneralConfig, PreprocessConfig
 from procedures.preprocess_files import _preprocess_data_ap
 from procedures.training import load_model
 from shared.datasets import adjusted_actions_maps
-from shared.helpers import calculate_interval
+from shared.helpers import calculate_interval, run_qsp, fill_frames
 from shared.skeletons import ntu_coco
 from shared.structs import SkeletonData, FrameData
-from shared.visualize_skeleton_file import visualize
-
-
-def listdiff(x, y):
-    return [a - b for a, b in zip(x, y)]
-
-
-def queue_size_printer(queues: list[Queue, ...], names):
-    prev = [0, 0, 0, 0]
-    while True:
-        sizes = [q.qsize() for q in queues]
-        if prev != sizes:
-            s = "".join(f"{s:4} " for s in sizes)
-            tqdm.write(s)
-            diff = [b - a for a, b in zip(prev, sizes)]
-            tqdm.write("".join(f"{d:4} " for d in diff))
-        prev = sizes
-        time.sleep(1)
-
-
-def run_qsp(queues, names):
-    qsp_thread = Thread(
-        target=queue_size_printer, args=(queues, names)
-    )
-    qsp_thread.start()
 
 
 def window_worker(
@@ -125,13 +101,6 @@ def _preprocess_data_ap(data: SkeletonData, cfg: PreprocessConfig):
     return data, np.array([ct1 - st, ct2 - ct1, ct3 - ct2, ct4 - ct3, ct5 - ct4, ct6 - ct5])
 
 
-def fill_frames(data: SkeletonData, size: int):
-    seq = data.frames[-1].seqId
-    for i in range(size - len(data.frames)):
-        data.frames.append(FrameData(seq + i + 1, 0, []))
-    data.length = data.lengthB = size
-
-
 def aggregate_results(window_results: list[tuple[int, int, torch.Tensor], ...]) -> list[int, ...]:
     per_frame = defaultdict(list)
     for start_frame, end_frame, data in window_results:
@@ -145,6 +114,30 @@ def aggregate_results(window_results: list[tuple[int, int, torch.Tensor], ...]) 
         tmp = torch.concat([x.unsqueeze(1) for x in data], dim=1)
         out.append(tmp.mean(1).max(0)[1].item())
     return out
+
+
+def calculate_frame_results(frame_results, to_index, frame_windows, window_results):
+    cache = {}
+    start_index = len(frame_results)
+    for index in range(start_index, to_index):
+        windows = tuple(frame_windows[index])
+        if windows in cache:
+            frame_results.append(cache[windows])
+            continue
+        windows_data = [window_results[window_id] for window_id in windows]
+        windows_data = [x[2] for x in windows_data if x[2] is not None]
+        if len(windows_data) == 0:
+            frame_results.append(None)
+            cache[windows] = None
+            continue
+        stacked_data = torch.stack([windows_data[0], windows_data[0]])
+        summed_data = stacked_data.sum(0)
+        result = summed_data.max(0)[1]  # index
+        result = result.item()
+        frame_results.append(result)
+        cache[windows] = result
+
+    return frame_results, start_index
 
 
 def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[str, None] = None):
@@ -170,22 +163,26 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
 
     start_time = time.time()
     window_count = 0
-    results = []
-    window_results = []
     unique_frames = []
+    frame_windows_mapping = defaultdict(list)
+    window_results = {}
+    frame_results = []
     while True:
         frames: list[FrameData] = window_queue.get()
         if frames is None:
             break
         for frame in frames:
+            frame_windows_mapping[frame.seqId].append(window_count)
             if frame.seqId not in [x.seqId for x in unique_frames]:
                 unique_frames.append(deepcopy(frame))
         start_frame, end_frame = frames[0].seqId, frames[-1].seqId
-        window_count += 1
+
         data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
                             len(frames), deepcopy(frames), len(frames), det_loader.frameSize, frame_interval)
 
         if data.no_bodies():
+            window_results[window_count] = (start_frame, end_frame, None, None)
+            window_count += 1
             continue
 
         # Fill frames if unfinished window
@@ -196,6 +193,8 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
         _preprocess_data_ap(data, cfg.prep_config)
         points = data.to_matrix()
         if points is None:
+            window_results[window_count] = (start_frame, end_frame, None, None)
+            window_count += 1
             continue
 
         features = prepare_features(cfg, norm_func, points, required_transforms, transforms)
@@ -204,31 +203,54 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
         with torch.no_grad():
             out = model(features)
             top5 = torch.topk(out, 5)[1]
-        # Save result
-        results.append(tuple(x for x in top5[0].tolist()))
-        window_results.append((start_frame, end_frame, out[0].cpu()))
+
+        # Save results
+        top5_tuple = tuple(x for x in top5[0].tolist())
+        window_results[window_count] = (start_frame, end_frame, out[0].cpu(), top5_tuple)
+        window_count += 1
+
+        # calculate results to frames[0].seqId
+        frame_results, ab = calculate_frame_results(frame_results, frames[0].seqId, frame_windows_mapping,
+                                                    window_results)
+        ct = datetime.datetime.now()
+        for i in range(ab, frames[0].seqId):
+            action_name = adjusted_actions_maps[cfg.dataset].get(frame_results[i])
+            print(f"{i:4}{ct.__str__():30}{action_name}")
+            ct = ct + datetime.timedelta(seconds=1 / (30 * cfg.samples_per_window / cfg.window_length))
+
+    frame_results, _ = calculate_frame_results(frame_results, len(frame_windows_mapping), frame_windows_mapping,
+                                               window_results)
+
     action_map = adjusted_actions_maps[cfg.dataset]
     end_time = time.time()
-    print(f"fps:        {window_count / (end_time - start_time):.4}")
+    fps = window_count / (end_time - start_time)
+    print(f"fps:        {fps:.4}")
     print(f"Total time: {end_time - start_time:.4}")
 
-    for res in results:
-        print([action_map[x] for x in res])
-    out = aggregate_results(window_results)
-    print(out)
-
+    # for res in results:
+    #     print([action_map[x] for x in res])
+    # out = aggregate_results(window_results)
+    # print(out)
     #
-    total_data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
-                              len(unique_frames), unique_frames, len(unique_frames), det_loader.frameSize,
-                              frame_interval)
+    # #
+    # total_data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
+    #                           len(unique_frames), unique_frames, len(unique_frames), det_loader.frameSize,
+    #                           frame_interval)
+    #
+    # pose_track(total_data.frames)
+    # for frame, action_id in zip(total_data.frames, out):
+    #     frame.text = action_map[action_id]
+    # fps = 30 * cfg.samples_per_window / cfg.window_length
+    # visualize(total_data, total_data.video_file, int(1000 / fps), print_frame_text=False, skip_frames=True,
+    #           save_file="/home/barny/naaaaaaah.mp4", draw_bbox=True)
 
-    pose_track(total_data.frames)
-    for frame, action_id in zip(total_data.frames, out):
-        frame.text = action_map[action_id]
-    fps = 30 * cfg.samples_per_window / cfg.window_length
-    visualize(total_data, total_data.video_file, int(1000 / fps), print_frame_text=False, skip_frames=True,
-              save_file="/home/barny/naaaaaaah.mp4", draw_bbox=True)
-    return end_time - start_time
+    for q in [det_loader.image_queue, det_loader.det_queue, det_loader.pose_queue, window_queue]:
+        while True:
+            if q.empty():
+                break
+            q.get()
+
+    return fps
 
 
 def prepare_features(cfg, norm_func, points, required_transforms, transforms):
@@ -305,18 +327,18 @@ def handle_classify(args: Namespace):
 if __name__ == "__main__":
     config = GeneralConfig.from_yaml_file(
         "/media/barny/SSD4/MasterThesis/Data/logs/window_tests/default_64_32_2/config.yaml")
-    config.interlace = 16
-    ababa = []
+    config.interlace = 24
+    fpses = []
     times = []
     for i in range(1):
         st = time.time()
-        x = single_file_classification("/media/godchama/ssd/hoshimatic.60.30.avi", config)
+        x = single_file_classification("/media/godchama/ssd/hoshimatic.20.30.avi", config)
         et = time.time()
         times.append(et - st)
-        ababa.append(x)
+        fpses.append(x)
     # single_file_classification("/media/godchama/ssd/hoshimatic.40.30.avi", config)
     # single_file_classification("/media/godchama/ssd/hoshimatic.60.30.avi", config)
     # single_file_classification("/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq1.avi",
     #                            config)
-    print(f"Mean post time: {np.mean(ababa):.6}")  # 0.0266  0.0700
-    print(f"Mean exec time: {np.mean(times):.5}")  # 8.8105 21.705
+    print(f"Mean exec time: {np.mean(times):.5}")  # 38.792
+    print(f"Mean fps: {np.mean(fpses):.5}")  # 2.1821 # 2.1684

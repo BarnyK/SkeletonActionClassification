@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from queue import Queue
 from threading import Thread
 
@@ -8,6 +10,88 @@ from tqdm import tqdm
 
 from pose_estimation import DetectionLoader
 from shared.structs import Body
+
+
+class ResultStore:
+    def __init__(self, seq_id, count, boxes, scores, cropped_boxes):
+        self.seqId = seq_id
+        self.results = []
+        self.count = count
+        self.boxes = boxes
+        self.scores = scores
+        self.cropped_boxes = cropped_boxes
+
+    def finished(self):
+        return len(self.results) >= self.count
+
+    def to_bodies(self) -> list[Body]:
+        if len(self.results) == 0:
+            return []
+        heatmap_size = self.results[0].shape[-2:]
+        bodies = []
+        for i, heatmap in enumerate(self.results):
+            bbox = self.cropped_boxes[i].tolist()
+            pose_coord, pose_score = heatmap_to_coord_simple(
+                heatmap, bbox, hm_shape=heatmap_size, norm_type=None
+            )
+            body = Body(pose_coord, pose_score, self.boxes[i], self.scores[i])
+            bodies.append(body)
+        return bodies
+
+
+def pose_worker_batch_filling(pose_model, det_loader: DetectionLoader, pose_queue: Queue, opts: EasyDict,
+                              batch_size: int = 5):
+    # Holds a list of tuples with frame_id, tensor
+    data_list = []
+    # Holds a map of frame_seq to its size of inputs
+    results = {}
+    with torch.no_grad():
+        for frame_id in range(det_loader.datalen):
+            (inputs, boxes, scores, cropped_boxes) = det_loader.read()
+            if scores is None:
+                # send current batch
+                pass
+            if boxes is None or boxes.nelement() == 0:
+                # empty bodies idk how to deal with this
+                results[frame_id] = ResultStore(frame_id,0, [], [], [], )
+                continue
+            datalen = inputs.size(0)
+            results[frame_id] = ResultStore(frame_id, datalen, boxes, scores, cropped_boxes, )
+            data_list.extend([(frame_id, inp) for inp in inputs])
+
+            while len(data_list) >= batch_size:
+                current_batch = data_list[:batch_size]
+                data_list = data_list[batch_size:]
+
+                send_batch(current_batch, opts, pose_model, results)
+
+            res_keys = sorted(results.keys())
+            for key in res_keys:
+                if not results[key].finished():
+                    break
+                data = results.pop(key)
+                bodies = data.to_bodies()
+                pose_queue.put(bodies)
+
+        send_batch(data_list, opts, pose_model, results)
+
+        for key in res_keys:
+            data = results.pop(key)
+            bodies = data.to_bodies()
+            pose_queue.put(bodies)
+
+    pass
+
+
+def send_batch(current_batch, opts, pose_model, results):
+    tensors: list[torch.Tensor] = [x[1] for x in current_batch]
+    frame_ids = [x[0] for x in current_batch]
+    input_tensor = torch.stack(tensors, 0)
+    input_tensor = input_tensor.to(opts.device, non_blocking=True)
+    heat_maps = pose_model(input_tensor)
+    heat_maps_list = [x for x in heat_maps]
+    for j, fid in enumerate(frame_ids):
+        results[fid].results.append(heat_maps_list[j])
 
 
 def pose_worker(
@@ -28,23 +112,6 @@ def pose_worker(
                 # Empty frame with no detection
                 pose_queue.put([])
                 continue
-            #
-            # ## Threshold boxes
-            # to_remove = []
-            # left = []
-            # for i in range(inps.shape[0]):
-            #     if scores[i] < 0.7:
-            #         to_remove = [i] + to_remove
-            #     else:
-            #         left.append(i)
-            #
-            # inps = inps[left]
-            # boxes = boxes[left]
-            # scores = scores[left]
-            # ids = ids[left]
-            # cropped_boxes = cropped_boxes[left]
-            # for i in to_remove:
-            #     orig_img.
 
             inps = inps.to(opts.device, non_blocking=True)
             datalen = inps.size(0)
@@ -75,7 +142,7 @@ def pose_worker(
 def run_pose_worker(pose_model, det_loader: DetectionLoader, opts: EasyDict, batch_size: int = 5, queue_size: int = 64):
     pose_queue = Queue(queue_size)
     pose_worker_process = Thread(
-        target=pose_worker, args=(pose_model, det_loader, pose_queue, opts, batch_size)
+        target=pose_worker_batch_filling, args=(pose_model, det_loader, pose_queue, opts, batch_size)
     )
     pose_worker_process.start()
     return pose_queue

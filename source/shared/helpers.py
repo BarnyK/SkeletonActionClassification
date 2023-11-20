@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import os
 import re
+import time
 from os import path
+from queue import Queue
+from threading import Thread
 from typing import List, Tuple
 
 import numpy as np
 import yaml
 from easydict import EasyDict as edict
 
+from shared.structs import SkeletonData, FrameData
 from shared.dataset_info import DatasetInfo
 
 
@@ -94,3 +98,41 @@ def flatten_list(in_list):
     if len(in_list) == 0 or not isinstance(in_list[0], list):
         return in_list
     return [x for hid_list in in_list for x in hid_list]
+
+
+def listdiff(x, y):
+    return [a - b for a, b in zip(x, y)]
+
+
+def queue_size_printer(queues: list[Queue, ...], names):
+    prev = [0, 0, 0, 0]
+    maxes = [0, 0, 0, 0]
+    while True:
+        sizes = [q.qsize() for q in queues]
+        if prev != sizes:
+            s = "".join(f"{s:4} " for s in sizes)
+            # tqdm.write(s)
+            diff = [b - a for a, b in zip(prev, sizes)]
+            # tqdm.write("".join(f"{d:4} " for d in diff))
+        prev = sizes
+        for i, m in enumerate(maxes):
+            if m < sizes[i]:
+                maxes[i] = sizes[i]
+        time.sleep(1)
+        if sum(sizes) == 0:
+            print("Maxes: ", maxes)
+            return
+
+
+def run_qsp(queues, names):
+    qsp_thread = Thread(
+        target=queue_size_printer, args=(queues, names)
+    )
+    qsp_thread.start()
+
+
+def fill_frames(data: SkeletonData, size: int):
+    seq = data.frames[-1].seqId
+    for i in range(size - len(data.frames)):
+        data.frames.append(FrameData(seq + i + 1, 0, []))
+    data.length = data.lengthB = size
