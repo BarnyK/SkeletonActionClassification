@@ -47,24 +47,17 @@ def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None):
     model.to(device)
 
     loss_func = torch.nn.CrossEntropyLoss()
-    stats = test_epoch(model, test_loader, loss_func, device)
-    print(stats)
+    mean_loss, top1_accuracy, top5_accuracy = test_epoch(model, test_loader, loss_func, device)
+
+    texts = ["Mean loss", "Top1 accuracy", "Top5 accuracy"]
+    values = [mean_loss, top1_accuracy, top5_accuracy]
+    for i, text in enumerate(texts):
+        print(f"{text + ':':15}{values[i]:10.6}")
 
 
 def handle_eval(args: Namespace):
     cfg = GeneralConfig.from_yaml_file(args.config)
-    if not os.path.isfile(args.video_file):
-        print(f"{args.video_file} does not exist")
-        return False
     if args.model and not os.path.isfile(args.model):
         print(f"{args.model} does not exist")
         return False
-
     evaluate(cfg, args.model)
-
-# if __name__ == "__main__":
-#     cfg = GeneralConfig.from_yaml_file("/media/barny/SSD4/MasterThesis/Data/logs/default_64_32_0/config.yaml")
-#     print(cfg)
-#     cfg.device = "cuda"
-#     cfg.eval_config.test_batch_size = 1
-#     evaluate(cfg, None)
