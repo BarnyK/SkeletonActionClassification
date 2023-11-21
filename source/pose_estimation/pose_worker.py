@@ -4,16 +4,19 @@ from queue import Queue
 from threading import Thread
 
 import torch
+import torch.multiprocessing as mp
 from alphapose.utils.transforms import heatmap_to_coord_simple
 from easydict import EasyDict
 from tqdm import tqdm
 
 from pose_estimation import DetectionLoader
 from shared.structs import Body
-import torch.multiprocessing as mp
 
-mp.set_start_method('forkserver', force=True)
-mp.set_sharing_strategy('file_system')
+use_mp = False
+if use_mp:
+    mp.set_start_method('forkserver', force=True)
+    mp.set_sharing_strategy('file_system')
+
 
 class ResultStore:
     def __init__(self, seq_id, count, boxes, scores, cropped_boxes):
@@ -56,7 +59,7 @@ def pose_worker_batch_filling(pose_model, det_loader: DetectionLoader, pose_queu
                 break
             if boxes is None or boxes.nelement() == 0:
                 # empty bodies idk how to deal with this
-                results[frame_id] = ResultStore(frame_id,0, [], [], [], )
+                results[frame_id] = ResultStore(frame_id, 0, [], [], [], )
                 continue
             datalen = inputs.size(0)
             results[frame_id] = ResultStore(frame_id, datalen, boxes, scores, cropped_boxes, )
@@ -145,6 +148,8 @@ def pose_worker(
 
 
 def run_pose_worker(pose_model, det_loader: DetectionLoader, opts: EasyDict, batch_size: int = 5, queue_size: int = 64):
+    if use_mp:
+        return run_pose_worker_mp(pose_model, det_loader, opts, batch_size, queue_size)
     pose_queue = Queue(queue_size)
     pose_worker_thread = Thread(
         target=pose_worker_batch_filling, args=(pose_model, det_loader, pose_queue, opts, batch_size)
@@ -152,7 +157,9 @@ def run_pose_worker(pose_model, det_loader: DetectionLoader, opts: EasyDict, bat
     pose_worker_thread.start()
     return pose_queue, pose_worker_thread
 
-def run_pose_worker_mp(pose_model, det_loader: DetectionLoader, opts: EasyDict, batch_size: int = 5, queue_size: int = 64):
+
+def run_pose_worker_mp(pose_model, det_loader: DetectionLoader, opts: EasyDict, batch_size: int = 5,
+                       queue_size: int = 64):
     pose_queue = mp.Queue(queue_size)
     pose_worker_process = mp.Process(
         target=pose_worker_batch_filling, args=(pose_model, det_loader, pose_queue, opts, batch_size)

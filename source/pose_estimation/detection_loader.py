@@ -13,8 +13,12 @@ from alphapose.utils.presets import SimpleTransform
 from alphapose.utils.transforms import get_affine_transform, im_to_torch
 from tqdm import tqdm
 
-mp.set_start_method('forkserver', force=True)
-mp.set_sharing_strategy('file_system')
+use_mp = False
+if use_mp:
+    mp.set_start_method('forkserver', force=True)
+    mp.set_sharing_strategy('file_system')
+
+
 class SentinelSkipFrame:
     pass
 
@@ -328,7 +332,7 @@ class DetectionLoader:
                     ),
                 )
         self.wait_and_put(
-            self.det_queue, (None, None, None, None, None, None)
+            self.det_queue, (None, None, None, None, None)
         )
         tqdm.write("Finished detection")
 

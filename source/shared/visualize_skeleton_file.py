@@ -1,5 +1,6 @@
 from queue import Queue
 from threading import Thread
+from typing import Union
 
 import cv2
 import numpy as np
@@ -264,24 +265,26 @@ class Visualizer:
         self.prep_keypoints = draw_preparation_func_map.get(self.skeleton_type, lambda x: x)
 
         self.draw_frame_number = True
-        self.save_file = None
-        self.closed = False
-        self.c =0
+        self.save_file = "/home/barny/thesis/test.mp4"
+        self.stopped = False
+        self.c = 0
         self.uniques = set()
         pass
 
-    def put(self, data: FrameData):
+    def stop(self):
+        self.stopped = True
+        self.put(None)
+
+    def put(self, data: Union[FrameData, None]):
         if data is None:
-            self.closed = True
             self.queue.put(data)
             return
-        self.c += 1
+        if data.seqId in self.uniques:
+            return
         self.uniques.add(data.seqId)
         self.queue.put(data)
 
-    def _get(self):
-        if self.closed:
-            return None
+    def _get(self) -> Union[FrameData, None]:
         return self.queue.get()
 
     def visualize(self):
@@ -289,9 +292,12 @@ class Visualizer:
         if self.skip_frames:
             wrapped_stream = every_nth_frame(self.video_stream, self.frame_interval)
             interval = 1
+            self.fps = self.fps / self.frame_interval
+            wait_key_value = int(1000 / self.fps)
         else:
             wrapped_stream = every_nth_frame(self.video_stream, 1)
             interval = self.frame_interval
+            wait_key_value = self.wait_key_value
 
         frame_size = (
             int(self.video_stream.get(cv2.CAP_PROP_FRAME_WIDTH)),
@@ -301,18 +307,18 @@ class Visualizer:
         out_stream = None
         if self.save_file:
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out_stream = cv2.VideoWriter(self.save_file, fourcc, 24, frame_size)
+            out_stream = cv2.VideoWriter(self.save_file, fourcc, self.fps, frame_size)
             out_stream.set(cv2.VIDEOWRITER_PROP_QUALITY, 1)
 
         i = -1
-        window_name = "XDXDXDXD"
-        while True:
+        window_name = "visualization"
+        while not self.stopped:
             i += 1
             (grabbed, frame) = next(wrapped_stream)
             if not grabbed:
                 break
             if self.draw_frame_number:
-                point = (frame.shape[1]-100,50)
+                point = (frame.shape[1] - 100, 50)
                 draw_text_with_outline(frame, point, str(i), 1)
 
             if not self.skip_frames and i % interval != 0:
@@ -338,11 +344,12 @@ class Visualizer:
                 continue
             cv2.imshow(window_name, frame)
             cv2.waitKey(self.wait_key_value)
-        cv2.destroyWindow(window_name)
+        if not self.save_file:
+            cv2.destroyWindow(window_name)
 
-    def run_visualize(self):
+    def run_visualize(self) -> Thread:
         self.vis_thread = Thread(
-                target=self.visualize,
-            )
+            target=self.visualize,
+        )
         self.vis_thread.start()
         return self.vis_thread

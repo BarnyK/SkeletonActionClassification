@@ -129,6 +129,7 @@ def run_qsp(queues, names):
         target=queue_size_printer, args=(queues, names)
     )
     qsp_thread.start()
+    return qsp_thread
 
 
 def fill_frames(data: SkeletonData, size: int):

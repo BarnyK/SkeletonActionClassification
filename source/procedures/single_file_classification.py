@@ -56,12 +56,12 @@ def window_worker(
 def run_window_worker(
         datalen: int, pose_data_queue: Queue, length: int, interlace: int
 ):
-    q = Queue(5)
+    q = Queue(32)
     window_worker_thread = Thread(
         target=window_worker, args=(q, datalen, pose_data_queue, length, interlace)
     )
     window_worker_thread.start()
-    return q
+    return q, window_worker_thread
 
 
 def _preprocess_data_ap(data: SkeletonData, cfg: PreprocessConfig):
@@ -147,12 +147,13 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     device = torch.device(cfg.device)
     frame_interval = calculate_interval(cfg.window_length, cfg.samples_per_window)
 
-    det_loader, pose_data_queue = create_alphapose_workers(cfg, device, filename, frame_interval)
+    det_loader, pose_data_queue, ap_threads = create_alphapose_workers(cfg, device, filename, frame_interval)
 
-    window_queue = run_window_worker(det_loader.length, pose_data_queue, cfg.samples_per_window, cfg.interlace)
+    window_queue, window_thread = run_window_worker(det_loader.length, pose_data_queue, cfg.samples_per_window,
+                                                    cfg.interlace)
 
-    run_qsp([det_loader.image_queue, det_loader.det_queue, det_loader.pose_queue, window_queue],
-            ["det", "post", "pose", "window"])
+    qsp_thread = run_qsp([det_loader.image_queue, det_loader.det_queue, det_loader.pose_queue, window_queue],
+                         ["det", "post", "pose", "window"])
 
     # Classification
     model, norm_func = create_model_norm(cfg, device, model_path)
@@ -167,65 +168,79 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     frame_windows_mapping = defaultdict(list)
     window_results = {}
     frame_results = []
-    visualizer = Visualizer(filename, cfg.skeleton_type, frame_interval, True, 15)
-    # visualizer.run_visualize()
-    while True:
-        frames: list[FrameData] = window_queue.get()
-        if frames is None:
-            break
-        for frame in frames:
-            frame_windows_mapping[frame.seqId].append(window_count)
-            if frame.seqId not in [x.seqId for x in unique_frames]:
-                unique_frames.append(deepcopy(frame))
-        start_frame, end_frame = frames[0].seqId, frames[-1].seqId
+    visualizer = Visualizer(filename, cfg.skeleton_type, frame_interval, True, 30)
+    vis_thread = visualizer.run_visualize()
 
-        data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
-                            len(frames), deepcopy(frames), len(frames), det_loader.frameSize, frame_interval)
+    all_threads = {"prep": ap_threads[0], "det": ap_threads[1], "post": ap_threads[2], "window": window_thread,
+                   "qsp": qsp_thread, "vis": vis_thread}
+    all_queues = {"prep": det_loader.image_queue, "det": det_loader.det_queue, "post": det_loader.pose_queue,
+                  "window": window_queue, "vis": visualizer.queue}
+    try:
+        print("Interruptible")
+        while True:
+            frames: list[FrameData] = window_queue.get()
+            if frames is None:
+                break
+            for frame in frames:
+                frame_windows_mapping[frame.seqId].append(window_count)
+                if frame.seqId not in [x.seqId for x in unique_frames]:
+                    unique_frames.append(deepcopy(frame))
+            start_frame, end_frame = frames[0].seqId, frames[-1].seqId
 
-        if data.no_bodies():
-            window_results[window_count] = (start_frame, end_frame, None, None)
+            data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
+                                len(frames), deepcopy(frames), len(frames), det_loader.frameSize, frame_interval)
+
+            if data.no_bodies():
+                window_results[window_count] = (start_frame, end_frame, None, None)
+                window_count += 1
+                frame_results, start_index = calculate_frame_results(frame_results, frames[0].seqId,
+                                                                     frame_windows_mapping,
+                                                                     window_results)
+                add_action_data(cfg.dataset, frame_results, start_index, frames[0].seqId, unique_frames, visualizer)
+                continue
+
+            # Fill frames if unfinished window
+            if data.length != cfg.samples_per_window:
+                fill_frames(data, cfg.samples_per_window)
+
+            # Preprocess
+            _preprocess_data_ap(data, cfg.prep_config)
+            points = data.to_matrix()
+            if points is None:
+                window_results[window_count] = (start_frame, end_frame, None, None)
+                window_count += 1
+                frame_results, start_index = calculate_frame_results(frame_results, frames[0].seqId,
+                                                                     frame_windows_mapping,
+                                                                     window_results)
+                add_action_data(cfg.dataset, frame_results, start_index, frames[0].seqId, unique_frames, visualizer)
+                continue
+
+            features = prepare_features(cfg, norm_func, points, required_transforms, transforms)
+            features = features.to(device, non_blocking=True)
+            # Run through model
+            with torch.no_grad():
+                out = model(features)
+                top5 = torch.topk(out, 5)[1]
+
+            # Save results
+            top5_tuple = tuple(x for x in top5[0].tolist())
+            window_results[window_count] = (start_frame, end_frame, out[0].cpu(), top5_tuple)
             window_count += 1
+
+            # calculate results to frames[0].seqId
             frame_results, start_index = calculate_frame_results(frame_results, frames[0].seqId, frame_windows_mapping,
                                                                  window_results)
             add_action_data(cfg.dataset, frame_results, start_index, frames[0].seqId, unique_frames, visualizer)
-            continue
-
-        # Fill frames if unfinished window
-        if data.length != cfg.samples_per_window:
-            fill_frames(data, cfg.samples_per_window)
-
-        # Preprocess
-        _preprocess_data_ap(data, cfg.prep_config)
-        points = data.to_matrix()
-        if points is None:
-            window_results[window_count] = (start_frame, end_frame, None, None)
-            window_count += 1
-            frame_results, start_index = calculate_frame_results(frame_results, frames[0].seqId, frame_windows_mapping,
-                                                                 window_results)
-            add_action_data(cfg.dataset, frame_results, start_index, frames[0].seqId, unique_frames, visualizer)
-            continue
-
-        features = prepare_features(cfg, norm_func, points, required_transforms, transforms)
-        features = features.to(device, non_blocking=True)
-        # Run through model
-        with torch.no_grad():
-            out = model(features)
-            top5 = torch.topk(out, 5)[1]
-
-        # Save results
-        top5_tuple = tuple(x for x in top5[0].tolist())
-        window_results[window_count] = (start_frame, end_frame, out[0].cpu(), top5_tuple)
-        window_count += 1
-
-        # calculate results to frames[0].seqId
-        frame_results, start_index = calculate_frame_results(frame_results, frames[0].seqId, frame_windows_mapping,
-                                                             window_results)
-        add_action_data(cfg.dataset, frame_results, start_index, frames[0].seqId, unique_frames, visualizer)
-
+    except KeyboardInterrupt:
+        visualizer.stop()
+        close_(all_queues)
+        time.sleep(3)
+        for name, thread in all_threads.items():
+            if thread: print(name, thread.is_alive())
+        return
     frame_results, start_index = calculate_frame_results(frame_results, len(frame_windows_mapping),
                                                          frame_windows_mapping, window_results)
     add_action_data(cfg.dataset, frame_results, start_index, len(frame_windows_mapping), unique_frames, visualizer)
-    [visualizer.put(unique_frames[i]) for i in range(len(frame_results), len(frame_windows_mapping))]
     visualizer.put(None)
     action_map = adjusted_actions_maps[cfg.dataset]
     end_time = time.time()
@@ -233,7 +248,6 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     print(f"fps:        {fps:.4}")
     print(f"Total time: {end_time - start_time:.4}")
 
-    #
     # #
     total_data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
                               len(unique_frames), unique_frames, len(unique_frames), det_loader.frameSize,
@@ -252,7 +266,25 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
                 break
             q.get()
     print(len(visualizer.uniques))
+    #vis_thread.join()
     return fps
+
+
+def close_(queues):
+    def empty_queue(q):
+        while not q.empty():
+            q.get()
+
+    for name, q in queues.items():
+        empty_queue(q)
+        if name == "prep":
+            q.put([None]*4)
+        if name == "det":
+            q.put([None]*5)
+        if name == "post":
+            q.put([None]*5)
+        else:
+            q.put(None)
 
 
 def add_action_data(dataset, frame_results, start_index, end_index, unique_frames, visualizer):
@@ -301,7 +333,7 @@ def create_model_norm(cfg: GeneralConfig, device: torch.device, model_path: str 
 
 
 def create_alphapose_workers(cfg: GeneralConfig, device: torch.device, filename: str,
-                             frame_interval: int) -> tuple[DetectionLoader, Queue]:
+                             frame_interval: int) -> tuple[DetectionLoader, Queue, list[Thread, ...]]:
     pose_cfg = cfg.pose_config
     ap_cfg, det_cfg, opts = read_ap_configs(cfg.skeleton_type, device)
     # Detection
@@ -317,7 +349,8 @@ def create_alphapose_workers(cfg: GeneralConfig, device: torch.device, filename:
     pose_data_queue, pose_thread = run_pose_worker(
         pose_model, det_loader, opts, pose_cfg.estimation_batch_size, pose_cfg.estimation_queue_size
     )
-    return det_loader, pose_data_queue
+    all_threads = det_threads + [pose_thread]
+    return det_loader, pose_data_queue, all_threads
 
 
 def handle_classify(args: Namespace):
@@ -339,7 +372,7 @@ if __name__ == "__main__":
     config.interlace = 24
     fpses = []
     times = []
-    for i in range(3):
+    for i in range(1):
         st = time.time()
         x = single_file_classification("/media/godchama/ssd/hoshimatic.60.30.avi", config)
         et = time.time()
