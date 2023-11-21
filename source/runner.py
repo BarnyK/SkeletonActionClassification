@@ -43,7 +43,7 @@ def main():
     # TODO
 
     # Evaluation
-    eval_parser = subparsers.add_parser("eval", help="Evaluate using a preprocessed file.")
+    eval_parser = subparsers.add_parser("eval", help="Evaluate using a preprocessed file.", aliases=["evaluate"])
     eval_parser.add_argument("config", help="Config file that will be used to generate skeletons.")
     eval_parser.add_argument("--model", default="",
                              help="Model to be used in evaluation. Should fit the config provided.")
