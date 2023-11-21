@@ -32,7 +32,7 @@ def single_file_pose(filename, cfg: GeneralConfig):
     )
     det_loader.start()
 
-    pose_data_queue = run_pose_worker(
+    pose_data_queue, _ = run_pose_worker(
         pose_model, det_loader, opts, pose_cfg.estimation_batch_size, pose_cfg.estimation_queue_size
     )
 

@@ -13,7 +13,8 @@ from alphapose.utils.presets import SimpleTransform
 from alphapose.utils.transforms import get_affine_transform, im_to_torch
 from tqdm import tqdm
 
-
+mp.set_start_method('forkserver', force=True)
+mp.set_sharing_strategy('file_system')
 class SentinelSkipFrame:
     pass
 
@@ -94,6 +95,7 @@ class DetectionLoader:
             add_dpg=False,
             gpu_device=self.device,
         )
+        opt.sp = True
 
         # initialize the queue used to store frames
         """

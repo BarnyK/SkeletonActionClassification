@@ -10,7 +10,10 @@ from tqdm import tqdm
 
 from pose_estimation import DetectionLoader
 from shared.structs import Body
+import torch.multiprocessing as mp
 
+mp.set_start_method('forkserver', force=True)
+mp.set_sharing_strategy('file_system')
 
 class ResultStore:
     def __init__(self, seq_id, count, boxes, scores, cropped_boxes):
@@ -143,7 +146,15 @@ def pose_worker(
 
 def run_pose_worker(pose_model, det_loader: DetectionLoader, opts: EasyDict, batch_size: int = 5, queue_size: int = 64):
     pose_queue = Queue(queue_size)
-    pose_worker_process = Thread(
+    pose_worker_thread = Thread(
+        target=pose_worker_batch_filling, args=(pose_model, det_loader, pose_queue, opts, batch_size)
+    )
+    pose_worker_thread.start()
+    return pose_queue, pose_worker_thread
+
+def run_pose_worker_mp(pose_model, det_loader: DetectionLoader, opts: EasyDict, batch_size: int = 5, queue_size: int = 64):
+    pose_queue = mp.Queue(queue_size)
+    pose_worker_process = mp.Process(
         target=pose_worker_batch_filling, args=(pose_model, det_loader, pose_queue, opts, batch_size)
     )
     pose_worker_process.start()

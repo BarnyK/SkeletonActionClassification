@@ -1,12 +1,13 @@
+from queue import Queue
+from threading import Thread
+
 import cv2
 import numpy as np
 
 from pose_estimation import every_nth_frame
 from shared.read_skeleton import read_skeleton
 from shared.skeletons import drawn_limbs_map, draw_preparation_func_map
-from shared.structs import SkeletonData
-
-
+from shared.structs import SkeletonData, FrameData
 
 tracking_colors = {
     0: (128, 128, 0),
@@ -62,7 +63,6 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
     )
     fps = video_stream.get(cv2.CAP_PROP_FPS)
 
-
     if skip_frames:
         wrapped_stream = every_nth_frame(video_stream, skeleton_data.frame_interval)
         interval = 1
@@ -105,53 +105,8 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
             continue
 
         frame_data = skeleton_data.frames[i // interval]
-        if print_frame_text and frame_data.text:
-            draw_text_with_outline(frame, (50, 50), frame_data.text, 1)
-        skeleton_color = (255, 0, 255)
-        for body in frame_data.bodies:
-            skeleton_color = (skeleton_color[1], skeleton_color[2], skeleton_color[0])
-            if body.tid is not None:
-                skeleton_color = tracking_colors[body.tid % len(tracking_colors)]
-
-            # Boxes
-            if draw_bbox and body.box is not None:
-                p1, p2 = (int(body.box[0]), int(body.box[1])), (
-                    int(body.box[2]),
-                    int(body.box[3]),
-                )
-                frame = cv2.rectangle(frame, p1, p2, (0, 0, 255), 2)
-                if draw_confidences:
-                    conf = body.boxConf
-                    if conf is not None:
-                        conf = conf[0]
-                        draw_text_with_outline(frame, p1, str(round(float(conf), 3)), 6 / 10)
-                    conf = body.poseConf.mean()
-                    if conf is not None:
-                        p1 = max(p1[0], 0), max(p1[1] - 17, 0)
-                        draw_text_with_outline(frame, p1, str(round(float(conf), 3)), 6 / 10)
-
-            # Points
-            points = body.poseXY
-
-            # Additional points if needed
-            points = prep_keypoints(points)
-
-            # Draw limbs
-            for ii, (p1, p2) in enumerate(limb_pairs):
-                point1 = (int(points[p1][0]), int(points[p1][1]))
-                point2 = (int(points[p2][0]), int(points[p2][1]))
-                cv2.line(frame, point1, point2, skeleton_color, 2)
-
-            # Draw points
-            for ii, point in enumerate(points):
-                point = (int(point[0]), int(point[1]))
-                if draw_point_number:
-                    draw_text_with_outline(frame, point, str(ii), 5 / 10)
-
-                if ii in []:
-                    cv2.circle(frame, point, 10, (0, 0, 255), -1)
-                else:
-                    cv2.circle(frame, point, 4, skeleton_color, -1)
+        frame = draw_frame_data(frame, frame_data, limb_pairs, prep_keypoints, draw_bbox, draw_confidences,
+                                draw_point_number, print_frame_text)
 
         if save_file:
             out_stream.write(frame)
@@ -163,6 +118,58 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
     if save_file:
         out_stream.release()
     cv2.destroyAllWindows()
+
+
+def draw_frame_data(frame, frame_data, limb_pairs, prep_keypoints, draw_bbox, draw_confidences, draw_point_number,
+                    print_frame_text):
+    if print_frame_text and frame_data.text:
+        draw_text_with_outline(frame, (50, 50), frame_data.text, 1)
+    skeleton_color = (255, 0, 255)
+    for body in frame_data.bodies:
+        skeleton_color = (skeleton_color[1], skeleton_color[2], skeleton_color[0])
+        if body.tid is not None:
+            skeleton_color = tracking_colors[body.tid % len(tracking_colors)]
+
+        # Boxes
+        if draw_bbox and body.box is not None:
+            p1, p2 = (int(body.box[0]), int(body.box[1])), (
+                int(body.box[2]),
+                int(body.box[3]),
+            )
+            frame = cv2.rectangle(frame, p1, p2, (0, 0, 255), 2)
+            if draw_confidences:
+                conf = body.boxConf
+                if conf is not None:
+                    conf = conf[0]
+                    draw_text_with_outline(frame, p1, str(round(float(conf), 3)), 6 / 10)
+                conf = body.poseConf.mean()
+                if conf is not None:
+                    p1 = max(p1[0], 0), max(p1[1] - 17, 0)
+                    draw_text_with_outline(frame, p1, str(round(float(conf), 3)), 6 / 10)
+
+        # Points
+        points = body.poseXY
+
+        # Additional points if needed
+        points = prep_keypoints(points)
+
+        # Draw limbs
+        for ii, (p1, p2) in enumerate(limb_pairs):
+            point1 = (int(points[p1][0]), int(points[p1][1]))
+            point2 = (int(points[p2][0]), int(points[p2][1]))
+            cv2.line(frame, point1, point2, skeleton_color, 2)
+
+        # Draw points
+        for ii, point in enumerate(points):
+            point = (int(point[0]), int(point[1]))
+            if draw_point_number:
+                draw_text_with_outline(frame, point, str(ii), 5 / 10)
+
+            if ii in []:
+                cv2.circle(frame, point, 10, (0, 0, 255), -1)
+            else:
+                cv2.circle(frame, point, 4, skeleton_color, -1)
+    return frame
 
 
 def visualize_alphapose(skeleton_file: str, wait_key: int = 0):
@@ -234,3 +241,108 @@ def visualize_data(data: SkeletonData, wait_key: int = 0):
         cv2.waitKey(wait_key)
 
     cv2.destroyAllWindows()
+
+
+# def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, window_name: str = "visualization",
+#               draw_bbox: bool = False, draw_frame_number: bool = False, draw_confidences: bool = False,
+#               skip_frames: bool = False, save_file: str = None, draw_point_number: bool = False,
+#               print_frame_text: bool = False):
+class Visualizer:
+    def __init__(self, video_file: str, skeleton_type: str, frame_interval: int, skip_frames: bool, fps: float):
+        self.queue = Queue()
+        self.video_file = video_file
+        self.fps = fps
+        self.wait_key_value = int(1000 / self.fps)
+
+        self.skeleton_type = skeleton_type
+        self.frame_interval = frame_interval
+        self.skip_frames = skip_frames
+
+        self.limb_pairs = drawn_limbs_map.get(self.skeleton_type)
+        if self.limb_pairs is None:
+            raise ValueError(f"Skeleton type not available {self.skeleton_type}")
+        self.prep_keypoints = draw_preparation_func_map.get(self.skeleton_type, lambda x: x)
+
+        self.draw_frame_number = True
+        self.save_file = None
+        self.closed = False
+        self.c =0
+        self.uniques = set()
+        pass
+
+    def put(self, data: FrameData):
+        if data is None:
+            self.closed = True
+            self.queue.put(data)
+            return
+        self.c += 1
+        self.uniques.add(data.seqId)
+        self.queue.put(data)
+
+    def _get(self):
+        if self.closed:
+            return None
+        return self.queue.get()
+
+    def visualize(self):
+        self.video_stream = cv2.VideoCapture(self.video_file)
+        if self.skip_frames:
+            wrapped_stream = every_nth_frame(self.video_stream, self.frame_interval)
+            interval = 1
+        else:
+            wrapped_stream = every_nth_frame(self.video_stream, 1)
+            interval = self.frame_interval
+
+        frame_size = (
+            int(self.video_stream.get(cv2.CAP_PROP_FRAME_WIDTH)),
+            int(self.video_stream.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+        )
+
+        out_stream = None
+        if self.save_file:
+            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+            out_stream = cv2.VideoWriter(self.save_file, fourcc, 24, frame_size)
+            out_stream.set(cv2.VIDEOWRITER_PROP_QUALITY, 1)
+
+        i = -1
+        window_name = "XDXDXDXD"
+        while True:
+            i += 1
+            (grabbed, frame) = next(wrapped_stream)
+            if not grabbed:
+                break
+            if self.draw_frame_number:
+                point = (frame.shape[1]-100,50)
+                draw_text_with_outline(frame, point, str(i), 1)
+
+            if not self.skip_frames and i % interval != 0:
+                if self.save_file:
+                    out_stream.write(frame)
+                    continue
+                cv2.imshow(window_name, frame)
+                cv2.waitKey(self.wait_key_value)
+
+            frame_data: FrameData = self._get()
+            if frame_data is None:
+                if self.save_file:
+                    out_stream.write(frame)
+                    continue
+                cv2.imshow(window_name, frame)
+                cv2.waitKey(self.wait_key_value)
+                continue
+
+            draw_frame_data(frame, frame_data, self.limb_pairs, self.prep_keypoints, True, False, False, True)
+
+            if self.save_file:
+                out_stream.write(frame)
+                continue
+            cv2.imshow(window_name, frame)
+            cv2.waitKey(self.wait_key_value)
+        cv2.destroyWindow(window_name)
+
+    def run_visualize(self):
+        self.vis_thread = Thread(
+                target=self.visualize,
+            )
+        self.vis_thread.start()
+        return self.vis_thread

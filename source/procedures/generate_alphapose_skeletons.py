@@ -54,10 +54,10 @@ def gen_alphapose_skeletons(
 
             det_loader = DetectionLoader(file, detector, ap_cfg, opts, "video", pose_cfg.detector_batch_size,
                                          pose_cfg.detector_queue_size, 1)
-            det_loader.start()
+            det_threads = det_loader.start()
 
-            pose_data_queue = run_pose_worker(pose, det_loader, opts, pose_cfg.estimation_batch_size,
-                                              pose_cfg.estimation_queue_size)
+            pose_data_queue, pose_thread = run_pose_worker(pose, det_loader, opts, pose_cfg.estimation_batch_size,
+                                                           pose_cfg.estimation_queue_size)
 
             tq = tqdm(range(det_loader.datalen), dynamic_ncols=True, disable=True)
             frames = []

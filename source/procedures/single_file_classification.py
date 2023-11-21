@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime
 import os
 import time
 from argparse import Namespace
@@ -28,11 +27,11 @@ from preprocessing.tracking import select_by_size, select_by_confidence, select_
 from procedures.config import GeneralConfig, PreprocessConfig
 from procedures.preprocess_files import _preprocess_data_ap
 from procedures.training import load_model
-from shared import visualize
 from shared.datasets import adjusted_actions_maps
 from shared.helpers import calculate_interval, run_qsp, fill_frames
 from shared.skeletons import ntu_coco
 from shared.structs import SkeletonData, FrameData
+from shared.visualize_skeleton_file import Visualizer
 
 
 def window_worker(
@@ -168,6 +167,8 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     frame_windows_mapping = defaultdict(list)
     window_results = {}
     frame_results = []
+    visualizer = Visualizer(filename, cfg.skeleton_type, frame_interval, True, 15)
+    # visualizer.run_visualize()
     while True:
         frames: list[FrameData] = window_queue.get()
         if frames is None:
@@ -184,6 +185,9 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
         if data.no_bodies():
             window_results[window_count] = (start_frame, end_frame, None, None)
             window_count += 1
+            frame_results, start_index = calculate_frame_results(frame_results, frames[0].seqId, frame_windows_mapping,
+                                                                 window_results)
+            add_action_data(cfg.dataset, frame_results, start_index, frames[0].seqId, unique_frames, visualizer)
             continue
 
         # Fill frames if unfinished window
@@ -196,6 +200,9 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
         if points is None:
             window_results[window_count] = (start_frame, end_frame, None, None)
             window_count += 1
+            frame_results, start_index = calculate_frame_results(frame_results, frames[0].seqId, frame_windows_mapping,
+                                                                 window_results)
+            add_action_data(cfg.dataset, frame_results, start_index, frames[0].seqId, unique_frames, visualizer)
             continue
 
         features = prepare_features(cfg, norm_func, points, required_transforms, transforms)
@@ -211,24 +218,20 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
         window_count += 1
 
         # calculate results to frames[0].seqId
-        frame_results, ab = calculate_frame_results(frame_results, frames[0].seqId, frame_windows_mapping,
-                                                    window_results)
-        ct = datetime.datetime.now()
-        for i in range(ab, frames[0].seqId):
-            action_name = adjusted_actions_maps[cfg.dataset].get(frame_results[i])
-            unique_frames[i].text = action_name
-            #print(f"{i:4}{ct.__str__():30}{action_name}")
-            ct = ct + datetime.timedelta(seconds=1 / (30 * cfg.samples_per_window / cfg.window_length))
+        frame_results, start_index = calculate_frame_results(frame_results, frames[0].seqId, frame_windows_mapping,
+                                                             window_results)
+        add_action_data(cfg.dataset, frame_results, start_index, frames[0].seqId, unique_frames, visualizer)
 
-    frame_results, _ = calculate_frame_results(frame_results, len(frame_windows_mapping), frame_windows_mapping,
-                                               window_results)
-
+    frame_results, start_index = calculate_frame_results(frame_results, len(frame_windows_mapping),
+                                                         frame_windows_mapping, window_results)
+    add_action_data(cfg.dataset, frame_results, start_index, len(frame_windows_mapping), unique_frames, visualizer)
+    [visualizer.put(unique_frames[i]) for i in range(len(frame_results), len(frame_windows_mapping))]
+    visualizer.put(None)
     action_map = adjusted_actions_maps[cfg.dataset]
     end_time = time.time()
     fps = window_count / (end_time - start_time)
     print(f"fps:        {fps:.4}")
     print(f"Total time: {end_time - start_time:.4}")
-
 
     #
     # #
@@ -240,16 +243,23 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     for frame, action_id in zip(total_data.frames, out):
         frame.text = action_map[frame_results[frame.seqId]]
     fps = 30 * cfg.samples_per_window / cfg.window_length
-    visualize(total_data, total_data.video_file, int(1000 / fps), print_frame_text=False, skip_frames=True,
-              save_file="/home/barny/naaaaaaah.mp4", draw_bbox=True)
+    # visualize(total_data, total_data.video_file, int(1000 / fps), print_frame_text=False, skip_frames=True,
+    #           save_file="/home/barny/naaaaaaah.mp4", draw_bbox=True)
 
     for q in [det_loader.image_queue, det_loader.det_queue, det_loader.pose_queue, window_queue]:
         while True:
             if q.empty():
                 break
             q.get()
-
+    print(len(visualizer.uniques))
     return fps
+
+
+def add_action_data(dataset, frame_results, start_index, end_index, unique_frames, visualizer):
+    for i in range(start_index, end_index):
+        action_name = adjusted_actions_maps[dataset].get(frame_results[i], "None")
+        unique_frames[i].text = action_name
+        visualizer.put(unique_frames[i])
 
 
 def prepare_features(cfg, norm_func, points, required_transforms, transforms):
@@ -301,10 +311,10 @@ def create_alphapose_workers(cfg: GeneralConfig, device: torch.device, filename:
         filename, detector, ap_cfg, opts, "video",
         pose_cfg.detector_batch_size, pose_cfg.detector_queue_size, frame_interval
     )
-    det_loader.start()
+    det_threads = det_loader.start()
     # Pose estimation
     pose_model = init_pose_model(device, ap_cfg, ap_cfg.weights_file)
-    pose_data_queue = run_pose_worker(
+    pose_data_queue, pose_thread = run_pose_worker(
         pose_model, det_loader, opts, pose_cfg.estimation_batch_size, pose_cfg.estimation_queue_size
     )
     return det_loader, pose_data_queue
@@ -329,14 +339,13 @@ if __name__ == "__main__":
     config.interlace = 24
     fpses = []
     times = []
-    for i in range(1):
+    for i in range(3):
         st = time.time()
-        #x = single_file_classification("/media/godchama/ssd/hoshimatic.20.30.avi", config)
-        x=0
+        x = single_file_classification("/media/godchama/ssd/hoshimatic.60.30.avi", config)
         et = time.time()
         times.append(et - st)
         fpses.append(x)
-    single_file_classification("/media/godchama/hdd/gura.short.mp4", config)
+    # single_file_classification("/media/godchama/hdd/gura.short.mp4", config)
     # single_file_classification("/media/godchama/ssd/hoshimatic.60.30.avi", config)
     # single_file_classification("/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq1.avi",
     #                            config)
