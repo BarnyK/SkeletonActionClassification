@@ -33,3 +33,30 @@ GENERAL PIPELINE:
 - Train
 - Classify/Evaluate
 
+
+
+Aktualne możliwości:
+- Generacja szkieletów alphapose
+  - Zamiana całego zbioru 
+  - Szkielety Coco17 i połączenie Coco z szkieletami NTU
+- Preprocessing szkieletów
+  - Filtracja na podstawie pewności bbox i szkieletów
+  - Parametric pose non maximum suppression
+  - Śledzenie z ogranieczniem odległości
+  - Wybór śledzonych szkieletów na podstawie długości sekwencji oraz miary ruchu punktów
+  - Uzupełniania szkieletów - interpolacja, MICE, K-nn
+- Feature extraction
+  - Punkty
+  - Relacja punktów do punktu centralnego szkieletu
+  - Kości
+  - Ruch (kości i punktów)
+  - Przyśpieszenie 
+  - Kąty przy stawach
+  - Nachylenia kości do osi układu współrzędnych
+- Klasyfikatory
+  - ST-GCN++ - klasyfikacja akcji i interakcji
+  - 2P-GCN - klasyfikacja interakcji
+- Trening sieci
+- Testy sieci z zapisami wyników
+- Możliwość generacji wyników ensemble różnych wariantów sieci
+- Klasyfikacja video przy użyciu oknowania

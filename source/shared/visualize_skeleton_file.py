@@ -249,7 +249,7 @@ def visualize_data(data: SkeletonData, wait_key: int = 0):
 #               skip_frames: bool = False, save_file: str = None, draw_point_number: bool = False,
 #               print_frame_text: bool = False):
 class Visualizer:
-    def __init__(self, video_file: str, skeleton_type: str, frame_interval: int, skip_frames: bool, fps: float):
+    def __init__(self, video_file: str, skeleton_type: str, frame_interval: int, skip_frames: bool, fps: float, save_file: str):
         self.queue = Queue()
         self.video_file = video_file
         self.fps = fps
@@ -265,7 +265,7 @@ class Visualizer:
         self.prep_keypoints = draw_preparation_func_map.get(self.skeleton_type, lambda x: x)
 
         self.draw_frame_number = True
-        self.save_file = "/home/barny/thesis/test.mp4"
+        self.save_file = save_file
         self.stopped = False
         self.c = 0
         self.uniques = set()

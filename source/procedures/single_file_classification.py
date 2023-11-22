@@ -65,19 +65,15 @@ def run_window_worker(
 
 
 def _preprocess_data_ap(data: SkeletonData, cfg: PreprocessConfig):
-    st = time.time()
     if cfg.transform_to_combined:
         data = ntu_coco.from_skeleton_data(data)
     if cfg.use_box_conf:
         skeleton_filters.remove_bodies_by_box_confidence(data, cfg.box_conf_threshold, cfg.box_conf_max_total,
                                                          cfg.box_conf_max_frames)
-    ct1 = time.time()
     if cfg.use_max_pose_conf:
         skeleton_filters.remove_by_max_possible_pose_confidence(data, cfg.max_pose_conf_threshold)
-    ct2 = time.time()
     # if cfg.use_nms:
     #     nms(data, True)
-    ct3 = time.time()
 
     if cfg.use_size_selection:
         select_by_size(data, cfg.max_body_count)
@@ -85,7 +81,6 @@ def _preprocess_data_ap(data: SkeletonData, cfg: PreprocessConfig):
         select_by_confidence(data, cfg.max_body_count)
     elif cfg.use_order_selection:
         select_by_order(data, cfg.max_body_count)
-    ct4 = time.time()
     if cfg.use_tracking:
         pose_track(data.frames,
                    threshold=cfg.pose_tracking_threshold,
@@ -95,10 +90,8 @@ def _preprocess_data_ap(data: SkeletonData, cfg: PreprocessConfig):
             select_tracks_by_motion(data, cfg.max_body_count)
     else:
         assign_tids_by_order(data)
-    ct5 = time.time()
     keypoint_fill(data, cfg.keypoint_fill_type)
-    ct6 = time.time()
-    return data, np.array([ct1 - st, ct2 - ct1, ct3 - ct2, ct4 - ct3, ct5 - ct4, ct6 - ct5])
+    return data,
 
 
 def aggregate_results(window_results: list[tuple[int, int, torch.Tensor], ...]) -> list[int, ...]:
@@ -140,7 +133,7 @@ def calculate_frame_results(frame_results, to_index, frame_windows, window_resul
     return frame_results, start_index
 
 
-def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[str, None] = None):
+def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[str, None] = None, save_file: str = None):
     assert os.path.isfile(filename)
 
     # Setup
@@ -168,7 +161,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     frame_windows_mapping = defaultdict(list)
     window_results = {}
     frame_results = []
-    visualizer = Visualizer(filename, cfg.skeleton_type, frame_interval, True, 30)
+    visualizer = Visualizer(filename, cfg.skeleton_type, frame_interval, True, 30, save_file)
     vis_thread = visualizer.run_visualize()
 
     all_threads = {"prep": ap_threads[0], "det": ap_threads[1], "post": ap_threads[2], "window": window_thread,
@@ -260,13 +253,13 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     # visualize(total_data, total_data.video_file, int(1000 / fps), print_frame_text=False, skip_frames=True,
     #           save_file="/home/barny/naaaaaaah.mp4", draw_bbox=True)
 
-    for q in [det_loader.image_queue, det_loader.det_queue, det_loader.pose_queue, window_queue]:
+    for name, q in all_queues.items():
         while True:
             if q.empty():
                 break
             q.get()
     print(len(visualizer.uniques))
-    #vis_thread.join()
+    vis_thread.join()
     return fps
 
 
@@ -360,6 +353,9 @@ def handle_classify(args: Namespace):
         return False
     if args.model and not os.path.isfile(args.model):
         print(f"{args.model} does not exist")
+        return False
+    if args.save_file and not os.path.isdir(os.path.split(args.save_file)[0]):
+        print(f"Folder for {args.save_file} does not exist")
         return False
 
     ## TODO method mean/window
