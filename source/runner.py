@@ -47,6 +47,7 @@ def main():
     eval_parser.add_argument("config", help="Config file that will be used to generate skeletons.")
     eval_parser.add_argument("--model", default="",
                              help="Model to be used in evaluation. Should fit the config provided.")
+    eval_parser.add_argument("--save-file", default="", help="Save results to file.")
 
     # Classification
     classify_parser = subparsers.add_parser("classify", help="Classify a video file.")

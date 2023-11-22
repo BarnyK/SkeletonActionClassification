@@ -166,7 +166,7 @@ class PoseDataset(Dataset):
 
         features = torch.from_numpy(features).float()
         if self.return_info:
-            return features, self.label_translation[label], label, self.dataset_info[idx]
+            return features, self.label_translation[label], label, idx, self.dataset_info[idx]
         else:
             return features, self.label_translation[label], label
 # def matrix_to_skeleton_body(mat):

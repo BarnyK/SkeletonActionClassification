@@ -8,6 +8,7 @@ import time
 from datetime import timedelta
 from typing import Union
 
+import numpy as np
 import torch
 from torch.optim.lr_scheduler import CosineAnnealingLR
 from torch.utils.data import DataLoader
@@ -63,13 +64,19 @@ def train_epoch(model, loss_func, loader, optimizer, scheduler, device):
     return mean_loss, top1_accuracy, top5_accuracy
 
 
-def test_epoch(model, loader, loss_func, device):
+def test_epoch(model, loader, loss_func, device, save_results=False):
     model.eval()
     running_loss = 0.0
     top1_count = 0
     top5_count = 0
     sample_count = 0
-    for x, labels, labels_real in (tq := tqdm(loader)):
+    results, all_labels, all_real_labels, names = [], [], [], []
+    for iter_data in (tq := tqdm(loader)):
+        if len(iter_data) == 5:
+            x, labels, labels_real, idx, dataset_info = iter_data
+        else:
+            x, labels, labels_real, *_ = iter_data
+            dataset_info = ""
         tq.set_description("Testing")
         batch_size, num_samples, *rest = x.shape
         x = x.reshape(batch_size * num_samples, *rest)
@@ -78,6 +85,13 @@ def test_epoch(model, loader, loss_func, device):
             out: torch.Tensor = model(x)
             out = out.reshape(batch_size, num_samples, -1)
             out = out.mean(dim=1)
+            if save_results:
+                res_out = out.cpu().numpy()
+                results.append(res_out)
+                all_labels.extend(labels.cpu().tolist())
+                all_real_labels.extend(labels_real.cpu().tolist())
+                names.extend(dataset_info)
+
             loss = loss_func(out, labels)
             sample_count += batch_size
 
@@ -91,6 +105,9 @@ def test_epoch(model, loader, loss_func, device):
     top5_accuracy = top5_count / sample_count
     mean_loss = running_loss / len(loader)
 
+    if save_results:
+        results = np.concatenate(results, 0)
+        return mean_loss, top1_accuracy, top5_accuracy, results, all_labels, all_real_labels, names
     return mean_loss, top1_accuracy, top5_accuracy
 
 
