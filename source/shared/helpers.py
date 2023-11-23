@@ -13,7 +13,7 @@ import yaml
 from easydict import EasyDict as edict
 
 from shared.dataset_info import DatasetInfo
-from shared.structs import SkeletonData, FrameData
+from shared.structs import SkeletonData, FrameData, Body
 
 
 def update_config(config_file):
@@ -137,3 +137,13 @@ def fill_frames(data: SkeletonData, size: int):
     for i in range(size - len(data.frames)):
         data.frames.append(FrameData(seq + i + 1, 0, []))
     data.length = data.lengthB = size
+
+def matrix_to_skeleton_body(mat):
+    B, T, V, C = mat.shape
+    data = SkeletonData("ababa", "coco17", None, None, T, [], T, (1920, 1080))
+    for fi in range(T):
+        frame = FrameData(fi, B, [])
+        for b in range(B):
+            frame.bodies.append(Body(mat[b, fi, :, :], None, None, None, None, b))
+        data.frames.append(frame)
+    return data

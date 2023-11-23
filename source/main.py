@@ -1,7 +1,6 @@
 import os
 
 import shared.datasets
-from datasets import TransformsNameList
 from procedures.config import PreprocessConfig, TrainingConfig, GeneralConfig
 from procedures.evaluate import evaluate_folder
 from procedures.generate_alphapose_skeletons import gen_alphapose_skeletons
@@ -345,30 +344,17 @@ def shortfeat(feat):
 
 if __name__ == "__main__":
     evaluate_folder("/home/barny/MasterThesis/Data/logs/feature_test")
+
 if __name__ == "__main__":
     import itertools
+
 
     files = ["/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_xview.train.pkl",
              "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_xsub.train.pkl",
              "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu120_xsub.train.pkl",
              "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu120_xset.train.pkl"]
-    all_features = TransformsNameList[:]
-    combs = [list(comb) for comb in itertools.combinations(all_features, 2)]
-    for i in range(1):
-        for file in files:
-            for features in combs:
-                feat_shorted = "-".join([shortfeat(x) for x in features])
-                name = os.path.split(file)[-1].split(".")[0]
-                test_file = file.replace("train", "test")
-                cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
-                cfg.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/feature_test"
-                cfg.features = features
-                cfg.name = f"stgcn_{feat_shorted}_{name}_{i}"
-                cfg.train_config.train_file = file
-                cfg.eval_config.test_file = test_file
-                train_network(cfg)
-                torch.cuda.empty_cache()
 
+    all_features = ['angles_motion']
     combs = [list(comb) for comb in itertools.combinations(all_features, 1)]
     for i in range(1):
         for file in files:
@@ -385,7 +371,45 @@ if __name__ == "__main__":
                 train_network(cfg)
                 torch.cuda.empty_cache()
 
-    files = [files[0]]
+    all_features = ['joints', 'joint_motion', 'angles', 'joints_relative', 'joint_accel', 'bones', 'bone_motion',
+                    'bone_angles', 'bone_accel']
+    combs = [list(comb) for comb in itertools.combinations(all_features, 2)]
+    for i in range(1):
+        for file in files:
+            for features in combs:
+                feat_shorted = "-".join([shortfeat(x) for x in features])
+                name = os.path.split(file)[-1].split(".")[0]
+                test_file = file.replace("train", "test")
+                cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
+                cfg.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/feature_test"
+                cfg.features = features
+                cfg.name = f"stgcn_{feat_shorted}_{name}_{i}"
+                cfg.train_config.train_file = file
+                cfg.eval_config.test_file = test_file
+                train_network(cfg)
+                torch.cuda.empty_cache()
+
+    all_features = ['joints', 'joint_motion', 'angles', 'angles_motion', 'joints_relative', 'joint_accel', 'bones',
+                    'bone_motion', 'bone_angles', 'bone_accel']
+    combs = [list(comb) for comb in itertools.combinations(all_features, 1)]
+    for i in range(1):
+        for file in files:
+            for features in combs:
+                feat_shorted = "-".join([shortfeat(x) for x in features])
+                name = os.path.split(file)[-1].split(".")[0]
+                test_file = file.replace("train", "test")
+                cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
+                cfg.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/feature_test"
+                cfg.features = features
+                cfg.name = f"stgcn_{feat_shorted}_{name}_{i}"
+                cfg.train_config.train_file = file
+                cfg.eval_config.test_file = test_file
+                train_network(cfg)
+                torch.cuda.empty_cache()
+
+    all_features = ['joints', 'joint_motion', 'angles', 'joints_relative', 'joint_accel', 'bones', 'bone_motion',
+                    'bone_angles', 'bone_accel']
+    files = [files[1]]
     combs = [list(comb) for comb in itertools.combinations(all_features, 3)]
     for i in range(1):
         for file in files:

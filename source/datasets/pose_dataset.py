@@ -169,39 +169,3 @@ class PoseDataset(Dataset):
             return features, self.label_translation[label], label, idx, self.dataset_info[idx]
         else:
             return features, self.label_translation[label], label
-# def matrix_to_skeleton_body(mat):
-#     B, T, V, C = mat.shape
-#     data = SkeletonData("ababa", "coco17", None, None, T, [], T, (1920, 1080))
-#     for fi in range(T):
-#         frame = FrameData(fi, B, [])
-#         for b in range(B):
-#             frame.bodies.append(Body(mat[b, fi, :, :], None, None, None, None, b))
-#         data.frames.append(frame)
-#     return data
-#
-#
-# if __name__ == "__main__":
-#     from torch.utils.data import DataLoader
-#     from tqdm import tqdm
-#
-#     test_sampler = Sampler(64, 64, False, 5)
-#     test_set = PoseDataset(
-#         "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.train.pkl",
-#         ["joints"],
-#         test_sampler,
-#         []
-#     )
-#     test_loader = DataLoader(test_set, 1, shuffle=False, num_workers=0, pin_memory=True)
-#     norm = SpineNormalization("/media/barny/SSD4/MasterThesis/Data/prepped_data/test1/ntu_xview.train.pkl", use_mean=False, align=True)
-#     for x, y, yy in tqdm(test_loader):
-#         xx = norm(x[0])
-#
-#         break
-#         x = screen_normalization(x, (1920, 1080))
-#         sd = matrix_to_skeleton_body(x[0])
-#         visualize_data(sd, 1000 // 30)
-#         visualize_skeleton(
-#             f"/home/barny/MasterThesis/Data/alphapose_skeletons/ntu_coco/S008C002P030R001A037.coco17.apskel.pkl")
-#         ['S008C002P030R001A037']
-#         break
-#         pass

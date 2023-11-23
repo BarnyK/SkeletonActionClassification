@@ -148,6 +148,25 @@ class ToAngles(PoseTransform):
         return 1
 
 
+class ToAnglesMotion(PoseTransform):
+    name: str = "angles_motion"
+    requires = [ToAngles]
+
+    def __init__(self, skeleton_type: str, *args, **kwargs):
+        super().__init__(skeleton_type, *args, **kwargs)
+
+    def __call__(self, features: dict[str, np.ndarray]):
+        angles = features.get(FeatureNames.ANGLES)
+        if angles is None:
+            raise KeyError(f"{FeatureNames.ANGLES} feature needs to be calculated before bone {self.name} feature")
+        features[self.name] = fe.to_motion(angles)
+        return features
+
+    @staticmethod
+    def calculate_channels(in_chan: int):
+        return 1
+
+
 class ToRelativeJoints(PoseTransform):
     name: str = "joints_relative"
     requires = [Joints]
@@ -176,12 +195,15 @@ class FeatureNames:
 
 
 TransformsList: list[Type[PoseTransform]] = [Joints, ToJointMotion, ToAngles, ToRelativeJoints, ToJointAccel, ToBones,
-                                             ToBoneMotion, ToBoneAngles, ToBoneAccel]
+                                             ToBoneMotion, ToBoneAngles, ToBoneAccel, ToAnglesMotion]
+
 TransformsNameList = [t.name for t in TransformsList]
+
 TransformsDict: dict[str, Type[PoseTransform]] = {
     Joints.name: Joints,  # 1
     ToJointMotion.name: ToJointMotion,  # 2
     ToAngles.name: ToAngles,  # 2
+    ToAnglesMotion.name: ToAnglesMotion,  # 3
     ToRelativeJoints.name: ToRelativeJoints,  # 2
     ToJointAccel.name: ToJointAccel,  # 3
     ToBones.name: ToBones,  # 2
@@ -198,3 +220,17 @@ def calculate_channels(features: Union[list[str], list[list[str], ...]], input_c
     for feat in features:
         channel_sum += TransformsDict[feat].calculate_channels(input_chan)
     return channel_sum
+
+
+if __name__ == "__main__":
+    import pickle
+
+    xd = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_xview.train.pkl"
+    with open(xd, "rb") as f:
+        data = pickle.load(f)
+    feature_dict = {"joints": data['poseXY'][0]}
+    an = ToAngles("coco17")
+    anm = ToAnglesMotion("coco17")
+    an(feature_dict)
+    anm(feature_dict)
+    pass

@@ -309,7 +309,7 @@ def create_dataloaders(cfg: GeneralConfig):
         cfg.symmetry_processing,
         norm_func
     )
-    train_loader = DataLoader(train_set, cfg.train_config.train_batch_size, True, num_workers=0, pin_memory=True)
+    train_loader = DataLoader(train_set, cfg.train_config.train_batch_size, True, num_workers=4, pin_memory=True)
 
     test_sampler = Sampler(cfg.window_length, cfg.samples_per_window, True, cfg.eval_config.test_clips_count)
     test_set = PoseDataset(
@@ -320,5 +320,5 @@ def create_dataloaders(cfg: GeneralConfig):
         cfg.symmetry_processing,
         norm_func
     )
-    test_loader = DataLoader(test_set, cfg.eval_config.test_batch_size, shuffle=False, num_workers=0, pin_memory=True)
+    test_loader = DataLoader(test_set, cfg.eval_config.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
     return test_loader, train_loader, test_set, train_set, norm_func
