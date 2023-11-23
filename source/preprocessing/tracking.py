@@ -209,28 +209,40 @@ def ntu_track_selection(data: SkeletonData, max_bodies: int = 2, length_threshol
 
 def select_by_size(data: SkeletonData, max_bodies: int = 2):
     for frame in data.frames:
-        if not frame.bodies:
-            continue
-        bboxes = [body_bbox(body) for body in frame.bodies]
-        sizes = [(bb[1] - bb[0]) * (bb[3] - bb[2]) for bb in bboxes]
-        sizes = sorted([(i, bb) for i, bb in enumerate(sizes)], key=lambda x: x[1], )
-        sizes = sizes[:max_bodies]
-        frame.bodies = [body for i, body in enumerate(frame.bodies) if i in [x[0] for x in sizes]]
+        select_by_size_frame(frame, max_bodies)
+
+
+def select_by_size_frame(frame: FrameData, max_bodies: int = 2):
+    if not frame.bodies:
+        return
+    bboxes = [body_bbox(body) for body in frame.bodies]
+    sizes = [(bb[1] - bb[0]) * (bb[3] - bb[2]) for bb in bboxes]
+    sizes = sorted([(i, bb) for i, bb in enumerate(sizes)], key=lambda x: x[1], )
+    sizes = sizes[:max_bodies]
+    frame.bodies = [body for i, body in enumerate(frame.bodies) if i in [x[0] for x in sizes]]
 
 
 def select_by_confidence(data: SkeletonData, max_bodies: int = 2):
     for frame in data.frames:
-        if not frame.bodies:
-            continue
-        confidences = [np.sum(body.poseConf) for body in frame.bodies]
-        confidences = sorted([(i, bb) for i, bb in enumerate(confidences)], key=lambda x: x[1], )
-        confidences = confidences[:max_bodies]
-        frame.bodies = [body for i, body in enumerate(frame.bodies) if i in [x[0] for x in confidences]]
+        select_by_confidence_frame(frame, max_bodies)
+
+
+def select_by_confidence_frame(frame, max_bodies):
+    if not frame.bodies:
+        return
+    confidences = [np.sum(body.poseConf) for body in frame.bodies]
+    confidences = sorted([(i, bb) for i, bb in enumerate(confidences)], key=lambda x: x[1], )
+    confidences = confidences[:max_bodies]
+    frame.bodies = [body for i, body in enumerate(frame.bodies) if i in [x[0] for x in confidences]]
 
 
 def select_by_order(data: SkeletonData, max_bodies: int = 2):
     for frame in data.frames:
-        frame.bodies = frame.bodies[:max_bodies]
+        select_by_order_frame(frame, max_bodies)
+
+
+def select_by_order_frame(frame, max_bodies):
+    frame.bodies = frame.bodies[:max_bodies]
 
 
 def assign_tids_by_order(data: SkeletonData):

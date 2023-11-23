@@ -1,6 +1,6 @@
 import numpy as np
 
-from shared.structs import SkeletonData
+from shared.structs import SkeletonData, FrameData
 
 drawn_limbs = [
     (0, 1), (2, 1), (3, 2), (4, 3), (5, 1), (6, 5), (7, 6), (8, 1), (9, 8), (10, 9), (11, 10), (12, 8), (13, 12),
@@ -70,21 +70,6 @@ def from_coco(mat: np.ndarray) -> np.ndarray:
     return new_mat
 
 
-def from_skeleton_data(data: SkeletonData) -> SkeletonData:
-    if data.type == "coco17":
-        func = from_coco
-    elif data.type == "ntu":
-        func = from_ntu
-    else:
-        raise KeyError(f"not supported type {data.type}")
-    for frame in data.frames:
-        for body in frame.bodies:
-            body.poseXY = func(body.poseXY)
-            body.poseConf = func(body.poseConf)
-    data.type = "ntu_coco"
-    return data
-
-
 def from_ntu(mat: np.ndarray) -> np.ndarray:
     *R, V, C = mat.shape
     new_mat = np.zeros((*R, 15, C))
@@ -95,6 +80,34 @@ def from_ntu(mat: np.ndarray) -> np.ndarray:
         new_mat[..., dst, :] = mat[..., src, :]
 
     return new_mat
+
+
+transform_map = {
+    "coco17": from_coco,
+    "ntu": from_ntu,
+}
+
+
+def from_frame(frame: FrameData, skeleton_type: str):
+    func = transform_map.get(skeleton_type)
+    if func is None:
+        raise KeyError(f"not supported type {skeleton_type}")
+    for body in frame.bodies:
+        body.poseXY = func(body.poseXY)
+        body.poseConf = func(body.poseConf)
+    return frame, "ntu_coco"
+
+
+def from_skeleton_data(data: SkeletonData) -> SkeletonData:
+    func = transform_map.get(data.type)
+    if func is None:
+        raise KeyError(f"not supported type {data.type}")
+    for frame in data.frames:
+        for body in frame.bodies:
+            body.poseXY = func(body.poseXY)
+            body.poseConf = func(body.poseConf)
+    data.type = "ntu_coco"
+    return data
 
 
 if __name__ == "__main__":

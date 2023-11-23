@@ -1,86 +1,10 @@
 import os
 
-import shared.datasets
-from procedures.config import PreprocessConfig, TrainingConfig, GeneralConfig
+from procedures.config import TrainingConfig, GeneralConfig
 from procedures.evaluate import evaluate_folder
 from procedures.generate_alphapose_skeletons import gen_alphapose_skeletons
-from procedures.preprocess_files import preprocess_files
 from procedures.training import train_network
 from shared.errors import DifferentConfigException
-
-# preprocess_files("/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
-#                  "/media/barny/SSD4/MasterThesis/Data/ntu_coco.f1.combined", PreprocessConfig())
-# preprocess_files("/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco",
-#                  "/media/barny/SSD4/MasterThesis/Data/ntu_120_coco.f1.combined", PreprocessConfig())
-# testing_generation()
-
-
-if __name__ == "__main__2":
-    import torch
-    from procedures.single_file_pose import single_file_pose
-
-    # single_file_pose(
-    #     "/media/barny/SSD4/MasterThesis/Data/ntu_sample/S001C001P001R001A010_rgb.avi",
-    #     torch.device("cuda"),
-    #     "coco17",
-    # )
-    single_file_pose("/media/barny/SSD4/MasterThesis/Data/concatenated.avi", torch.device("cuda"))
-
-if __name__ == "__main__2":
-    # Generation of NTU datasets from Alphapose skeletons
-    # preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
-    #                   "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-    #                  "/media/barny/SSD4/MasterThesis/Data/prepped_data/test1",
-    #                  PreprocessConfig(),
-    #                  datasets.all_splits,
-    #                  24,
-    #                  False)
-    cfg = PreprocessConfig()
-    cfg.keypoint_fill_type = "mice"
-    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
-                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_mice_fill_bad", cfg,
-                     shared.datasets.all_splits, 4,
-                     False)
-
-    cfg = PreprocessConfig()
-    cfg.keypoint_fill_type = "knn"
-    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
-                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_knn_fill_bad", cfg,
-                     shared.datasets.all_splits, 4,
-                     False)
-
-if __name__ == "__main__2":
-    # Generation of NTU datasets from Alphapose skeleton while changing the skeleton type
-    # cfg = PreprocessConfig()
-    # cfg.transform_to_combined = True
-    # preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
-    #                   "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-    #                  "/media/barny/SSD4/MasterThesis/Data/prepped_data/coco_combined",
-    #                  cfg,
-    #                  datasets.all_splits,
-    #                  24,
-    #                  False)
-
-    # cfg = ntu_preprocess_cfg()
-    # cfg.remove_missing_from_file = True
-    # preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons",
-    #                   "/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons_120"],
-    #                  "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_test1",
-    #                  cfg,
-    #                  datasets.all_splits, 6, False,
-    #                  "/media/barny/SSD4/MasterThesis/Data/NTU_RGBD120_samples_with_missing_skeletons.txt")
-    cfg = GeneralConfig()
-    cfg.remove_missing_from_file = True
-    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco",
-                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_no_missing",
-                     cfg,
-                     shared.datasets.all_splits,
-                     10,
-                     False,
-                     "/media/barny/SSD4/MasterThesis/Data/NTU_RGBD120_samples_with_missing_skeletons.txt")
 
 if __name__ == "__main__2":
     sets = [
@@ -347,7 +271,6 @@ if __name__ == "__main__":
 
 if __name__ == "__main__":
     import itertools
-
 
     files = ["/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_xview.train.pkl",
              "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_xsub.train.pkl",

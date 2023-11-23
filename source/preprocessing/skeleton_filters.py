@@ -29,6 +29,20 @@ def remove_by_max_possible_pose_confidence(data: SkeletonData, threshold: float 
             frame.bodies.pop(b)
 
 
+def remove_by_max_possible_pose_confidence_frame(frame: FrameData, threshold: float = 0.3):
+    if frame.bodies:
+        min_conf = frame.bodies[0].poseXY.shape[0] * threshold
+    else:
+        return
+
+    to_remove = []
+    for bi, body in enumerate(frame.bodies):
+        if body.poseConf.sum() < min_conf:
+            to_remove = [bi] + to_remove
+    for bi in to_remove:
+        frame.bodies.pop(bi)
+
+
 def remove_bodies_by_box_confidence(data: SkeletonData, threshold: float = 0.5, max_total: float = 1.0,
                                     max_frames: float = 1.0) -> bool:
     """

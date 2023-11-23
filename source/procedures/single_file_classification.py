@@ -18,32 +18,28 @@ from datasets.pose_dataset import solve_feature_transform_requirements, transfor
 from datasets.transform_wrappers import calculate_channels, TransformsDict
 from models import create_stgcnpp
 from pose_estimation import DetectionLoader, init_detector, init_pose_model, read_ap_configs, run_pose_worker
-from preprocessing import skeleton_filters
-from preprocessing.keypoint_fill import keypoint_fill
-from preprocessing.nms import single_frame_nms
 from preprocessing.normalizations import create_norm_func, setup_norm_func
-from preprocessing.tracking import select_by_size, select_by_confidence, select_by_order, pose_track, \
-    select_tracks_by_motion, assign_tids_by_order
-from procedures.config import GeneralConfig, PreprocessConfig
-from procedures.preprocess_files import _preprocess_data_ap
+from procedures.config import GeneralConfig
 from procedures.training import load_model
-from shared.datasets import adjusted_actions_maps
+from procedures.utils.preprocessing import preprocess_data_ap, preprocess_per_frame
+from shared.dataset_statics import adjusted_actions_maps
 from shared.helpers import calculate_interval, run_qsp, fill_frames
-from shared.skeletons import ntu_coco
 from shared.structs import SkeletonData, FrameData
 from shared.visualize_skeleton_file import Visualizer
 
 
 def window_worker(
-        q: Queue, datalen: int, pose_data_queue: Queue, length: int, interlace: int
+        q: Queue, datalen: int, pose_data_queue: Queue, cfg: GeneralConfig
 ):
     window = []
+    length = cfg.samples_per_window
+    interlace = cfg.interlace
     for i in tqdm(range(datalen), disable=False):
         data = pose_data_queue.get()
         if data is None:
             break
         fd = FrameData(i, len(data), data)
-        single_frame_nms(fd, True)
+        preprocess_per_frame(fd, cfg)
         window.append(fd)
         if len(window) == length:
             q.put(window)
@@ -54,44 +50,15 @@ def window_worker(
 
 
 def run_window_worker(
-        datalen: int, pose_data_queue: Queue, length: int, interlace: int
+        datalen: int, pose_data_queue: Queue, cfg: GeneralConfig
 ):
+    cfg = deepcopy(cfg)
     q = Queue(32)
     window_worker_thread = Thread(
-        target=window_worker, args=(q, datalen, pose_data_queue, length, interlace)
+        target=window_worker, args=(q, datalen, pose_data_queue, cfg)
     )
     window_worker_thread.start()
     return q, window_worker_thread
-
-
-def _preprocess_data_ap(data: SkeletonData, cfg: PreprocessConfig):
-    if cfg.transform_to_combined:
-        data = ntu_coco.from_skeleton_data(data)
-    if cfg.use_box_conf:
-        skeleton_filters.remove_bodies_by_box_confidence(data, cfg.box_conf_threshold, cfg.box_conf_max_total,
-                                                         cfg.box_conf_max_frames)
-    if cfg.use_max_pose_conf:
-        skeleton_filters.remove_by_max_possible_pose_confidence(data, cfg.max_pose_conf_threshold)
-    # if cfg.use_nms:
-    #     nms(data, True)
-
-    if cfg.use_size_selection:
-        select_by_size(data, cfg.max_body_count)
-    elif cfg.use_confidence_selection:
-        select_by_confidence(data, cfg.max_body_count)
-    elif cfg.use_order_selection:
-        select_by_order(data, cfg.max_body_count)
-    if cfg.use_tracking:
-        pose_track(data.frames,
-                   threshold=cfg.pose_tracking_threshold,
-                   width_ratio=cfg.pose_tracking_width_ratio,
-                   height_ratio=cfg.pose_tracking_height_ratio)
-        if cfg.use_motion_selection:
-            select_tracks_by_motion(data, cfg.max_body_count)
-    else:
-        assign_tids_by_order(data)
-    keypoint_fill(data, cfg.keypoint_fill_type)
-    return data
 
 
 def aggregate_results(window_results: list[tuple[int, int, torch.Tensor], ...]) -> list[int, ...]:
@@ -143,8 +110,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
 
     det_loader, pose_data_queue, ap_threads = create_alphapose_workers(cfg, device, filename, frame_interval)
 
-    window_queue, window_thread = run_window_worker(det_loader.length, pose_data_queue, cfg.samples_per_window,
-                                                    cfg.interlace)
+    window_queue, window_thread = run_window_worker(det_loader.length, pose_data_queue, cfg)
 
     qsp_thread = run_qsp([det_loader.image_queue, det_loader.det_queue, det_loader.pose_queue, window_queue],
                          ["det", "post", "pose", "window"])
@@ -198,7 +164,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
                 fill_frames(data, cfg.samples_per_window)
 
             # Preprocess
-            _preprocess_data_ap(data, cfg.prep_config)
+            preprocess_data_ap(data, cfg.prep_config)
             points = data.to_matrix()
             if points is None:
                 window_results[window_count] = (start_frame, end_frame, None, None)

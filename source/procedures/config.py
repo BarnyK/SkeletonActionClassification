@@ -9,7 +9,7 @@ from typing import Union, Type, Optional, List, AnyStr, TextIO, BinaryIO
 from dataclass_wizard import YAMLWizard
 from dataclass_wizard.type_def import T, Encoder, Decoder
 
-import shared.datasets
+from shared.dataset_statics import all_splits
 
 
 @dataclass
@@ -47,7 +47,7 @@ class TrainingConfig(YAMLWizard, key_transform='SNAKE'):
 class PreprocessConfig(YAMLWizard, key_transform='SNAKE'):
     processes: int = 12
     missing_file: str = ""
-    split_strategy: list[str] = field(default_factory=lambda: shared.datasets.all_splits)
+    split_strategy: list[str] = field(default_factory=lambda: all_splits)
 
     use_box_conf: bool = True
     box_conf_threshold: float = 0.7

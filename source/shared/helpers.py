@@ -138,6 +138,7 @@ def fill_frames(data: SkeletonData, size: int):
         data.frames.append(FrameData(seq + i + 1, 0, []))
     data.length = data.lengthB = size
 
+
 def matrix_to_skeleton_body(mat):
     B, T, V, C = mat.shape
     data = SkeletonData("ababa", "coco17", None, None, T, [], T, (1920, 1080))

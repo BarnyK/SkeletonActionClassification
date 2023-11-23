@@ -1,4 +1,4 @@
-from shared.datasets import ntu_splits, ut_splits, ntu_actions, ut_actions
+from shared.dataset_statics import ntu_splits, ut_splits, ntu_actions, ut_actions
 
 split_map = {
     "ntu_xsub": ntu_splits.ntu_xsub_split,

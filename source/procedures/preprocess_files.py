@@ -9,75 +9,22 @@ from typing import Union
 
 from tqdm import tqdm
 
-import shared.datasets
-from preprocessing import skeleton_filters
-from preprocessing.keypoint_fill import keypoint_fill
-from preprocessing.nms import nms
-from preprocessing.tracking import pose_track, select_tracks_by_motion, assign_tids_by_order, select_by_order, \
-    select_by_confidence, select_by_size, ntu_track_selection
+import shared.dataset_statics
 from procedures.config import PreprocessConfig, GeneralConfig
+from procedures.utils.preprocessing import preprocess_data_ap, preprocess_data_ntu
 from shared import ntu_loader
 from shared.dataset_info import name_to_ntu_data
 from shared.helpers import folder_check
-from shared.skeletons import ntu_coco
 from shared.structs import SkeletonData
-
-
-def _preprocess_data_ntu(data: SkeletonData, cfg: PreprocessConfig):
-    if cfg.transform_to_combined:
-        data = ntu_coco.from_skeleton_data(data)
-
-    if data.no_bodies():
-        return data
-
-    if cfg.use_3d_points:
-        for tid in data.get_all_tids():
-            for body in data.get_all_bodies_for_tid(tid):
-                body.poseXY = body.poseXYZ
-
-    ntu_track_selection(data, cfg.max_body_count)
-    keypoint_fill(data, cfg.keypoint_fill_type)
-    return data
-
-
-def _preprocess_data_ap(data: SkeletonData, cfg: PreprocessConfig) -> SkeletonData:
-    if cfg.transform_to_combined:
-        data = ntu_coco.from_skeleton_data(data)
-    if cfg.use_box_conf:
-        skeleton_filters.remove_bodies_by_box_confidence(data, cfg.box_conf_threshold, cfg.box_conf_max_total,
-                                                         cfg.box_conf_max_frames)
-    if cfg.use_max_pose_conf:
-        skeleton_filters.remove_by_max_possible_pose_confidence(data, cfg.max_pose_conf_threshold)
-    if cfg.use_nms:
-        nms(data, True)
-
-    if cfg.use_size_selection:
-        select_by_size(data, cfg.max_body_count)
-    elif cfg.use_confidence_selection:
-        select_by_confidence(data, cfg.max_body_count)
-    elif cfg.use_order_selection:
-        select_by_order(data, cfg.max_body_count)
-
-    if cfg.use_tracking:
-        pose_track(data.frames,
-                   threshold=cfg.pose_tracking_threshold,
-                   width_ratio=cfg.pose_tracking_width_ratio,
-                   height_ratio=cfg.pose_tracking_height_ratio)
-        if cfg.use_motion_selection:
-            select_tracks_by_motion(data, cfg.max_body_count)
-    else:
-        assign_tids_by_order(data)
-    keypoint_fill(data, cfg.keypoint_fill_type)
-    return data
 
 
 def preprocess_file(in_file: str, cfg: PreprocessConfig, return_raw_data: bool = False):
     if cfg.alphapose_skeletons:
         data = SkeletonData.load(in_file)
-        _preprocess_data_ap(data, cfg)
+        preprocess_data_ap(data, cfg)
     else:
         data = ntu_loader.read_file(in_file)
-        data = _preprocess_data_ntu(data, cfg)
+        data = preprocess_data_ntu(data, cfg)
 
     if data.no_bodies():
         tqdm.write(f"Empty bodies in: {in_file}")
@@ -147,7 +94,7 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: P
     results = [x for x in results if x[1] is not None]
 
     for strategy in cfg.split_strategy:
-        split_func = shared.datasets.split_map[strategy]
+        split_func = shared.dataset_statics.split_map[strategy]
         train_split, test_split = split_func(results)
         tqdm.write(f"{strategy}: {len(train_split['action']) + len(test_split['action'])}")
         tqdm.write(f"\tTrain: {len(train_split['action'])}")
@@ -187,10 +134,9 @@ def handle_preprocess(args: Namespace):
             print("Some of the paths are invalid")
         return False
 
-
-if __name__ == "__main__":
-    cfg = GeneralConfig.from_yaml_file("./configs/general/ntu_xview.yaml")
-    cfg.prep_config.processes = 0
-    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons"],
-                     "/tmp/",
-                     cfg.prep_config)
+# if __name__ == "__main__":
+#     cfg = GeneralConfig.from_yaml_file("./configs/general/ntu_xview.yaml")
+#     cfg.prep_config.processes = 0
+#     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons"],
+#                      "/tmp/",
+#                      cfg.prep_config)
