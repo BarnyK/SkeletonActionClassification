@@ -448,6 +448,6 @@ def test_nms(skeleton_file):
 
 
 if __name__ == "__main__":
-    for i in range(50,61):
-        test_nms(f"/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco/S009C003P025R001A0{i}.coco17.apskel.pkl")
-
+    for i in range(50, 61):
+        test_nms(
+            f"/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco/S009C003P025R001A0{i}.coco17.apskel.pkl")

@@ -342,6 +342,7 @@ if __name__ == "__main__":
 def shortfeat(feat):
     return "".join(x[:2] for x in feat.split("_"))
 
+
 if __name__ == "__main__":
     evaluate_folder("/home/barny/MasterThesis/Data/logs/feature_test")
 if __name__ == "__main__":

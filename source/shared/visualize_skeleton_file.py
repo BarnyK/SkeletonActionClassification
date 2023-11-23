@@ -249,7 +249,8 @@ def visualize_data(data: SkeletonData, wait_key: int = 0):
 #               skip_frames: bool = False, save_file: str = None, draw_point_number: bool = False,
 #               print_frame_text: bool = False):
 class Visualizer:
-    def __init__(self, video_file: str, skeleton_type: str, frame_interval: int, skip_frames: bool, fps: float, save_file: str):
+    def __init__(self, video_file: str, skeleton_type: str, frame_interval: int, skip_frames: bool, fps: float,
+                 save_file: str):
         self.queue = Queue()
         self.video_file = video_file
         self.fps = fps

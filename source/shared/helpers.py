@@ -12,8 +12,8 @@ import numpy as np
 import yaml
 from easydict import EasyDict as edict
 
-from shared.structs import SkeletonData, FrameData
 from shared.dataset_info import DatasetInfo
+from shared.structs import SkeletonData, FrameData
 
 
 def update_config(config_file):
