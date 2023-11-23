@@ -77,12 +77,21 @@ def handle_eval(args: Namespace):
         return False
     evaluate(cfg, args.model)
 
+
 def evaluate_folder(folder_path: str):
-    files = [(root, os.path.join(root, file)) for root, subdir, files in os.walk(folder_path) for file in files if file == "config.yaml"]
-    for root, config_file in files:
-        print(config_file)
+    files = [(root, os.path.join(root, file)) for root, subdir, files in os.walk(folder_path) for file in files if
+             file == "config.yaml"]
+    for i, (root, config_file) in enumerate(files):
+        print(f"{i:<4}{len(files):<8}{config_file}")
         cfg = GeneralConfig.from_yaml_file(config_file)
         file_path = os.path.join(root, "results.pkl")
+        model_path = os.path.join(root, "best.pth")
+        if not os.path.isfile(model_path):
+            print(f"{model_path} doesn't exist")
+            continue
+        if os.path.isfile(file_path):
+            print("Already done")
+            continue
         evaluate(cfg, None, file_path)
 
 

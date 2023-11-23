@@ -91,7 +91,7 @@ def _preprocess_data_ap(data: SkeletonData, cfg: PreprocessConfig):
     else:
         assign_tids_by_order(data)
     keypoint_fill(data, cfg.keypoint_fill_type)
-    return data,
+    return data
 
 
 def aggregate_results(window_results: list[tuple[int, int, torch.Tensor], ...]) -> list[int, ...]:
@@ -133,7 +133,8 @@ def calculate_frame_results(frame_results, to_index, frame_windows, window_resul
     return frame_results, start_index
 
 
-def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[str, None] = None, save_file: str = None):
+def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[str, None] = None,
+                               save_file: str = None):
     assert os.path.isfile(filename)
 
     # Setup
@@ -241,25 +242,30 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     print(f"fps:        {fps:.4}")
     print(f"Total time: {end_time - start_time:.4}")
 
+    whole_data = np.stack([res for _, _, res, _ in window_results.values()])
+    whole_results = np.sum(whole_data, 0)
+    res = np.argmax(whole_results)
+    print(action_map[res])
+
     # #
-    total_data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
-                              len(unique_frames), unique_frames, len(unique_frames), det_loader.frameSize,
-                              frame_interval)
-    #
-    # pose_track(total_data.frames)
-    for frame, action_id in zip(total_data.frames, out):
-        frame.text = action_map[frame_results[frame.seqId]]
-    fps = 30 * cfg.samples_per_window / cfg.window_length
-    # visualize(total_data, total_data.video_file, int(1000 / fps), print_frame_text=False, skip_frames=True,
-    #           save_file="/home/barny/naaaaaaah.mp4", draw_bbox=True)
+    # total_data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
+    #                           len(unique_frames), unique_frames, len(unique_frames), det_loader.frameSize,
+    #                           frame_interval)
+    # #
+    # # pose_track(total_data.frames)
+    # for frame, action_id in zip(total_data.frames, out):
+    #     frame.text = action_map[frame_results[frame.seqId]]
+    # fps = 30 * cfg.samples_per_window / cfg.window_length
+    # # visualize(total_data, total_data.video_file, int(1000 / fps), print_frame_text=False, skip_frames=True,
+    # #           save_file="/home/barny/naaaaaaah.mp4", draw_bbox=True)
 
     for name, q in all_queues.items():
-        while True:
-            if q.empty():
-                break
+        if name == "vis":
+            continue
+        while not q.empty():
             q.get()
     print(len(visualizer.uniques))
-    vis_thread.join()
+    print(vis_thread.join())
     return fps
 
 
@@ -271,11 +277,11 @@ def close_(queues):
     for name, q in queues.items():
         empty_queue(q)
         if name == "prep":
-            q.put([None]*4)
+            q.put([None] * 4)
         if name == "det":
-            q.put([None]*5)
+            q.put([None] * 5)
         if name == "post":
-            q.put([None]*5)
+            q.put([None] * 5)
         else:
             q.put(None)
 
@@ -370,7 +376,7 @@ if __name__ == "__main__":
     times = []
     for i in range(1):
         st = time.time()
-        x = single_file_classification("/media/godchama/ssd/hoshimatic.60.30.avi", config)
+        x = single_file_classification("/media/godchama/ssd/hoshimatic.20.30.avi", config)
         et = time.time()
         times.append(et - st)
         fpses.append(x)

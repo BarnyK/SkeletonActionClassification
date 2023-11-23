@@ -3,6 +3,7 @@ import os
 import shared.datasets
 from datasets import TransformsNameList
 from procedures.config import PreprocessConfig, TrainingConfig, GeneralConfig
+from procedures.evaluate import evaluate_folder
 from procedures.generate_alphapose_skeletons import gen_alphapose_skeletons
 from procedures.preprocess_files import preprocess_files
 from procedures.training import train_network
@@ -341,7 +342,8 @@ if __name__ == "__main__":
 def shortfeat(feat):
     return "".join(x[:2] for x in feat.split("_"))
 
-
+if __name__ == "__main__":
+    evaluate_folder("/home/barny/MasterThesis/Data/logs/feature_test")
 if __name__ == "__main__":
     import itertools
 

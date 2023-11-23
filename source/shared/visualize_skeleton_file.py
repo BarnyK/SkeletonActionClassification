@@ -326,7 +326,7 @@ class Visualizer:
                     out_stream.write(frame)
                     continue
                 cv2.imshow(window_name, frame)
-                cv2.waitKey(self.wait_key_value)
+                cv2.waitKey(wait_key_value)
 
             frame_data: FrameData = self._get()
             if frame_data is None:
@@ -334,7 +334,7 @@ class Visualizer:
                     out_stream.write(frame)
                     continue
                 cv2.imshow(window_name, frame)
-                cv2.waitKey(self.wait_key_value)
+                cv2.waitKey(wait_key_value)
                 continue
 
             draw_frame_data(frame, frame_data, self.limb_pairs, self.prep_keypoints, True, False, False, True)
@@ -343,7 +343,7 @@ class Visualizer:
                 out_stream.write(frame)
                 continue
             cv2.imshow(window_name, frame)
-            cv2.waitKey(self.wait_key_value)
+            cv2.waitKey(wait_key_value)
         if not self.save_file:
             cv2.destroyWindow(window_name)
 
