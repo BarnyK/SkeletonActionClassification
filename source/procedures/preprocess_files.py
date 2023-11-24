@@ -11,7 +11,7 @@ from tqdm import tqdm
 
 import shared.dataset_statics
 from procedures.config import PreprocessConfig, GeneralConfig
-from procedures.utils.preprocessing import preprocess_data_ap, preprocess_data_ntu
+from procedures.utils.prep import preprocess_data_ap, preprocess_data_ntu
 from shared import ntu_loader
 from shared.dataset_info import name_to_ntu_data
 from shared.helpers import folder_check

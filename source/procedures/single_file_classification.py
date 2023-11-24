@@ -21,7 +21,7 @@ from pose_estimation import DetectionLoader, init_detector, init_pose_model, rea
 from preprocessing.normalizations import create_norm_func, setup_norm_func
 from procedures.config import GeneralConfig
 from procedures.training import load_model
-from procedures.utils.preprocessing import preprocess_data_ap, preprocess_per_frame
+from procedures.utils.prep import preprocess_per_frame, preprocess_data_rest
 from shared.dataset_statics import adjusted_actions_maps
 from shared.helpers import calculate_interval, run_qsp, fill_frames
 from shared.structs import SkeletonData, FrameData
@@ -53,7 +53,7 @@ def run_window_worker(
         datalen: int, pose_data_queue: Queue, cfg: GeneralConfig
 ):
     cfg = deepcopy(cfg)
-    q = Queue(32)
+    q = Queue(2)
     window_worker_thread = Thread(
         target=window_worker, args=(q, datalen, pose_data_queue, cfg)
     )
@@ -128,7 +128,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     frame_windows_mapping = defaultdict(list)
     window_results = {}
     frame_results = []
-    visualizer = Visualizer(filename, cfg.skeleton_type, frame_interval, True, 30, save_file)
+    visualizer = Visualizer(filename, cfg.skeleton_type, frame_interval, True, save_file)
     vis_thread = visualizer.run_visualize()
 
     all_threads = {"prep": ap_threads[0], "det": ap_threads[1], "post": ap_threads[2], "window": window_thread,
@@ -164,7 +164,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
                 fill_frames(data, cfg.samples_per_window)
 
             # Preprocess
-            preprocess_data_ap(data, cfg.prep_config)
+            preprocess_data_rest(data, cfg.prep_config)
             points = data.to_matrix()
             if points is None:
                 window_results[window_count] = (start_frame, end_frame, None, None)
@@ -208,7 +208,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     print(f"fps:        {fps:.4}")
     print(f"Total time: {end_time - start_time:.4}")
 
-    whole_data = np.stack([res for _, _, res, _ in window_results.values()])
+    whole_data = np.stack([res for _, _, res, _ in window_results.values()if res is not None])
     whole_results = np.sum(whole_data, 0)
     res = np.argmax(whole_results)
     print(action_map[res])
@@ -342,13 +342,16 @@ if __name__ == "__main__":
     times = []
     for i in range(1):
         st = time.time()
-        x = single_file_classification("/media/godchama/ssd/hoshimatic.20.30.avi", config)
+        # x = single_file_classification("/media/godchama/ssd/hoshimatic.20.30.avi", config)
+        # x = single_file_classification(
+        #     "/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq1.avi",
+        #     config)
+        x = single_file_classification("/home/barny/rickroll.webm",config, None,"/home/barny/rickroll.2.avi")
         et = time.time()
         times.append(et - st)
         fpses.append(x)
     # single_file_classification("/media/godchama/hdd/gura.short.mp4", config)
     # single_file_classification("/media/godchama/ssd/hoshimatic.60.30.avi", config)
-    # single_file_classification("/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq1.avi",
-    #                            config)
+
     print(f"Mean exec time: {np.mean(times):.5}")  # 38.792
     print(f"Mean fps: {np.mean(fpses):.5}")  # 2.1821 # 2.1684

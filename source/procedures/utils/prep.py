@@ -30,7 +30,7 @@ def preprocess_per_frame(frame: FrameData, gcfg: GeneralConfig):
     return frame
 
 
-def preprocess_data_with_context(data: SkeletonData, cfg: PreprocessConfig):
+def preprocess_data_rest(data: SkeletonData, cfg: PreprocessConfig):
     if cfg.use_tracking:
         pose_track(data.frames,
                    threshold=cfg.pose_tracking_threshold,

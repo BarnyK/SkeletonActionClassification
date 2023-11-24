@@ -277,28 +277,11 @@ if __name__ == "__main__":
              "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu120_xsub.train.pkl",
              "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu120_xset.train.pkl"]
 
-    all_features = ['angles_motion']
-    combs = [list(comb) for comb in itertools.combinations(all_features, 1)]
-    for i in range(1):
-        for file in files:
-            for features in combs:
-                feat_shorted = "-".join([shortfeat(x) for x in features])
-                name = os.path.split(file)[-1].split(".")[0]
-                test_file = file.replace("train", "test")
-                cfg = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
-                cfg.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/feature_test"
-                cfg.features = features
-                cfg.name = f"stgcn_{feat_shorted}_{name}_{i}"
-                cfg.train_config.train_file = file
-                cfg.eval_config.test_file = test_file
-                train_network(cfg)
-                torch.cuda.empty_cache()
-
     all_features = ['joints', 'joint_motion', 'angles', 'joints_relative', 'joint_accel', 'bones', 'bone_motion',
                     'bone_angles', 'bone_accel']
     combs = [list(comb) for comb in itertools.combinations(all_features, 2)]
     for i in range(1):
-        for file in files:
+        for file in files[:2]:
             for features in combs:
                 feat_shorted = "-".join([shortfeat(x) for x in features])
                 name = os.path.split(file)[-1].split(".")[0]

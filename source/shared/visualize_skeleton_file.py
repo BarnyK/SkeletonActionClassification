@@ -249,12 +249,10 @@ def visualize_data(data: SkeletonData, wait_key: int = 0):
 #               skip_frames: bool = False, save_file: str = None, draw_point_number: bool = False,
 #               print_frame_text: bool = False):
 class Visualizer:
-    def __init__(self, video_file: str, skeleton_type: str, frame_interval: int, skip_frames: bool, fps: float,
+    def __init__(self, video_file: str, skeleton_type: str, frame_interval: int, skip_frames: bool,
                  save_file: str):
         self.queue = Queue()
         self.video_file = video_file
-        self.fps = fps
-        self.wait_key_value = int(1000 / self.fps)
 
         self.skeleton_type = skeleton_type
         self.frame_interval = frame_interval
@@ -289,26 +287,26 @@ class Visualizer:
         return self.queue.get()
 
     def visualize(self):
-        self.video_stream = cv2.VideoCapture(self.video_file)
+        video_stream = cv2.VideoCapture(self.video_file)
+        fps = video_stream.get(cv2.CAP_PROP_FPS)
         if self.skip_frames:
-            wrapped_stream = every_nth_frame(self.video_stream, self.frame_interval)
+            wrapped_stream = every_nth_frame(video_stream, self.frame_interval)
             interval = 1
-            self.fps = self.fps / self.frame_interval
-            wait_key_value = int(1000 / self.fps)
+            fps = fps / self.frame_interval
         else:
-            wrapped_stream = every_nth_frame(self.video_stream, 1)
+            wrapped_stream = every_nth_frame(video_stream, 1)
             interval = self.frame_interval
-            wait_key_value = self.wait_key_value
+        wait_key_value = int(1000 / fps)
 
         frame_size = (
-            int(self.video_stream.get(cv2.CAP_PROP_FRAME_WIDTH)),
-            int(self.video_stream.get(cv2.CAP_PROP_FRAME_HEIGHT)),
+            int(video_stream.get(cv2.CAP_PROP_FRAME_WIDTH)),
+            int(video_stream.get(cv2.CAP_PROP_FRAME_HEIGHT)),
         )
 
         out_stream = None
         if self.save_file:
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            out_stream = cv2.VideoWriter(self.save_file, fourcc, self.fps, frame_size)
+            out_stream = cv2.VideoWriter(self.save_file, fourcc, fps, frame_size)
             out_stream.set(cv2.VIDEOWRITER_PROP_QUALITY, 1)
 
         i = -1
@@ -345,6 +343,9 @@ class Visualizer:
                 continue
             cv2.imshow(window_name, frame)
             cv2.waitKey(wait_key_value)
+        if self.save_file:
+            out_stream.release()
+        video_stream.release()
         if not self.save_file:
             cv2.destroyWindow(window_name)
 
