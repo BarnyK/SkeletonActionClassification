@@ -3,6 +3,7 @@ import os
 from procedures.config import TrainingConfig, GeneralConfig
 from procedures.evaluate import evaluate_folder
 from procedures.generate_alphapose_skeletons import gen_alphapose_skeletons
+from procedures.preprocess_files import preprocess_files
 from procedures.training import train_network
 from shared.errors import DifferentConfigException
 
@@ -267,7 +268,44 @@ def shortfeat(feat):
 
 
 if __name__ == "__main__":
+    cfg = GeneralConfig.from_yaml_file("./configs/general/ut_test_conf.yaml")
+    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set1_coco","/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set2_coco"],
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_ut_test2",cfg.prep_config)
+if __name__ == "__main__":
+    config = GeneralConfig.from_yaml_file("configs/general/ut_test_conf.yaml")
+    train_network(config)
+
+    config = GeneralConfig.from_yaml_file("configs/general/ut_2pgcn_conf.yaml")
+    train_network(config)
+
+    config = GeneralConfig.from_yaml_file("configs/general/ut_2pgcn_conf.yaml")
+    config.name = "2pgcn_ut_both_jo-jomo_b16_64"
+    config.samples_per_window = 64
+    train_network(config)
+
+    config = GeneralConfig.from_yaml_file("configs/general/ut_2pgcn_conf.yaml")
+    config.name = "2pgcn_ut_both_jo-jomo_b16_inter_spatial"
+    config.graph_type = "mutual-inter"
+    config.labeling = "spatial"
+    train_network(config)
+
+
+if __name__ == "__main__":
+    config = GeneralConfig.from_yaml_file("configs/general/ap_mutual_120xset.yaml")
+    train_network(config)
+    config = GeneralConfig.from_yaml_file("configs/general/ap_2pgcn_mutual_xview.yaml")
+    train_network(config)
+    config = GeneralConfig.from_yaml_file("configs/general/ap_2pgcn_mutual_120xset.yaml")
+    train_network(config)
+
+
+
+
+if __name__ == "__main__":
     evaluate_folder("/home/barny/MasterThesis/Data/logs/feature_test")
+
+
+
 
 if __name__ == "__main__":
     import itertools
