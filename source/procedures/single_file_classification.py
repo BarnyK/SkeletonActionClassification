@@ -16,9 +16,11 @@ from tqdm import tqdm
 from datasets.pose_dataset import solve_feature_transform_requirements, transform_to_tpgcn_input, \
     transform_to_stgcn_input
 from datasets.transform_wrappers import calculate_channels, TransformsDict
-from models import create_stgcnpp
+from models import create_stgcnpp, create_tpgcn
 from pose_estimation import DetectionLoader, init_detector, init_pose_model, read_ap_configs, run_pose_worker
+from preprocessing.keypoint_fill import keypoint_fill
 from preprocessing.normalizations import create_norm_func, setup_norm_func
+from preprocessing.tracking import pose_track
 from procedures.config import GeneralConfig
 from procedures.training import load_model
 from procedures.utils.prep import preprocess_per_frame, preprocess_data_rest
@@ -53,7 +55,7 @@ def run_window_worker(
         datalen: int, pose_data_queue: Queue, cfg: GeneralConfig
 ):
     cfg = deepcopy(cfg)
-    q = Queue(2)
+    q = Queue(16)
     window_worker_thread = Thread(
         target=window_worker, args=(q, datalen, pose_data_queue, cfg)
     )
@@ -196,29 +198,36 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
         close_(all_queues)
         time.sleep(3)
         for name, thread in all_threads.items():
-            if thread: print(name, thread.is_alive())
+            if thread:
+                print(name, thread.is_alive())
         return
+
     frame_results, start_index = calculate_frame_results(frame_results, len(frame_windows_mapping),
                                                          frame_windows_mapping, window_results)
     add_action_data(cfg.dataset, frame_results, start_index, len(frame_windows_mapping), unique_frames, visualizer)
-    visualizer.put(None)
-    action_map = adjusted_actions_maps[cfg.dataset]
+
     end_time = time.time()
-    fps = window_count / (end_time - start_time)
+    fps = len(unique_frames) / (end_time - start_time)
     print(f"fps:        {fps:.4}")
     print(f"Total time: {end_time - start_time:.4}")
 
-    whole_data = np.stack([res for _, _, res, _ in window_results.values()if res is not None])
+    whole_data = np.stack([res for _, _, res, _ in window_results.values() if res is not None])
     whole_results = np.sum(whole_data, 0)
     res = np.argmax(whole_results)
-    print(action_map[res])
+    print(adjusted_actions_maps[cfg.dataset][res])
+    for w in window_results:
+        print(window_results[w])
 
     # #
-    # total_data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
-    #                           len(unique_frames), unique_frames, len(unique_frames), det_loader.frameSize,
-    #                           frame_interval)
-    # #
-    # # pose_track(total_data.frames)
+    if visualizer.save_file:
+        total_data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
+                                  len(unique_frames), unique_frames, len(unique_frames), det_loader.frameSize,
+                                  frame_interval)
+        pose_track(total_data.frames)
+        keypoint_fill(total_data, cfg.prep_config.keypoint_fill_type)
+        for frame in total_data.frames:
+            visualizer.put(frame)
+    visualizer.put(None)
     # for frame, action_id in zip(total_data.frames, out):
     #     frame.text = action_map[frame_results[frame.seqId]]
     # fps = 30 * cfg.samples_per_window / cfg.window_length
@@ -256,7 +265,8 @@ def add_action_data(dataset, frame_results, start_index, end_index, unique_frame
     for i in range(start_index, end_index):
         action_name = adjusted_actions_maps[dataset].get(frame_results[i], "None")
         unique_frames[i].text = action_name
-        visualizer.put(unique_frames[i])
+        if not visualizer.save_file:
+            visualizer.put(unique_frames[i])
 
 
 def prepare_features(cfg, norm_func, points, required_transforms, transforms):
@@ -284,9 +294,12 @@ def create_model_norm(cfg: GeneralConfig, device: torch.device, model_path: str 
     channels = calculate_channels(cfg.features, 2)
     if cfg.model_type == "stgcnpp":
         model = create_stgcnpp(num_classes, channels, cfg.skeleton_type)
-        model.to(device)
+    elif cfg.model_type == "2pgcn":
+        model = create_tpgcn(num_classes, len(cfg.features), channels,
+                             cfg.skeleton_type, cfg.labeling, cfg.graph_type)
     else:
-        raise ValueError("2p-gcn not supported yet")
+        raise KeyError(f"model type {cfg.model_type} not supported")
+    model.to(device)
     # Load state dict
     model.load_state_dict(state_dict['net'])
     model.eval()
@@ -330,28 +343,25 @@ def handle_classify(args: Namespace):
         print(f"Folder for {args.save_file} does not exist")
         return False
 
-    ## TODO method mean/window
     single_file_classification(args.video_file, cfg)
 
 
 if __name__ == "__main__":
     config = GeneralConfig.from_yaml_file(
         "/media/barny/SSD4/MasterThesis/Data/logs/window_tests/default_64_32_2/config.yaml")
-    config.interlace = 24
+
     fpses = []
     times = []
     for i in range(1):
         st = time.time()
-        # x = single_file_classification("/media/godchama/ssd/hoshimatic.20.30.avi", config)
-        # x = single_file_classification(
-        #     "/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq1.avi",
-        #     config)
-        x = single_file_classification("/home/barny/rickroll.webm",config, None,"/home/barny/rickroll.2.avi")
+        input_file = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq3.avi"
+        out = os.path.join("/media/barny/SSD4/MasterThesis/result_videos/", os.path.split(input_file)[-1])
+        x = single_file_classification(
+            input_file,
+            config, None, out)
         et = time.time()
         times.append(et - st)
         fpses.append(x)
-    # single_file_classification("/media/godchama/hdd/gura.short.mp4", config)
-    # single_file_classification("/media/godchama/ssd/hoshimatic.60.30.avi", config)
 
     print(f"Mean exec time: {np.mean(times):.5}")  # 38.792
     print(f"Mean fps: {np.mean(fpses):.5}")  # 2.1821 # 2.1684
