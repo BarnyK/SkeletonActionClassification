@@ -152,7 +152,7 @@ def run_pose_worker(pose_model, det_loader: DetectionLoader, opts: EasyDict, bat
         return run_pose_worker_mp(pose_model, det_loader, opts, batch_size, queue_size)
     pose_queue = Queue(queue_size)
     pose_worker_thread = Thread(
-        target=pose_worker_batch_filling, args=(pose_model, det_loader, pose_queue, opts, batch_size)
+        target=pose_worker, args=(pose_model, det_loader, pose_queue, opts, batch_size)
     )
     pose_worker_thread.start()
     return pose_queue, pose_worker_thread
@@ -162,7 +162,7 @@ def run_pose_worker_mp(pose_model, det_loader: DetectionLoader, opts: EasyDict, 
                        queue_size: int = 64):
     pose_queue = mp.Queue(queue_size)
     pose_worker_process = mp.Process(
-        target=pose_worker_batch_filling, args=(pose_model, det_loader, pose_queue, opts, batch_size)
+        target=pose_worker, args=(pose_model, det_loader, pose_queue, opts, batch_size)
     )
     pose_worker_process.start()
     return pose_queue
