@@ -11,7 +11,7 @@ from shared.structs import SkeletonData, FrameData
 from shared.visualize_skeleton_file import visualize
 
 
-def single_file_pose(filename, cfg: GeneralConfig):
+def single_file_pose(filename, cfg: GeneralConfig, save_file: str = None):
     assert os.path.isfile(filename)
     pose_cfg = cfg.pose_config
 
@@ -57,9 +57,34 @@ def single_file_pose(filename, cfg: GeneralConfig):
         frame_interval
     )
     visualize(data, data.video_file, wait_key=1000 // 30,
-              draw_bbox=True, draw_confidences=True, draw_frame_number=True)
+              draw_bbox=True, draw_confidences=False, draw_frame_number=True, save_file=save_file)
+    # skeleton_filters.remove_bodies_by_box_confidence(data, cfg.prep_config.box_conf_threshold)
+    # skeleton_filters.remove_by_max_possible_pose_confidence(data, cfg.prep_config.max_pose_conf_threshold)
+    # visualize(data, data.video_file, wait_key=1000 // 30,
+    #           draw_bbox=True, draw_confidences=True, draw_frame_number=True,
+    #           save_file=prepend_filename(save_file, "filtered_"))
+    # pose_track(data.frames,
+    #            threshold=cfg.prep_config.pose_tracking_threshold,
+    #            width_ratio=cfg.prep_config.pose_tracking_width_ratio,
+    #            height_ratio=cfg.prep_config.pose_tracking_height_ratio)
+    # visualize(data, data.video_file, wait_key=1000 // 30,
+    #           draw_bbox=True, draw_confidences=True, draw_frame_number=True,
+    #           save_file=prepend_filename(save_file, "tracked_"))
+    # keypoint_fill(data, "interpolation")
+    # visualize(data, data.video_file, wait_key=1000 // 30,
+    #           draw_bbox=True, draw_confidences=True, draw_frame_number=True,
+    #           save_file=prepend_filename(save_file, "filled_"))
+
+
+def prepend_filename(filename, prefix):
+    x, y = os.path.split(filename)
+    return os.path.join(x, f"{prefix}{y}")
 
 
 if __name__ == "__main__":
-    config = GeneralConfig()
-    single_file_pose("/media/barny/SSD4/MasterThesis/Data/concatenated.5.avi", config)
+    config = GeneralConfig.from_yaml_file(
+        "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml"
+    )
+    input_file = "/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb/S003C002P007R002A060_rgb.avi"
+    out = os.path.join("/media/barny/SSD4/MasterThesis/result_videos/boxes/", os.path.split(input_file)[-1])
+    single_file_pose(input_file, config, out)
