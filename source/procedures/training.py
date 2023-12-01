@@ -189,7 +189,8 @@ def train_network(cfg: GeneralConfig):
         existing_cfg = GeneralConfig.from_yaml_file(existing_cfg_path)
         if existing_cfg != cfg:
             diffs = GeneralConfig.compare(existing_cfg, cfg)
-            raise DifferentConfigException(f"Existing config is different to the current one - {', '.join(diffs)}")
+            if len(diffs)>0:
+                raise DifferentConfigException(f"Existing config is different to the current one - {', '.join(diffs)}")
         if os.path.exists(os.path.join(cfg.best_model_path)):
             finished = True
         # load
@@ -307,7 +308,9 @@ def create_dataloaders(cfg: GeneralConfig):
         train_sampler,
         augments,
         cfg.symmetry_processing,
-        norm_func
+        norm_func,
+        False,
+        cfg.copy_pad,
     )
     train_loader = DataLoader(train_set, cfg.train_config.train_batch_size, True, num_workers=4, pin_memory=True)
 
@@ -318,7 +321,9 @@ def create_dataloaders(cfg: GeneralConfig):
         test_sampler,
         [],
         cfg.symmetry_processing,
-        norm_func
+        norm_func,
+        False,
+        cfg.copy_pad,
     )
     test_loader = DataLoader(test_set, cfg.eval_config.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
     return test_loader, train_loader, test_set, train_set, norm_func

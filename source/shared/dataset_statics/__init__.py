@@ -9,6 +9,10 @@ split_map = {
     "ntu_mutual_xview": ntu_splits.ntu_mutual_xview_split,
     "ntu120_mutual_xset": ntu_splits.ntu120_mutual_xset_split,
     "ntu120_mutual_xsub": ntu_splits.ntu120_mutual_xsub_split,
+    "ntu_whole_train": ntu_splits.ntu_whole_train,
+    "ntu_whole_test": ntu_splits.ntu_whole_test,
+    "ntu120_whole_train": ntu_splits.ntu120_whole_train,
+    "ntu120_whole_test": ntu_splits.ntu120_whole_test,
     "ut_whole_train": ut_splits.ut_whole_train,
     "ut_whole_test": ut_splits.ut_whole_test,
 }

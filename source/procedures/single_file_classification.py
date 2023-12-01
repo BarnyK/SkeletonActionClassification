@@ -93,6 +93,7 @@ def calculate_frame_results(frame_results, to_index, frame_windows, window_resul
             cache[windows] = None
             continue
         stacked_data = torch.stack([windows_data[0], windows_data[0]])
+        stacked_data = torch.nn.functional.softmax(stacked_data, 1)
         summed_data = stacked_data.sum(0)
         result = summed_data.max(0)[1]  # index
         result = result.item()
@@ -130,6 +131,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     frame_windows_mapping = defaultdict(list)
     window_results = {}
     frame_results = []
+
     visualizer = Visualizer(filename, cfg.skeleton_type, frame_interval, True, save_file)
     vis_thread = visualizer.run_visualize()
 
@@ -278,7 +280,7 @@ def prepare_features(cfg, norm_func, points, required_transforms, transforms):
     if isinstance(cfg.features[0], str):
         features = transform_to_stgcn_input(feature_dictionary, cfg.features)
     elif isinstance(cfg.features[0], list):
-        features = transform_to_tpgcn_input(feature_dictionary, cfg.features, cfg.symmetry_processing)
+        features = transform_to_tpgcn_input(feature_dictionary, cfg.features, cfg.symmetry_processing, cfg.copy_pad)
     else:
         raise KeyError("features are wrong")
     features = torch.from_numpy(features).float().unsqueeze(0)
@@ -346,22 +348,42 @@ def handle_classify(args: Namespace):
     single_file_classification(args.video_file, cfg)
 
 
+def prepend_extension(filename, prefix):
+    root, filename = os.path.split(filename)
+    filename, extension = os.path.splitext(filename)
+    return os.path.join(root, f"{filename}.{prefix}.{extension}", )
+
+
 if __name__ == "__main__":
-    config = GeneralConfig.from_yaml_file(
-        "/media/barny/SSD4/MasterThesis/Data/logs/window_tests/default_64_32_2/config.yaml")
+    config_files = ["/media/barny/SSD4/MasterThesis/Data/logs/ut/2pgcn_ut_both_jo-jomo_b16_inter_spatial/config.yaml",
+                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml",
+                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml",
+                    "/media/barny/SSD4/MasterThesis/Data/logs/ut/2pgcn_ut_both_jo-jomo_b16_inter_spatial_copy_pad/config.yaml",
+                    "/media/barny/SSD4/MasterThesis/Data/logs/ut/2pgcn_myut_both_jo-jomo_b16_inter_spatial/config.yaml",
+                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base_noalign/config.yaml",
+                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base_copypad/config.yaml",
+                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutualxview_base_noalign/config.yaml",
+                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutualxview_base_copypad/config.yaml"]
 
     fpses = []
     times = []
-    for i in range(1):
-        st = time.time()
-        input_file = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq3.avi"
-        out = os.path.join("/media/barny/SSD4/MasterThesis/result_videos/", os.path.split(input_file)[-1])
-        x = single_file_classification(
-            input_file,
-            config, None, out)
-        et = time.time()
-        times.append(et - st)
-        fpses.append(x)
+    for i, filename in enumerate(config_files):
+        config = GeneralConfig.from_yaml_file(filename)
+        for interlace in [2,4,8,12,16,20,24,28,30]:
+            config.interlace = interlace
+            print(config.name, config.samples_per_window, config.window_length, config.interlace)
+            st = time.time()
+            input_file = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq3.avi"
+            input_file = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/seq1.cut.avi"
+            out_filename = prepend_extension(prepend_extension(input_file, config.name),
+                                             f"{config.window_length}.{config.samples_per_window}.{config.interlace}")
+            out = os.path.join("/media/barny/SSD4/MasterThesis/result_videos/", os.path.split(out_filename)[-1])
+            x = single_file_classification(
+                input_file,
+                config, None, out)
+            et = time.time()
+            times.append(et - st)
+            fpses.append(x)
 
     print(f"Mean exec time: {np.mean(times):.5}")  # 38.792
     print(f"Mean fps: {np.mean(fpses):.5}")  # 2.1821 # 2.1684

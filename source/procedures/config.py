@@ -148,6 +148,7 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
     samples_per_window: int = 32
     interlace: int = 16
     symmetry_processing: bool = False  #: Only works with 2p-GCN
+    copy_pad: bool = False  #: Only works with 2P-GCN
     labeling: str = "distance"  #: Only works with 2P-GCN
     graph_type: str = "mutual"  #: Only works with 2P-GCN
     normalization_type: str = "spine_align"
@@ -165,10 +166,14 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
 
     @staticmethod
     def compare(instance1: GeneralConfig, instance2: GeneralConfig) -> list[str]:
+        ncrit_fields = ["device", "detector_batch_size", "detector_queue_size", "estimation_batch_size",
+                        "estimation_queue_size", "test_batch_size", "eval_interval", "eval_last_n","interlace"]
         diffs = []
         class_fields = fields(instance1)
         for field_ in class_fields:
             field_name = field_.name
+            if field_name in ncrit_fields:
+                continue
             value1 = getattr(instance1, field_name)
             value2 = getattr(instance2, field_name)
 

@@ -26,7 +26,8 @@ def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None, out_path: 
         [],
         cfg.symmetry_processing,
         norm_func,
-        True
+        True,
+        copy_pad=cfg.copy_pad
     )
     test_loader = DataLoader(test_set, cfg.eval_config.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
@@ -81,6 +82,7 @@ def handle_eval(args: Namespace):
 def evaluate_folder(folder_path: str):
     files = [(root, os.path.join(root, file)) for root, subdir, files in os.walk(folder_path) for file in files if
              file == "config.yaml"]
+    files = [x for x in files if not os.path.isfile(os.path.join(x[0], "results.pkl"))]
     for i, (root, config_file) in enumerate(files):
         print(f"{i:<4}{len(files):<8}{config_file}")
         cfg = GeneralConfig.from_yaml_file(config_file)

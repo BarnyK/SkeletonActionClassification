@@ -71,6 +71,26 @@ if __name__ == "__main__2":
     os.makedirs(output_folder, exist_ok=True)
     gen_alphapose_skeletons(input_folder, output_folder, cfg)
 
+if __name__ == "__main__2":
+    cfg = GeneralConfig()
+    cfg.pose_config.dataset_name = "ut"
+    input_folder = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/my_segments1"
+    output_folder = f"/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/my_ut_set1_coco"
+    os.makedirs(output_folder, exist_ok=True)
+    gen_alphapose_skeletons(input_folder, output_folder, cfg)
+
+    cfg = GeneralConfig()
+    cfg.pose_config.dataset_name = "ut"
+    input_folder = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/my_segments2"
+    output_folder = f"/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/my_ut_set2_coco"
+    os.makedirs(output_folder, exist_ok=True)
+    gen_alphapose_skeletons(input_folder, output_folder, cfg)
+
+    cfg = GeneralConfig.from_yaml_file("./configs/general/ut_test_conf.yaml")
+    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/my_ut_set1_coco",
+                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/my_ut_set2_coco"],
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_my_ut_test", cfg.prep_config)
+
 
 def find_divisors(N):
     return [i for i in range(1, N + 1) if N % i == 0 and i > 2]
@@ -267,9 +287,10 @@ def shortfeat(feat):
     return "".join(x[:2] for x in feat.split("_"))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__2":
     cfg = GeneralConfig.from_yaml_file("./configs/general/ut_test_conf.yaml")
-    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set1_coco","/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set2_coco"],
+    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set1_coco",
+                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set2_coco"],
                      "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_ut_test2",cfg.prep_config)
 if __name__ == "__main__":
     config = GeneralConfig.from_yaml_file("configs/general/ut_test_conf.yaml")
@@ -289,6 +310,21 @@ if __name__ == "__main__":
     config.labeling = "spatial"
     train_network(config)
 
+    config = GeneralConfig.from_yaml_file("configs/general/ut_2pgcn_conf.yaml")
+    config.name = "2pgcn_ut_both_jo-jomo_b16_inter_spatial_copy_pad"
+    config.graph_type = "mutual-inter"
+    config.labeling = "spatial"
+    config.copy_pad = True
+    train_network(config)
+
+    config = GeneralConfig.from_yaml_file("configs/general/ut_2pgcn_conf.yaml")
+    config.train_config.train_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_my_ut_test/ut_whole_test.test.pkl"
+    config.eval_config.test_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_my_ut_test/ut_whole_train.train.pkl"
+    config.name = "2pgcn_myut_both_jo-jomo_b16_inter_spatial"
+    config.graph_type = "mutual-inter"
+    config.labeling = "spatial"
+    train_network(config)
+
 
 if __name__ == "__main__":
     config = GeneralConfig.from_yaml_file("configs/general/ap_mutual_120xset.yaml")
@@ -297,6 +333,27 @@ if __name__ == "__main__":
     train_network(config)
     config = GeneralConfig.from_yaml_file("configs/general/ap_2pgcn_mutual_120xset.yaml")
     train_network(config)
+
+    config = GeneralConfig.from_yaml_file("configs/general/ap_2pgcn_mutual_120xset.yaml")
+    config.name = config.name + "_noalign"
+    config.normalization_type = "spine"
+    train_network(config)
+
+    config = GeneralConfig.from_yaml_file("configs/general/ap_2pgcn_mutual_120xset.yaml")
+    config.name = config.name + "_copypad"
+    config.copy_pad = True
+    train_network(config)
+
+    config = GeneralConfig.from_yaml_file("configs/general/ap_2pgcn_mutual_xview.yaml")
+    config.name = config.name + "_noalign"
+    config.normalization_type = "spine"
+    train_network(config)
+
+    config = GeneralConfig.from_yaml_file("configs/general/ap_2pgcn_mutual_xview.yaml")
+    config.name = config.name + "_copypad"
+    config.copy_pad = True
+    train_network(config)
+    #raise ValueError
 
 
 
@@ -367,5 +424,7 @@ if __name__ == "__main__":
                 cfg.name = f"stgcn_{feat_shorted}_{name}_{i}"
                 cfg.train_config.train_file = file
                 cfg.eval_config.test_file = test_file
+                cfg.eval_config.eval_interval = 80
+                cfg.eval_config.eval_last_n = 10
                 train_network(cfg)
                 torch.cuda.empty_cache()

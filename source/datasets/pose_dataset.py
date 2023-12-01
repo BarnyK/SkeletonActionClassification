@@ -48,21 +48,22 @@ def transform_to_stgcn_input(feature_dictionary, feature_list):
     return features
 
 
-def transform_to_tpgcn_input(feature_dictionary, feature_list, symmetry):
+def transform_to_tpgcn_input(feature_dictionary: dict, feature_list: list, symmetry: bool, copy_pad: bool):
     og_features = feature_dictionary['joints']
     if og_features.ndim == 4:
-        return create_tpgcn_branches(feature_dictionary, feature_list, og_features, symmetry)
+        return create_tpgcn_branches(feature_dictionary, feature_list, og_features, symmetry, copy_pad)
     else:
         # Sampling creates new dimension
         out_data = []
         for s in range(og_features.shape[0]):
-            new_features = create_tpgcn_branches(feature_dictionary, feature_list, og_features, symmetry, s)
+            new_features = create_tpgcn_branches(feature_dictionary, feature_list, og_features, symmetry, copy_pad, s)
             out_data.append(new_features)
         features = np.stack(out_data)
         return features
 
 
-def create_tpgcn_branches(feature_dictionary, feature_list, og_features, symmetry, s=None):
+def create_tpgcn_branches(feature_dictionary: dict, feature_list: list, og_features,
+                          symmetry: bool, copy_pad: bool, s: int = None):
     # Number of branches
     B = len(feature_list)
     # Number of channels in branch
@@ -77,6 +78,14 @@ def create_tpgcn_branches(feature_dictionary, feature_list, og_features, symmetr
             branch_features = [feature_dictionary[k] for k in branch]
         branch_features = np.concatenate(branch_features, axis=-1)
         branch_features = branch_features.transpose(3, 1, 2, 0)  # C, T, V, M
+        if branch_features.shape[-1] == 1:
+            if copy_pad:
+                branch_features = np.concatenate([branch_features, branch_features],-1)
+            else:
+                # Zero pad
+                padded = np.zeros((C, T, V, 2), dtype=np.float32)
+                padded[..., 0] = branch_features[..., 0]
+                branch_features = padded
         new_features[bi, :, :, :V, 0] = branch_features[..., :, 0]
         new_features[bi, :, :, V:, 0] = branch_features[..., :, 1]
         if symmetry:
@@ -88,7 +97,7 @@ def create_tpgcn_branches(feature_dictionary, feature_list, og_features, symmetr
 class PoseDataset(Dataset):
     def __init__(self, data_file: str, feature_list: Union[list[str], list[list[str]]],
                  sampler: Sampler, augments: list = (), symmetry: bool = False, norm_func=no_norm,
-                 return_info: bool = False):
+                 return_info: bool = False, copy_pad: bool = False):
         with open(data_file, "rb") as f:
             data = pickle.load(f)
         # Data should be a dict with keys "labels", "points", "confidences", "image_shape"
@@ -97,14 +106,14 @@ class PoseDataset(Dataset):
         self.dataset_info = data['dataset_info']
 
         # Remove mutuals that do not have both bodies
-        if isinstance(feature_list[0], list):
-            for i in range(len(self.points), 0, -1):
-                i -= 1
-                if self.points[i].shape[0] != 2:
-                    self.points.pop(i)
-                    self.labels.pop(i)
-                    self.dataset_info.pop(i)
-                    # print(f"Removed {i}")
+        # if isinstance(feature_list[0], list):
+        #     for i in range(len(self.points), 0, -1):
+        #         i -= 1
+        #         if self.points[i].shape[0] != 2:
+        #             self.points.pop(i)
+        #             self.labels.pop(i)
+        #             self.dataset_info.pop(i)
+        # print(f"Removed {i}")
 
         self.confidences = data['poseConf']
         self.image_shape = data.get("im_shape", (1920, 1080))
@@ -130,6 +139,7 @@ class PoseDataset(Dataset):
         self.label_translation = {x: i for i, x in enumerate(unique_labels)}
         self.norm_func = norm_func
         self.return_info = return_info
+        self.copy_pad = copy_pad
 
     def num_classes(self):
         return len(self.label_translation)
@@ -162,7 +172,7 @@ class PoseDataset(Dataset):
             features = transform_to_stgcn_input(feature_dictionary, self.feature_list)
 
         if isinstance(self.feature_list[0], list):
-            features = transform_to_tpgcn_input(feature_dictionary, self.feature_list, self.symmetry)
+            features = transform_to_tpgcn_input(feature_dictionary, self.feature_list, self.symmetry, self.copy_pad)
 
         features = torch.from_numpy(features).float()
         if self.return_info:

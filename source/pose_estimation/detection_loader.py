@@ -273,7 +273,7 @@ class DetectionLoader:
                 self.image_queue, (imgs, orig_imgs, im_names, im_dim_list)
             )
         stream.release()
-        tqdm.write("Finished frame processing")
+        #tqdm.write("Finished frame processing")
 
     def image_detection(self):
         # Reads batches of images from image_queue and performs detection on them
@@ -334,7 +334,7 @@ class DetectionLoader:
         self.wait_and_put(
             self.det_queue, (None, None, None, None, None)
         )
-        tqdm.write("Finished detection")
+        #tqdm.write("Finished detection")
 
     def image_postprocess(self):
         # Post process
@@ -371,7 +371,7 @@ class DetectionLoader:
                     self.pose_queue,
                     (inps, orig_img, boxes, scores, cropped_boxes),
                 )
-        tqdm.write("Finished post processing")
+        #tqdm.write("Finished post processing")
 
     def read(self):
         return self.wait_and_get(self.pose_queue, "pose")
