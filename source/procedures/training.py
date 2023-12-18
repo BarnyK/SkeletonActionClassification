@@ -184,8 +184,9 @@ def train_network(cfg: GeneralConfig):
     finished = False
     load_file = None
     logs_path = os.path.join(cfg.log_folder, cfg.name)
+    cfg_path = os.path.join(logs_path, "config.yaml")
     if os.path.exists(logs_path):
-        existing_cfg_path = os.path.join(logs_path, "config.yaml")
+        existing_cfg_path = cfg_path
         existing_cfg = GeneralConfig.from_yaml_file(existing_cfg_path)
         if existing_cfg != cfg:
             diffs = GeneralConfig.compare(existing_cfg, cfg)
@@ -207,12 +208,12 @@ def train_network(cfg: GeneralConfig):
     os.makedirs(os.path.join(logs_path, "models"), exist_ok=True)
 
     # Write config
-    cfg.to_yaml_file(os.path.join(logs_path, "config.yaml"))
+    cfg.to_yaml_file(cfg_path)
 
     # Return if training already complete
     if start_epoch >= t_cfg.epochs or finished:
         logger.info("Training completed")
-        return
+        return cfg_path
 
     # Create dataloaders
     test_loader, train_loader, test_set, _, norm_func = create_dataloaders(cfg)
@@ -292,6 +293,7 @@ def train_network(cfg: GeneralConfig):
     shutil.copy(best_epoch_file, cfg.best_model_path)
     logger.info("Training completed")
     keep_best_models(logs_path, cfg.train_config.keep_best_n)
+    return cfg_path
 
 
 def create_dataloaders(cfg: GeneralConfig):

@@ -1,7 +1,7 @@
 import os
 
 from procedures.config import TrainingConfig, GeneralConfig
-from procedures.evaluate import evaluate_folder
+from procedures.evaluate import evaluate_folder, evaluate
 from procedures.generate_alphapose_skeletons import gen_alphapose_skeletons
 from procedures.preprocess_files import preprocess_files
 from procedures.training import train_network
@@ -355,6 +355,88 @@ if __name__ == "__main__":
     train_network(config)
     #raise ValueError
 
+if __name__ == "__main__":
+    log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/transforms/"
+    ap_config = GeneralConfig.from_yaml_file("configs/general/default_ap_transformed_xview.yaml")
+    ap_config.log_folder = log_folder
+    ap_config.train_config.train_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_transformed/ntu120_xset.train.pkl"
+    ap_config.eval_config.test_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_transformed/ntu120_xset.test.pkl"
+    ap_config.name = "ap_transformed_120xset"
+    train_network(ap_config)
+
+    ntu_config = GeneralConfig.from_yaml_file("configs/general/ntu_transform_xview.yaml")
+    ntu_config.log_folder = log_folder
+    ntu_config.train_config.train_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_transformed/ntu120_xset.train.pkl"
+    ntu_config.eval_config.test_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_transformed/ntu120_xset.test.pkl"
+    ntu_config.name = "ntu_transformed_120xset"
+    train_network(ntu_config)
+
+    print("Ntu trained on ap skeletons")
+    evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
+
+    print("AP trained on ntu skeletons")
+    evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
+
+    log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/transforms/"
+    ap_config = GeneralConfig.from_yaml_file("configs/general/default_ap_transformed_xsub.yaml")
+    ap_config.log_folder = log_folder
+    ap_config.train_config.train_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_transformed/ntu120_xsub.train.pkl"
+    ap_config.eval_config.test_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_transformed/ntu120_xsub.test.pkl"
+    ap_config.name = "ap_transformed_120xsub"
+    train_network(ap_config)
+
+    ntu_config = GeneralConfig.from_yaml_file("configs/general/ntu_transform_xsub.yaml")
+    ntu_config.log_folder = log_folder
+    ntu_config.train_config.train_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_transformed/ntu120_xsub.train.pkl"
+    ntu_config.eval_config.test_file = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ntu_transformed/ntu120_xsub.test.pkl"
+    ntu_config.name = "ntu_transformed_120xsub"
+    train_network(ntu_config)
+
+    print("Ntu trained on ap skeletons")
+    evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
+
+    print("AP trained on ntu skeletons")
+    evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
+
+if __name__ == "__main__":
+    log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/transforms/"
+    ap_config = GeneralConfig.from_yaml_file("configs/general/default_ap_transformed_xview.yaml")
+    ap_config.log_folder = log_folder
+    ap_config.name = "ap_transformed_xview"
+    train_network(ap_config)
+
+    ntu_config = GeneralConfig.from_yaml_file("configs/general/ntu_transform_xview.yaml")
+    ntu_config.log_folder = log_folder
+    ntu_config.name = "ntu_transformed_xview"
+    train_network(ntu_config)
+
+    print("Ntu trained on ap skeletons")
+    evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
+
+    print("AP trained on ntu skeletons")
+    evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
+
+    log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/transforms/"
+    ap_config = GeneralConfig.from_yaml_file("configs/general/default_ap_transformed_xsub.yaml")
+    ap_config.log_folder = log_folder
+    ap_config.name = "ap_transformed_xsub"
+    train_network(ap_config)
+
+    ntu_config = GeneralConfig.from_yaml_file("configs/general/ntu_transform_xsub.yaml")
+    ntu_config.log_folder = log_folder
+    ntu_config.name = "ntu_transformed_xsub"
+    train_network(ntu_config)
+
+    print("Ntu trained on ap skeletons")
+    evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
+
+    print("AP trained on ntu skeletons")
+    evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
+
+
+
+
+
 
 
 
@@ -412,7 +494,7 @@ if __name__ == "__main__":
                     'bone_angles', 'bone_accel']
     files = [files[1]]
     combs = [list(comb) for comb in itertools.combinations(all_features, 3)]
-    for i in range(1):
+    for i in range(2):
         for file in files:
             for features in combs:
                 feat_shorted = "-".join([shortfeat(x) for x in features])

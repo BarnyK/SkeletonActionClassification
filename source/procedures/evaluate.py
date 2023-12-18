@@ -16,11 +16,13 @@ from procedures.config import GeneralConfig
 from procedures.training import test_epoch, load_model
 
 
-def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None, out_path: Union[str, None] = None):
+def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None, out_path: Union[str, None] = None, test_file: str = None):
+    if test_file is None:
+        test_file = cfg.eval_config.test_file
     norm_func = create_norm_func(cfg.normalization_type)
     test_sampler = Sampler(cfg.window_length, cfg.samples_per_window, True, cfg.eval_config.test_clips_count)
     test_set = PoseDataset(
-        cfg.eval_config.test_file,
+        test_file,
         cfg.features,
         test_sampler,
         [],
@@ -62,10 +64,11 @@ def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None, out_path: 
     for i, text in enumerate(texts):
         print(f"{text + ':':15}{values[i]:10.6}")
 
+    results_data = {"config": cfg.to_yaml(), "results": results, "labels": labels, "real_labels": real_labels,
+                    "names": names, "top1": top1_accuracy, "top5": top5_accuracy}
     if out_path:
-        results_data = {"config": cfg.to_yaml(), "results": results, "labels": labels, "real_labels": real_labels,
-                        "names": names, "top1": top1_accuracy, "top5": top5_accuracy}
         torch.save(results_data, out_path)
+    return results_data
 
 
 def handle_eval(args: Namespace):
@@ -76,7 +79,7 @@ def handle_eval(args: Namespace):
     if args.save_file and not os.path.isdir(os.path.split(args.save_file)[0]):
         print(f"Folder for {args.save_file} does not exist")
         return False
-    evaluate(cfg, args.model)
+    evaluate(cfg, args.model, args.save_file)
 
 
 def evaluate_folder(folder_path: str):

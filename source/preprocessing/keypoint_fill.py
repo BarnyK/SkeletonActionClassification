@@ -142,11 +142,11 @@ def fill_missing_frames(skeleton_data: SkeletonData, tid: int):
         if id_to_fill - left > right - id_to_fill:
             src = skeleton_data.get_frame_body(right, tid)
             dst = skeleton_data.get_frame_body(id_to_fill, tid)
-            dst.poseXY = src.poseXY
+            dst.poseXY = src.poseXY.copy()
         else:
             src = skeleton_data.get_frame_body(left, tid)
             dst = skeleton_data.get_frame_body(id_to_fill, tid)
-            dst.poseXY = src.poseXY
+            dst.poseXY = src.poseXY.copy()
 
     return __added_count
 
