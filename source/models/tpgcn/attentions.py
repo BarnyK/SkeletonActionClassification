@@ -20,22 +20,28 @@ class ST_Part_Att(nn.Module):
         self.conv_v = nn.Conv2d(inner_channel, channel, kernel_size=1)
 
         self.bn = nn.BatchNorm2d(channel)
-        self.act = Swish(inplace=True)
+        self.act = Swish(inplace=True)  # It's ReLU
 
     def forward(self, x):
         N, C, T, V = x.size()
         P = len(self.parts)
         res = x
 
+        # Average the feature map in the frame and part levels respecitvely
         x_t = x.mean(3, keepdims=True)  # N,C,T,1
-        # x_v = x.mean(2, keepdims=True).transpose(2, 3) # N,C,V,1
-        # x_p = torch.einsum('nclv,vp->nclp',(x.mean(2, keepdims=True), self.mat)).transpose(2, 3) # N,C,P,1
         x_p = (x.mean(2, keepdims=True) @ self.mat).transpose(2, 3)
+
+        # Concatenate the obtained feature vectors and feed them into a fcn layer
         x_att = self.fcn(torch.cat([x_t, x_p], dim=2))  # N,C,(T+P),1
         x_t, x_p = torch.split(x_att, [T, P], dim=2)
-        x_t_att = self.conv_t(x_t).sigmoid()  # N,C,T,1
 
+        # Two fully-connected layers (conv?) to obtain frame-wise and part wise scores
+        x_t_att = self.conv_t(x_t).sigmoid()  # N,C,T,1
         x_p_att = self.conv_v(x_p.transpose(2, 3)).sigmoid()  # N,C,1,P
+
+        # self.joints is a tensor in which elements map the index to part number
+        # x_p_att has attention for each part
+        # The attention values for each joint are found by index_select
         x_v_att = x_p_att.index_select(3, self.joints)  # N,C,1,V
 
         x_att = x_t_att * x_v_att

@@ -31,11 +31,13 @@ def normalize_digraph(A, dim=0):
     h, w = A.shape
     Dn = np.zeros((w, w))
 
+    # Could be done with np.recip
     for i in range(w):
         if Dl[i] > 0:
             Dn[i, i] = Dl[i] ** (-1)
 
     AD = np.dot(A, Dn)
+    # AD = A * np.reciprocal(Dl, where=Dl!=0)
     return AD
 
 

@@ -26,3 +26,40 @@ def create_tpgcn(num_clesses: int, branches: int, channels: int, skeleton_type: 
                   module=AttGCN_Module,
                   attention=__attention["stpa"])
     return model
+
+
+if __name__ == "__main__2":
+    import torch
+    import time
+
+    model = create_stgcnpp(120, 3, "coco17")
+
+    device = torch.device("cpu")
+
+    model.to(device)
+    # 5 samples, 2 bodies, 64 time frames, 17 joints, 3 channels
+    xd = torch.rand((5, 2, 64, 17, 3), device=device)
+
+    for i in range(100):
+        st = time.time()
+        ababa = model(xd)
+        et = time.time()
+        print(et - st)
+        print(ababa.shape)
+        break
+
+if __name__ == "__main__2":
+    import torch
+    import time
+
+    model = create_tpgcn(120, 4, 3, "coco17", "spatial", "mutual")
+    device = torch.device("cpu")
+
+    model.to(device)
+    # 5 samples, 12 channels, 64 time frames, 17 joints, 3 channels
+    xd = torch.rand((5, 4, 3, 64, 34, 2), device=device)
+
+    for i in range(1):
+        st = time.time()
+        ababa = model(xd)
+        et = time.time()

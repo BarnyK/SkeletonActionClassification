@@ -34,12 +34,7 @@ class Graph:
 
     def _get_edge(self):
         if self.layout == "coco17":
-            if self.graph == 'physical':
-                num_node = coco.num_nodes
-                neighbor_link = coco.edges
-                parts = coco.parts
-                center = coco.center
-            elif self.graph == 'mutual':
+            if self.graph == 'mutual':
                 num_node = coco.num_nodes * 2
                 neighbor_link = coco.edges + [(x + coco.num_nodes, y + coco.num_nodes) for x, y in coco.edges]
                 neighbor_link += [(coco.center, coco.center + coco.num_nodes)]  # Link between centers
@@ -48,20 +43,15 @@ class Graph:
             elif self.graph == 'mutual-inter':
                 num_node = coco.num_nodes * 2
                 neighbor_link = coco.edges + [(x + coco.num_nodes, y + coco.num_nodes) for x, y in coco.edges]
-                neighbor_link += [(coco.center, coco.center + coco.num_nodes)]
+                neighbor_link += [(coco.center, coco.center + coco.num_nodes)] # Link between centers
                 neighbor_link += [(9, 10), (9 + coco.num_nodes, 10 + coco.num_nodes),
-                                  (9, 9 + coco.num_nodes), (10, 10 + coco.num_nodes)]
+                                  (9, 9 + coco.num_nodes), (10, 10 + coco.num_nodes)] # Links between hands
                 parts = coco.parts + [x + coco.num_nodes for x in coco.parts]
                 center = coco.center
             else:
                 raise ValueError()
         elif self.layout == "ntu_coco":
-            if self.graph == 'physical':
-                num_node = ntu_coco.num_nodes
-                neighbor_link = ntu_coco.edges
-                parts = ntu_coco.parts
-                center = ntu_coco.center
-            elif self.graph == 'mutual':
+            if self.graph == 'mutual':
                 num_node = ntu_coco.num_nodes * 2
                 neighbor_link = ntu_coco.edges + [(x + ntu_coco.num_nodes, y + ntu_coco.num_nodes) for x, y in
                                                   ntu_coco.edges]
@@ -80,12 +70,7 @@ class Graph:
             else:
                 raise ValueError()
         elif self.layout == "ntu":
-            if self.graph == 'physical':
-                num_node = ntu.num_nodes
-                neighbor_link = ntu.edges
-                parts = ntu.parts
-                center = ntu.center
-            elif self.graph == 'mutual':
+            if self.graph == 'mutual':
                 num_node = ntu.num_nodes * 2
                 neighbor_link = ntu.edges + [(x + ntu.num_nodes, y + ntu.num_nodes) for x, y in ntu.edges]
                 neighbor_link += [(ntu.center, ntu.center + ntu.num_nodes)]
