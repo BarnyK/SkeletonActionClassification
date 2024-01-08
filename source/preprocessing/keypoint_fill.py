@@ -151,9 +151,24 @@ def fill_missing_frames(skeleton_data: SkeletonData, tid: int):
     return __added_count
 
 
+def zero_fill(data: SkeletonData, tid: int, threshold: float = 0.3):
+    bodies = []
+    for frame in data.frames:
+        for body in frame.bodies:
+            if body.tid == tid:
+                bodies.append(body)
+                break
+    assert len(bodies) == data.length
+    full_matrix = np.stack([body.poseXY for body in bodies], 0)
+    missing = np.stack([body.poseConf.squeeze() for body in bodies], 0) < threshold
+    full_matrix[missing] = 0
+    for i, body in enumerate(bodies):
+        body.poseXY = full_matrix[i, :, :]
+
+
 def keypoint_fill(skeleton_data: SkeletonData, fill_type: str = "interpolation", threshold: float = 0.3,
                   max_iters: int = 15, neighbours: int = 8):
-    assert fill_type in ["interpolation", "mice", "knn"]
+    assert fill_type in ["interpolation", "mice", "knn", "none", "zero"]
 
     for tid in skeleton_data.get_all_tids():
         fill_missing_frames(skeleton_data, tid)
@@ -163,3 +178,5 @@ def keypoint_fill(skeleton_data: SkeletonData, fill_type: str = "interpolation",
             mice_fill(skeleton_data, tid, threshold, max_iters)
         elif fill_type == "knn":
             knn_fill(skeleton_data, tid, threshold, neighbours)
+        elif fill_type == "zero":
+            zero_fill(skeleton_data, tid, threshold)
