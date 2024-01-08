@@ -45,7 +45,10 @@ def window_worker(
         window.append(fd)
         if len(window) == length:
             q.put(window)
-            window = window[-interlace:]
+            if interlace > 0:
+                window = window[-interlace:]
+            else:
+                window = []
     if len(window) > interlace:
         q.put(window)
     q.put(None)
@@ -217,8 +220,8 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     whole_results = np.sum(whole_data, 0)
     res = np.argmax(whole_results)
     print(adjusted_actions_maps[cfg.dataset][res])
-    for w in window_results:
-        print(window_results[w])
+    # for w in window_results:
+    #     print(window_results[w])
 
     # #
     if visualizer.save_file:
@@ -355,26 +358,45 @@ def prepend_extension(filename, prefix):
 
 
 if __name__ == "__main__":
-    config_files = ["/media/barny/SSD4/MasterThesis/Data/logs/ut/2pgcn_ut_both_jo-jomo_b16_inter_spatial/config.yaml",
-                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml",
-                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml",
-                    "/media/barny/SSD4/MasterThesis/Data/logs/ut/2pgcn_ut_both_jo-jomo_b16_inter_spatial_copy_pad/config.yaml",
-                    "/media/barny/SSD4/MasterThesis/Data/logs/ut/2pgcn_myut_both_jo-jomo_b16_inter_spatial/config.yaml",
-                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base_noalign/config.yaml",
-                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base_copypad/config.yaml",
-                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutualxview_base_noalign/config.yaml",
-                    "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutualxview_base_copypad/config.yaml"]
+    config_files = ["/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml",
+                    "/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml"]
+    params = [
+        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 60, 0),
+        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 30, 0),
+        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 30, 10),
+        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 30, 15),
+        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 30, 20),
+        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 15, 0),
+        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 30, 30, 0)
+    ]
 
-    fpses = []
-    times = []
-    for i, filename in enumerate(config_files):
+    params = [
+        ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_bo_ntu120_xset_0/config.yaml",64,32,30),
+        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 60, 0),
+        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 60, 0),
+        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 30, 0),
+        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 30, 10),
+        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 30, 15),
+        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 30, 20),
+        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 15, 0),
+        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 30, 30, 0)
+    ]
+    res = []
+    for i, (filename, window_length, samples, interlace) in enumerate(params):
+        fpses = []
+        times = []
         config = GeneralConfig.from_yaml_file(filename)
-        for interlace in [2,4,8,12,16,20,24,28,30]:
-            config.interlace = interlace
-            print(config.name, config.samples_per_window, config.window_length, config.interlace)
+        config.interlace = interlace
+        config.window_length = window_length
+        config.samples_per_window = samples
+        #config.pose_config.detector_queue_size = 20
+        for i in range(1):
+            print(config.name, config.window_length, config.samples_per_window, config.interlace, i)
             st = time.time()
             input_file = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq3.avi"
             input_file = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/seq1.cut.avi"
+            input_file = "/home/barny/dance_practice.cut.avi"
+            input_file = "/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb_120/S021C003P055R001A101_rgb.avi"
             out_filename = prepend_extension(prepend_extension(input_file, config.name),
                                              f"{config.window_length}.{config.samples_per_window}.{config.interlace}")
             out = os.path.join("/media/barny/SSD4/MasterThesis/result_videos/", os.path.split(out_filename)[-1])
@@ -385,5 +407,37 @@ if __name__ == "__main__":
             times.append(et - st)
             fpses.append(x)
 
-    print(f"Mean exec time: {np.mean(times):.5}")  # 38.792
-    print(f"Mean fps: {np.mean(fpses):.5}")  # 2.1821 # 2.1684
+        print(f"Mean exec time: {np.mean(times):.5}")  # 38.792
+        print(f"Mean fps: {np.mean(fpses):.5}")  # 2.1821 # 2.1684
+        res.append(
+            f"{config.name} {config.window_length} {config.samples_per_window} {config.interlace} {np.mean(fpses):.5}")
+    for r in res:
+        print(r)
+
+    """
+    stgcn_jo_ntu_xsub_0 60 60 0 62.385
+stgcn_jo_ntu_xsub_0 60 30 0 93.336
+stgcn_jo_ntu_xsub_0 60 30 10 90.429
+stgcn_jo_ntu_xsub_0 60 30 15 88.298
+stgcn_jo_ntu_xsub_0 60 30 20 88.824
+stgcn_jo_ntu_xsub_0 60 15 0 130.79
+    """
+
+    """
+    stgcn_jo_ntu_xsub_0 60 60 0 58.231
+    stgcn_jo_ntu_xsub_0 60 30 0 70.839
+    stgcn_jo_ntu_xsub_0 60 30 10 73.537
+    stgcn_jo_ntu_xsub_0 60 30 15 70.035
+    stgcn_jo_ntu_xsub_0 60 30 20 67.809
+    stgcn_jo_ntu_xsub_0 60 15 0 98.51
+    stgcn_jo_ntu_xsub_0 30 30 0 59.565
+    """
+"""1080p, 20
+stgcn_jo_ntu_xsub_0 60 60 0 45.397
+stgcn_jo_ntu_xsub_0 60 30 0 56.51
+stgcn_jo_ntu_xsub_0 60 30 10 54.772
+stgcn_jo_ntu_xsub_0 60 30 15 52.366
+stgcn_jo_ntu_xsub_0 60 30 20 53.571
+stgcn_jo_ntu_xsub_0 60 15 0 55.516
+stgcn_jo_ntu_xsub_0 30 30 0 44.417
+"""

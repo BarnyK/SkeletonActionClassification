@@ -76,11 +76,6 @@ class STGCN(nn.Module):
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.fc_cls = nn.Linear(out_channels, num_classes)
 
-    # def init_weights(self):
-    #     if isinstance(self.pretrained, str):
-    #         self.pretrained = cache_checkpoint(self.pretrained)
-    #         load_checkpoint(self, self.pretrained, strict=False)
-
     def forward_extraction(self, x):
         N, M, T, V, C = x.size()
         x = x.permute(0, 1, 3, 4, 2).contiguous()

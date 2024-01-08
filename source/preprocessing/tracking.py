@@ -41,7 +41,7 @@ def calculate_movement_to_body_ratio(skeleton1: np.ndarray, skeleton2: np.ndarra
 def pose_track(frames: list[FrameData], threshold=60, width_ratio: float = 100.0, height_ratio: float = 50.0):
     tracks, num_tracks = [], 0
     num_joints = None
-    for idx, frame in enumerate(frames):
+    for frame_index, frame in enumerate(frames):
         poses = [x.poseXY for x in frame.bodies]
         if len(poses) == 0:
             # skip frames with no bodies
@@ -51,27 +51,31 @@ def pose_track(frames: list[FrameData], threshold=60, width_ratio: float = 100.0
             num_joints = poses[0].shape[0]
 
         # Create tracks.
-        track_proposals = [t for t in tracks if t["data"][-1][0] > idx - threshold]
+        track_proposals = [t for t in tracks if t["data"][-1][0] > frame_index - threshold]
         n, m = len(track_proposals), len(poses)
         scores = np.zeros((n, m))
 
         # for each combination of track and pose calculate distances and solve linear sum assignment
         for i in range(n):
             for j in range(m):
+                # Distance between last skeleton of i-th track
                 scores[i][j] = skeleton_distance(
                     track_proposals[i]["data"][-1][1], poses[j]
                 )
         row, col = linear_sum_assignment(scores)
         additional_col = []
+
         # Save results
         for r, c in zip(row, col):
             move_ratios = calculate_movement_to_body_ratio(track_proposals[r]["data"][-1][1],
                                                            poses[c],
-                                                           idx - track_proposals[r]["data"][-1][0])
+                                                           frame_index - track_proposals[r]["data"][-1][0])
             if (move_ratios > np.array([width_ratio, height_ratio])).any():
                 # deny
                 additional_col.append(c)
-            track_proposals[r]["data"].append((idx, poses[c], c))
+
+            # Append to each track (frame_id, actual skeleton, index of skeleton in frame)
+            track_proposals[r]["data"].append((frame_index, poses[c], c))
 
         # If there is more poses than tracks
         for j in range(m):
@@ -79,14 +83,14 @@ def pose_track(frames: list[FrameData], threshold=60, width_ratio: float = 100.0
                 num_tracks += 1
                 new_track = dict(data=[])
                 new_track["track_id"] = num_tracks
-                new_track["data"] = [(idx, poses[j], j)]
+                new_track["data"] = [(frame_index, poses[j], j)]
                 tracks.append(new_track)
 
     # Assign tracking ids to bodies
     for i, track in enumerate(tracks):
         for item in track["data"]:
-            idx, _, pos = item
-            frames[idx].bodies[pos].tid = i
+            frame_index, _, pos = item
+            frames[frame_index].bodies[pos].tid = i
 
 
 def get_valid_bodies(bodies: list[Body], ratio: float = 0.8) -> list[Body]:

@@ -1,7 +1,7 @@
 import os.path
 from argparse import Namespace
 
-from shared.ntu_loader import read_file
+from pose_estimation.ntu_loader import read_file
 from shared.structs import SkeletonData
 from shared.visualize_skeleton_file import visualize
 

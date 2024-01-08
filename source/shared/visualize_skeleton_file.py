@@ -20,7 +20,7 @@ tracking_colors = {
 
 
 def draw_text_with_outline(image, point, text, font_size):
-    point = point[0] + 10, point[1]
+    point = point[0] + 10, point[1] + 50
     cv2.putText(
         image,
         text,
@@ -28,7 +28,7 @@ def draw_text_with_outline(image, point, text, font_size):
         cv2.FONT_HERSHEY_SIMPLEX,
         font_size,
         (0, 0, 0),
-        2,
+        4,
         cv2.LINE_AA,
     )
     cv2.putText(
@@ -38,7 +38,7 @@ def draw_text_with_outline(image, point, text, font_size):
         cv2.FONT_HERSHEY_SIMPLEX,
         font_size,
         (255, 255, 255),
-        1,
+        2,
         cv2.LINE_AA,
     )
 
@@ -124,7 +124,7 @@ def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, w
 def draw_frame_data(frame, frame_data, limb_pairs, prep_keypoints, draw_bbox, draw_confidences, draw_point_number,
                     print_frame_text):
     if print_frame_text and frame_data.text:
-        draw_text_with_outline(frame, (50, 50), frame_data.text, 1)
+        draw_text_with_outline(frame, (50, 50), frame_data.text, 3)
     skeleton_color = (255, 0, 255)
     for body in frame_data.bodies:
         skeleton_color = (skeleton_color[1], skeleton_color[2], skeleton_color[0])

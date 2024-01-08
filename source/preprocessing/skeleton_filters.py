@@ -86,7 +86,7 @@ def remove_bodies_by_box_confidence(data: SkeletonData, threshold: float = 0.5, 
 def remove_bodies_by_box_confidence_frame(frame: FrameData, threshold: float = 0.5):
     """
     Remove
-    :param data: SkeletonData
+    :param frame:
     :param threshold: box confidence threshold
     :return:
     """
