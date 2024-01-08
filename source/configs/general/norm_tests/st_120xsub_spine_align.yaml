@@ -1,0 +1,71 @@
+device: cuda:0
+dataset: ntu120
+eval_config:
+  eval_interval: 5
+  eval_last_n: 20
+  output_path: /media/barny/SSD4/MasterThesis/Data/logs/norm_tests/
+  test_batch_size: 128
+  test_clips_count: 8
+  test_file: /media/barny/SSD4/MasterThesis/Data/prepped_data/ap_final/ntu120_xsub.test.pkl
+features:
+  - joints
+interlace: 16
+log_folder: /media/barny/SSD4/MasterThesis/Data/logs/norm_tests/
+model_type: stgcnpp
+name: ap_ntu120xsub
+normalization_type: spine_align
+pose_config:
+  detector_batch_size: 5
+  detector_cfg: ./configs/detector/yolov3-spp.cfg
+  detector_queue_size: 256
+  detector_weights: ./weights/detector/yolov3-spp.weights
+  estimation_batch_size: 8
+  estimation_queue_size: 64
+  estimation_weights: ./weights/alphapose/fast_res50_256x192.pth
+prep_config:
+  alphapose_skeletons: true
+  box_conf_max_frames: 0.9
+  box_conf_max_total: 0.9
+  box_conf_threshold: 0.7
+  keypoint_fill_type: interpolation
+  max_body_count: 2
+  max_pose_conf_threshold: 0.55
+  missing_file: ''
+  pose_tracking_height_ratio: 0.55
+  pose_tracking_threshold: 90
+  pose_tracking_width_ratio: 1.8
+  processes: 12
+  remove_missing_from_file: false
+  split_strategy:
+    - ntu_xsub
+    - ntu_xview
+    - ntu120_xset
+    - ntu120_xsub
+    - ntu_mutual_xsub
+    - ntu_mutual_xview
+    - ntu120_mutual_xset
+    - ntu120_mutual_xsub
+  transform_to_combined: false
+  use_box_conf: true
+  use_confidence_selection: false
+  use_max_pose_conf: true
+  use_motion_selection: true
+  use_nms: true
+  use_order_selection: false
+  use_size_selection: false
+  use_tracking: true
+samples_per_window: 32
+skeleton_type: coco17
+symmetry_processing: false
+train_config:
+  cosine_shed_eta_min: 0.0001
+  epochs: 80
+  scale_value: 0.2
+  sgd_lr: 0.1
+  sgd_momentum: 0.9
+  sgd_nesterov: true
+  sgd_weight_decay: 0.0002
+  train_batch_size: 64
+  train_file: /media/barny/SSD4/MasterThesis/Data/prepped_data/ap_final/ntu120_xsub.train.pkl
+  use_scale_augment: false
+window_length: 64
