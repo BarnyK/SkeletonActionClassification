@@ -44,9 +44,9 @@ def read_file(file_path):
 
     return skeleton_data
 
-# if __name__ == "__main__":
-#     xd = read_file(
-#         "/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons/S001C001P001R001A052.skeleton"
-#     )
-#     del xd.frames
-#     print(xd.__dict__)
+if __name__ == "__main__":
+    xd = read_file(
+        "/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons/S001C001P001R001A052.skeleton"
+    )
+    del xd.frames
+    print(xd.__dict__)

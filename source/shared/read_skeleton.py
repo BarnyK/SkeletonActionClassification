@@ -1,4 +1,4 @@
-from shared.ntu_loader import read_file as read_ntu
+from pose_estimation.ntu_loader import read_file as read_ntu
 from shared.structs import SkeletonData
 
 

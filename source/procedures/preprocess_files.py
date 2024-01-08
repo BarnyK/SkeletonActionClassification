@@ -10,9 +10,9 @@ from typing import Union
 from tqdm import tqdm
 
 import shared.dataset_statics
+from pose_estimation import ntu_loader
 from procedures.config import PreprocessConfig, GeneralConfig
 from procedures.utils.prep import preprocess_data_ap, preprocess_data_ntu
-from shared import ntu_loader
 from shared.dataset_info import name_to_ntu_data
 from shared.helpers import folder_check
 from shared.structs import SkeletonData
@@ -134,9 +134,16 @@ def handle_preprocess(args: Namespace):
             print("Some of the paths are invalid")
         return False
 
-# if __name__ == "__main__":
-#     cfg = GeneralConfig.from_yaml_file("./configs/general/ntu_xview.yaml")
-#     cfg.prep_config.processes = 0
-#     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons"],
-#                      "/tmp/",
-#                      cfg.prep_config)
+
+if __name__ == "__main__":
+    # cfg = GeneralConfig.from_yaml_file("./configs/general/ntu_xview.yaml")
+    # cfg.prep_config.processes = 0
+    # preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons"],
+    #                  "/tmp/",
+    #                  cfg.prep_config)
+    cfg = GeneralConfig.from_yaml_file("./configs/general/prep_tests/filling_mice.yaml")
+    cfg.prep_config.processes = 0
+    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco",
+                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"],
+                     "/tmp", cfg.prep_config)
+

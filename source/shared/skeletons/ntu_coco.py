@@ -111,7 +111,7 @@ def from_skeleton_data(data: SkeletonData) -> SkeletonData:
 
 
 if __name__ == "__main__":
-    from shared.ntu_loader import read_file
+    from pose_estimation.ntu_loader import read_file
 
     xd = read_file("/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons/S001C001P001R001A001.skeleton")
     pose = xd.frames[0].bodies[0].poseXY

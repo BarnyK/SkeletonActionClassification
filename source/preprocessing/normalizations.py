@@ -91,9 +91,9 @@ class SpineNormalization:
             all_spines.append(spines[0])
         all_spines = np.concatenate(all_spines)
         if self.use_mean:
-            self.scale = np.mean(all_spines)
+            self.scale = np.mean(all_spines[all_spines < np.inf])
         else:
-            self.scale = np.max(all_spines)
+            self.scale = np.max(all_spines[all_spines < np.inf])
 
     def load_from_state_dict(self, state_dict: dict):
         self.align = state_dict['align']
