@@ -148,3 +148,13 @@ def matrix_to_skeleton_body(mat):
             frame.bodies.append(Body(mat[b, fi, :, :], None, None, None, None, b))
         data.frames.append(frame)
     return data
+
+
+def swap_extension(filename, new_ext):
+    file_no_ext, _ = os.path.splitext(filename)
+    return f"{filename}.{new_ext}"
+
+
+def prepend_filename(filename, prefix):
+    x, y = os.path.split(filename)
+    return os.path.join(x, f"{prefix}{y}")

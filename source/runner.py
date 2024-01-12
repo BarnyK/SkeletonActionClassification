@@ -4,6 +4,7 @@ from procedures.evaluate import handle_eval
 from procedures.generate_alphapose_skeletons import handle_generate
 from procedures.preprocess_files import handle_preprocess
 from procedures.single_file_classification import handle_classify
+from procedures.single_file_pose import handle_pose_estimation
 from procedures.visualize_skeleton import handle_visualize
 
 a = """
@@ -40,7 +41,6 @@ def main():
     # Training
     train_parser = subparsers.add_parser("train", help="Train network.")
     train_parser.add_argument("config", help="Config file that will be used to generate skeletons.")
-    # TODO
 
     # Evaluation
     eval_parser = subparsers.add_parser("eval", help="Evaluate using a preprocessed file.", aliases=["evaluate"])
@@ -57,15 +57,22 @@ def main():
                                  help="Model to be used in evaluation. Should fit the config provided.")
     classify_parser.add_argument("--method", choices=['mean', 'window'], default="window",
                                  help="Method for classification ")
+    classify_parser.add_argument("--save-file", default="", help="Save video file to file")
 
+    # Visualizer
     visualize_parser = subparsers.add_parser("visualize", help="Visualize skeleton with video file.")
     visualize_parser.add_argument("skeleton_file", help="Input file. Can be NTU or Alphapose skeleton file")
     visualize_parser.add_argument("video_file", help="Video file that will be played with skeletons")
-    visualize_parser.add_argument("--save-file", default="", help="Save video file to file")
+    visualize_parser.add_argument("--save-file", default="", help="Save output video to file")
     visualize_parser.add_argument("--draw-bbox", action="store_true", help="Whether to draw bounding boxes")
 
+    # Single file pose estimation
+    estimator = subparsers.add_parser("estimator", help="Pose estimate video file.")
+    estimator.add_argument("config", help="Config file that will be used")
+    estimator.add_argument("video_file", help="Video file that will undergo pose estimation")
+    estimator.add_argument("--save-file", default="", help="Save output video. Will also save the skeleton data.")
+
     args = parser.parse_args()
-    print(args)
 
     if args.function == "generate":
         handle_generate(args)
@@ -79,6 +86,8 @@ def main():
         handle_classify(args)
     elif args.function == "visualize":
         handle_visualize(args)
+    elif args.function == "estimator":
+        handle_pose_estimation(args)
 
 
 if __name__ == "__main__":

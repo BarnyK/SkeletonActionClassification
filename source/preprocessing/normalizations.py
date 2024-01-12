@@ -132,6 +132,8 @@ def create_norm_func(norm_name: str):
         norm_func = SpineNormalization(use_mean=False, align=True)
     elif norm_name == "mean_spine_align":
         norm_func = SpineNormalization(use_mean=True, align=True)
+    elif norm_name == "none":
+        norm_func = no_norm
     else:
         raise KeyError("")
     return norm_func
@@ -146,5 +148,7 @@ def setup_norm_func(norm_func, state_dict: dict = None, train_file: str = None):
     return
 
 
+norm_types = ["screen", "relative", "spine", "mean_spine", "spine_align", "mean_spine_align", "none"]
 if __name__ == "__main__":
-    x1 = create_norm_func("spine_align")
+    for ntype in norm_types:
+        x1 = create_norm_func(ntype)
