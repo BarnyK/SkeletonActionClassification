@@ -3,16 +3,18 @@ from __future__ import annotations
 import multiprocessing
 import os
 import pickle
+import random
 from argparse import Namespace
 from functools import partial
 from typing import Union
 
+import numpy as np
 from tqdm import tqdm
 
 import shared.dataset_statics
 from pose_estimation import ntu_loader
 from procedures.config import PreprocessConfig, GeneralConfig
-from procedures.utils.prep import preprocess_data_ap, preprocess_data_ntu
+from procedures.utils.prep import preprocess_data_ap, preprocess_data_ntu, preprocess_data_ap_timed
 from shared.dataset_info import name_to_ntu_data
 from shared.helpers import folder_check
 from shared.structs import SkeletonData
@@ -78,6 +80,9 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: P
             new_files.append(file)
         files = new_files
 
+    # random.seed(0)
+    # files = random.sample(files, k=5000)
+
     if isinstance(cfg.split_strategy, str):
         cfg.split_strategy = [cfg.split_strategy]
 
@@ -91,7 +96,12 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: P
         pool.close()
         pool.join()
 
-    results = [x for x in results if x[1] is not None]
+    # results = [x for x in results if x[1] is not None]
+    # times_mean = np.array([x[-1] for x in results]).mean(0)
+    # times_var = np.array([x[-1] for x in results]).var(0)
+    # print(", ".join([f"{x:.4}" for x in times_mean]))
+    # print(", ".join([f"{x:.4}" for x in times_var]))
+    # return
 
     for strategy in cfg.split_strategy:
         split_func = shared.dataset_statics.split_map[strategy]
@@ -141,7 +151,13 @@ if __name__ == "__main__":
     # preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons"],
     #                  "/tmp/",
     #                  cfg.prep_config)
-    cfg = GeneralConfig.from_yaml_file("./configs/general/prep_tests/filling_mice.yaml")
+    # cfg = GeneralConfig.from_yaml_file("./configs/general/prep_tests/default.yaml")
+    # cfg.prep_config.processes = 0
+    # preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco",
+    #                   "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"],
+    #                  "/tmp", cfg.prep_config)
+
+    cfg = GeneralConfig.from_yaml_file("./configs/general/prep_tests/filling_zero.yaml")
     cfg.prep_config.processes = 0
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"],

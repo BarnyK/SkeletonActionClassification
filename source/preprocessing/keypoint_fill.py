@@ -10,7 +10,8 @@ from sklearn.utils._testing import ignore_warnings
 from shared.structs import SkeletonData, Body
 
 enable_iterative_imputer
-os.environ['NUMEXPR_NUM_THREADS'] = '2'
+os.environ['NUMEXPR_NUM_THREADS'] = '6'
+os.environ['NUMEXPR_MAX_THREADS'] = '12'
 
 
 def keypoint_interpolation_fill(bodies: List[Body], keypoint_index: int, threshold: float = 0.4):
@@ -65,15 +66,19 @@ def mice_fill(data: SkeletonData, tid: int, threshold: float = 0.3, max_iter: in
     assert len(bodies) == data.length
     full_matrix = np.stack([body.poseXY for body in bodies], 0)
     missing = np.stack([body.poseConf.squeeze() for body in bodies], 0) < threshold
-    full_matrix[missing] = -10e4
+    og = full_matrix.copy()
+    full_matrix[missing] = 0
 
-    imputer = IterativeImputer(missing_values=-10e4, max_iter=max_iter, random_state=0, n_nearest_features=5, tol=1e-2)
+    imputer = IterativeImputer(missing_values=0, max_iter=max_iter, random_state=0, n_nearest_features=5, tol=1e-1)
     for i in range(full_matrix.shape[2]):
         imputer.fit(full_matrix[:, ~missing.all(0), i])
         full_matrix[:, ~missing.all(0), i] = imputer.transform(full_matrix[:, ~missing.all(0), i])
-
+        # imputer.fit(full_matrix[..., i])
+        # full_matrix[..., i] = imputer.transform(full_matrix[..., i])
+    full_matrix[(full_matrix == 0) | (full_matrix == np.inf)] = og[(full_matrix == 0) | (full_matrix == np.inf)]
     for i, body in enumerate(bodies):
         body.poseXY = full_matrix[i, :, :]
+    pass
 
 
 @ignore_warnings(category=ConvergenceWarning)
@@ -92,6 +97,7 @@ def knn_fill(data: SkeletonData, tid: int, threshold: float = 0.3, neighbours: i
     imputer = KNNImputer(missing_values=-10e4, n_neighbors=neighbours)
     for i in range(full_matrix.shape[2]):
         full_matrix[:, ~missing.all(0), i] = imputer.fit_transform(full_matrix[:, :, i])
+        # full_matrix[..., i] = imputer.fit_transform(full_matrix[..., i])
 
     for i, body in enumerate(bodies):
         body.poseXY = full_matrix[i, :, :]
