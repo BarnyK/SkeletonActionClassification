@@ -266,13 +266,11 @@ class DetectionLoader:
                 # Record original image resolution
                 imgs = torch.cat(imgs)
                 im_dim_list = torch.FloatTensor(im_dim_list).repeat(1, 2)
-                # im_dim_list_ = im_dim_list
 
             self.wait_and_put(
                 self.image_queue, (imgs, orig_imgs, im_names, im_dim_list)
             )
         stream.release()
-        # tqdm.write("Finished frame processing")
 
     def image_detection(self):
         # Reads batches of images from image_queue and performs detection on them
@@ -333,7 +331,6 @@ class DetectionLoader:
         self.wait_and_put(
             self.det_queue, (None, None, None, None, None)
         )
-        # tqdm.write("Finished detection")
 
     def image_postprocess(self):
         # Post process
@@ -357,14 +354,11 @@ class DetectionLoader:
                         (None, orig_img, boxes, scores, None),
                     )
                     continue
-                # imght = orig_img.shape[0]
-                # imgwidth = orig_img.shape[1]
+
                 cropped_boxes = torch.zeros(boxes.size(0), 4)
                 for i, box in enumerate(boxes):
                     inps[i], cropped_box = self.test_transform_mine(orig_img, box)
                     cropped_boxes[i] = torch.FloatTensor(cropped_box)
-
-                # inps, cropped_boxes = self.transformation.align_transform(orig_img, boxes)
 
                 self.wait_and_put(
                     self.pose_queue,
@@ -387,6 +381,7 @@ class DetectionLoader:
         return self.datalen
 
     def test_transform_mine(self, src, bbox, interp=1):
+        """Crop and reside for tests. Implemented to replace cv2.affineTransform"""
         input_size = self._input_size
         inp_h, inp_w = input_size
         xmin, ymin, xmax, ymax = bbox
@@ -412,26 +407,6 @@ class DetectionLoader:
         img2[2].add_(-0.480)
 
         return img2, [xmin2, ymin2, xmax2, ymax2]
-
-    def test_transform(self, src, bbox):
-        xmin, ymin, xmax, ymax = bbox
-        input_size = self._input_size
-        inp_h, inp_w = input_size
-        center, scale = _box_to_center_scale(
-            xmin, ymin, xmax - xmin, ymax - ymin, inp_w / inp_h)
-        scale = scale * 1.0
-
-        trans = get_affine_transform(center, scale, 0, [inp_w, inp_h])
-        img = cv2.warpAffine(src, trans, (int(inp_w), int(inp_h)), flags=cv2.INTER_LINEAR)
-        bbox = _center_scale_to_box(center, scale)
-
-        img = im_to_torch(img)
-        img[0].add_(-0.406)
-        img[1].add_(-0.457)
-        img[2].add_(-0.480)
-
-        return img, bbox
-
 
 def calc_new_box(xmin, ymin, w, h, aspect):
     if w > aspect * h:
