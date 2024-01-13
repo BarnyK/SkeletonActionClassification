@@ -124,10 +124,10 @@ def get_per_frame_results(window_results: dict, frame_windows: dict):
 
 def calculate_total_result(window_results: dict) -> int:
     """Calculates mean class for all windows"""
-    whole_data = np.stack(
-        [torch.nn.functional.softmax(res) for _, _, res, _ in window_results.values() if res is not None])
-    whole_results = np.sum(whole_data, 0)
-    class_id = np.argmax(whole_results)
+    whole_data = torch.stack([res for _, _, res, _ in window_results.values() if res is not None])
+    whole_data = torch.nn.functional.softmax(whole_data, 1)
+    whole_results = torch.sum(whole_data, 0)
+    class_id = torch.argmax(whole_results).item()
     return class_id
 
 
