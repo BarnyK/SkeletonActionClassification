@@ -58,6 +58,8 @@ def main():
     classify_parser.add_argument("--method", choices=['mean', 'window'], default="window",
                                  help="Method for classification ")
     classify_parser.add_argument("--save-file", default="", help="Save video file to file")
+    classify_parser.add_argument("--window-save-file", default="", help="Save window results to file")
+    classify_parser.add_argument("--interlace", default=None, type=int, help="Overwrite interlace value from config")
 
     # Visualizer
     visualize_parser = subparsers.add_parser("visualize", help="Visualize skeleton with video file.")

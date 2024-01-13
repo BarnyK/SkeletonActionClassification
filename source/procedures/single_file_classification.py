@@ -18,14 +18,12 @@ from datasets.pose_dataset import solve_feature_transform_requirements, transfor
 from datasets.transform_wrappers import calculate_channels, TransformsDict
 from models import create_stgcnpp, create_tpgcn
 from pose_estimation import DetectionLoader, init_detector, init_pose_model, read_ap_configs, run_pose_worker
-from preprocessing.keypoint_fill import keypoint_fill
 from preprocessing.normalizations import create_norm_func, setup_norm_func
-from preprocessing.tracking import pose_track
 from procedures.config import GeneralConfig
 from procedures.training import load_model
 from procedures.utils.prep import preprocess_per_frame, preprocess_data_rest
 from shared.dataset_statics import adjusted_actions_maps
-from shared.helpers import calculate_interval, run_qsp, fill_frames
+from shared.helpers import calculate_interval, run_qsp, fill_frames, swap_extension
 from shared.structs import SkeletonData, FrameData
 from shared.visualize_skeleton_file import Visualizer
 
@@ -33,6 +31,7 @@ from shared.visualize_skeleton_file import Visualizer
 def window_worker(
         q: Queue, datalen: int, pose_data_queue: Queue, cfg: GeneralConfig
 ):
+    """Read results from pose detection and pass them through per-frame preprocessing"""
     window = []
     length = cfg.samples_per_window
     interlace = cfg.interlace
@@ -66,22 +65,8 @@ def run_window_worker(
     return q, window_worker_thread
 
 
-def aggregate_results(window_results: list[tuple[int, int, torch.Tensor], ...]) -> list[int, ...]:
-    per_frame = defaultdict(list)
-    for start_frame, end_frame, data in window_results:
-        for fi in range(start_frame, end_frame + 1):
-            per_frame[fi].append(data)
-    out = []
-    for i, data in per_frame.items():
-        if len(data) == 1:
-            out.append(data[0].max(0)[1].item())
-            continue
-        tmp = torch.concat([x.unsqueeze(1) for x in data], dim=1)
-        out.append(tmp.mean(1).max(0)[1].item())
-    return out
-
-
 def calculate_frame_results(frame_results, to_index, frame_windows, window_results):
+    """Calculates class id results from window"""
     cache = {}
     start_index = len(frame_results)
     for index in range(start_index, to_index):
@@ -106,20 +91,63 @@ def calculate_frame_results(frame_results, to_index, frame_windows, window_resul
     return frame_results, start_index
 
 
-def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[str, None] = None,
-                               save_file: str = None):
-    assert os.path.isfile(filename)
+def get_per_frame_results(window_results: dict, frame_windows: dict):
+    """Returns a list of tensors where each index has information about data returned on the corresponding frame"""
+    cache = {}
+    per_frame_results = []
+    for index in sorted(frame_windows.keys()):
+        windows = tuple(frame_windows[index])
+        if windows in cache:
+            per_frame_results.append(cache[windows])
+            continue
 
-    # Setup
+        windows_data = [window_results[window_id] for window_id in windows]
+        windows_data = [x[2] for x in windows_data if x[2] is not None]
+        if len(windows_data) == 0:
+            per_frame_results.append(None)
+            cache[windows] = None
+            continue
+
+        stacked_data = torch.stack([windows_data[0], windows_data[0]])
+        stacked_data = torch.nn.functional.softmax(stacked_data, 1)
+        summed_data = stacked_data.sum(0)
+        per_frame_results.append(summed_data)
+        cache[windows] = summed_data
+
+    # Get any result to know the shape
+    any_res = [x for x in per_frame_results if x is not None][0]
+    for i in range(len(per_frame_results)):
+        if per_frame_results[i] is None:
+            per_frame_results[i] = torch.zeros_like(any_res)
+    return per_frame_results
+
+
+def calculate_total_result(window_results: dict) -> int:
+    """Calculates mean class for all windows"""
+    whole_data = np.stack(
+        [torch.nn.functional.softmax(res) for _, _, res, _ in window_results.values() if res is not None])
+    whole_results = np.sum(whole_data, 0)
+    class_id = np.argmax(whole_results)
+    return class_id
+
+
+def single_file_classification(video_file: str, cfg: GeneralConfig, model_path: Union[str, None] = None,
+                               save_file: str = None, result_method: str = "window", window_save_file: str = None):
+    assert os.path.isfile(video_file)
+
+    # Setup for pose estimation and windowing
     device = torch.device(cfg.device)
     frame_interval = calculate_interval(cfg.window_length, cfg.samples_per_window)
-
-    det_loader, pose_data_queue, ap_threads = create_alphapose_workers(cfg, device, filename, frame_interval)
-
+    det_loader, pose_data_queue, ap_threads = create_alphapose_workers(cfg, device, video_file, frame_interval)
     window_queue, window_thread = run_window_worker(det_loader.length, pose_data_queue, cfg)
 
-    qsp_thread = run_qsp([det_loader.image_queue, det_loader.det_queue, det_loader.pose_queue, window_queue],
-                         ["det", "post", "pose", "window"])
+    # Queue size printer
+    if __debug__:
+        qsp_thread = run_qsp(
+            [det_loader.image_queue, det_loader.det_queue, det_loader.pose_queue, pose_data_queue, window_queue],
+            ["det", "post", "pose", "pose2", "window"])
+    else:
+        qsp_thread = None
 
     # Classification
     model, norm_func = create_model_norm(cfg, device, model_path)
@@ -128,6 +156,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     required_transforms = solve_feature_transform_requirements(cfg.features)
     transforms = {key: TransformsDict[key](cfg.skeleton_type) for key in required_transforms}
 
+    # Set up variables required for saving results
     start_time = time.time()
     window_count = 0
     unique_frames = []
@@ -135,15 +164,17 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
     window_results = {}
     frame_results = []
 
-    visualizer = Visualizer(filename, cfg.skeleton_type, frame_interval, True, save_file)
+    # Set up visualization
+    visualizer = Visualizer(video_file, cfg.skeleton_type, frame_interval, True, save_file)
     vis_thread = visualizer.run_visualize()
 
-    all_threads = {"prep": ap_threads[0], "det": ap_threads[1], "post": ap_threads[2], "window": window_thread,
-                   "qsp": qsp_thread, "vis": vis_thread}
+    all_threads = {"prep": ap_threads[0], "det": ap_threads[1], "post": ap_threads[2], "pose": ap_threads[3],
+                   "window": window_thread, "vis": vis_thread}
+    if qsp_thread:
+        all_threads['qsp'] = qsp_thread
     all_queues = {"prep": det_loader.image_queue, "det": det_loader.det_queue, "post": det_loader.pose_queue,
-                  "window": window_queue, "vis": visualizer.queue}
+                  "pose": pose_data_queue, "window": window_queue, "vis": visualizer.queue}
     try:
-        print("Interruptible")
         while True:
             frames: list[FrameData] = window_queue.get()
             if frames is None:
@@ -154,7 +185,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
                     unique_frames.append(deepcopy(frame))
             start_frame, end_frame = frames[0].seqId, frames[-1].seqId
 
-            data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
+            data = SkeletonData("estimated", cfg.skeleton_type, None, video_file,
                                 len(frames), deepcopy(frames), len(frames), det_loader.frameSize, frame_interval)
 
             if data.no_bodies():
@@ -199,6 +230,7 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
                                                                  window_results)
             add_action_data(cfg.dataset, frame_results, start_index, frames[0].seqId, unique_frames, visualizer)
     except KeyboardInterrupt:
+        # Stop visualization and close all threads by consuming from all_queues
         visualizer.stop()
         close_(all_queues)
         time.sleep(3)
@@ -207,45 +239,48 @@ def single_file_classification(filename, cfg: GeneralConfig, model_path: Union[s
                 print(name, thread.is_alive())
         return
 
+    # Add all the data together and produce final mean result
     frame_results, start_index = calculate_frame_results(frame_results, len(frame_windows_mapping),
                                                          frame_windows_mapping, window_results)
     add_action_data(cfg.dataset, frame_results, start_index, len(frame_windows_mapping), unique_frames, visualizer)
+    mean_class_id = calculate_total_result(window_results)
 
+    # Calculate final time and fps here
     end_time = time.time()
     fps = len(unique_frames) / (end_time - start_time)
-    print(f"fps:        {fps:.4}")
-    print(f"Total time: {end_time - start_time:.4}")
 
-    whole_data = np.stack([res for _, _, res, _ in window_results.values() if res is not None])
-    whole_results = np.sum(whole_data, 0)
-    res = np.argmax(whole_results)
-    print(adjusted_actions_maps[cfg.dataset][res])
-    # for w in window_results:
-    #     print(window_results[w])
+    print("Average action in the video: ", adjusted_actions_maps[cfg.dataset][mean_class_id])
 
-    # #
+    # Save results using visualizer class
     if visualizer.save_file:
-        total_data = SkeletonData("estimated", cfg.skeleton_type, None, filename,
+        total_data = SkeletonData("estimated", cfg.skeleton_type, None, video_file,
                                   len(unique_frames), unique_frames, len(unique_frames), det_loader.frameSize,
                                   frame_interval)
-        pose_track(total_data.frames)
-        keypoint_fill(total_data, cfg.prep_config.keypoint_fill_type)
         for frame in total_data.frames:
+            if result_method == "mean":
+                frame.text = adjusted_actions_maps[cfg.dataset][mean_class_id]
             visualizer.put(frame)
-    visualizer.put(None)
-    # for frame, action_id in zip(total_data.frames, out):
-    #     frame.text = action_map[frame_results[frame.seqId]]
-    # fps = 30 * cfg.samples_per_window / cfg.window_length
-    # # visualize(total_data, total_data.video_file, int(1000 / fps), print_frame_text=False, skip_frames=True,
-    # #           save_file="/home/barny/naaaaaaah.mp4", draw_bbox=True)
 
+        skeleton_filename = swap_extension(save_file, "apskel.pkl")
+        total_data.save(skeleton_filename)
+    visualizer.put(None)
+
+    # Save per window results
+    if window_save_file:
+        whole_data = get_per_frame_results(window_results, frame_windows_mapping)
+        whole_data = np.stack(whole_data)
+        with open(window_save_file, "wb") as f:
+            np.save(f, whole_data)
+
+    # Ensure queues empty
     for name, q in all_queues.items():
         if name == "vis":
             continue
         while not q.empty():
             q.get()
-    print(len(visualizer.uniques))
-    print(vis_thread.join())
+
+    # Wait for visualizer
+    vis_thread.join()
     return fps
 
 
@@ -347,8 +382,17 @@ def handle_classify(args: Namespace):
     if args.save_file and not os.path.isdir(os.path.split(args.save_file)[0]):
         print(f"Folder for {args.save_file} does not exist")
         return False
+    if args.window_save_file and not os.path.isdir(os.path.split(args.window_save_file)[0]):
+        print(f"Folder for {args.window_save_file} does not exist")
+        return False
+    if args.interlace is not None:
+        if args.interlace < 0 or args.interlace >= cfg.samples_per_window:
+            print(
+                f"Incorrect interlace value. Interlace should be an integer above 0 and below samples per window count")
+            return False
+        cfg.interlace = args.interlace
 
-    single_file_classification(args.video_file, cfg)
+    single_file_classification(args.video_file, cfg, args.model, args.save_file, args.method, args.window_save_file)
 
 
 def prepend_extension(filename, prefix):
@@ -371,7 +415,7 @@ if __name__ == "__main__":
     ]
 
     params = [
-        ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_bo_ntu120_xset_0/config.yaml",64,32,30),
+        ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_bo_ntu120_xset_0/config.yaml", 64, 32, 30),
         # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 60, 0),
         # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 60, 0),
         # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 30, 0),
@@ -389,20 +433,18 @@ if __name__ == "__main__":
         config.interlace = interlace
         config.window_length = window_length
         config.samples_per_window = samples
-        #config.pose_config.detector_queue_size = 20
+        # config.pose_config.detector_queue_size = 20
         for i in range(1):
             print(config.name, config.window_length, config.samples_per_window, config.interlace, i)
             st = time.time()
             input_file = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq3.avi"
-            input_file = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/seq1.cut.avi"
-            input_file = "/home/barny/dance_practice.cut.avi"
-            input_file = "/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb_120/S021C003P055R001A101_rgb.avi"
+            # input_file = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/seq1.cut.avi"
+            # input_file = "/home/barny/dance_practice.cut.avi"
+            # input_file = "/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb_120/S021C003P055R001A101_rgb.avi"
             out_filename = prepend_extension(prepend_extension(input_file, config.name),
                                              f"{config.window_length}.{config.samples_per_window}.{config.interlace}")
             out = os.path.join("/media/barny/SSD4/MasterThesis/result_videos/", os.path.split(out_filename)[-1])
-            x = single_file_classification(
-                input_file,
-                config, None, out)
+            x = single_file_classification(input_file, config, None, None)
             et = time.time()
             times.append(et - st)
             fpses.append(x)
@@ -413,31 +455,3 @@ if __name__ == "__main__":
             f"{config.name} {config.window_length} {config.samples_per_window} {config.interlace} {np.mean(fpses):.5}")
     for r in res:
         print(r)
-
-    """
-    stgcn_jo_ntu_xsub_0 60 60 0 62.385
-stgcn_jo_ntu_xsub_0 60 30 0 93.336
-stgcn_jo_ntu_xsub_0 60 30 10 90.429
-stgcn_jo_ntu_xsub_0 60 30 15 88.298
-stgcn_jo_ntu_xsub_0 60 30 20 88.824
-stgcn_jo_ntu_xsub_0 60 15 0 130.79
-    """
-
-    """
-    stgcn_jo_ntu_xsub_0 60 60 0 58.231
-    stgcn_jo_ntu_xsub_0 60 30 0 70.839
-    stgcn_jo_ntu_xsub_0 60 30 10 73.537
-    stgcn_jo_ntu_xsub_0 60 30 15 70.035
-    stgcn_jo_ntu_xsub_0 60 30 20 67.809
-    stgcn_jo_ntu_xsub_0 60 15 0 98.51
-    stgcn_jo_ntu_xsub_0 30 30 0 59.565
-    """
-"""1080p, 20
-stgcn_jo_ntu_xsub_0 60 60 0 45.397
-stgcn_jo_ntu_xsub_0 60 30 0 56.51
-stgcn_jo_ntu_xsub_0 60 30 10 54.772
-stgcn_jo_ntu_xsub_0 60 30 15 52.366
-stgcn_jo_ntu_xsub_0 60 30 20 53.571
-stgcn_jo_ntu_xsub_0 60 15 0 55.516
-stgcn_jo_ntu_xsub_0 30 30 0 44.417
-"""
