@@ -5,6 +5,7 @@ import os
 import re
 import shutil
 import time
+from argparse import Namespace
 from datetime import timedelta
 from typing import Union
 
@@ -329,3 +330,8 @@ def create_dataloaders(cfg: GeneralConfig):
     )
     test_loader = DataLoader(test_set, cfg.eval_config.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
     return test_loader, train_loader, test_set, train_set, norm_func
+
+
+def handle_training(args: Namespace):
+    cfg = GeneralConfig.from_yaml_file(args.config)
+    train_network(cfg)

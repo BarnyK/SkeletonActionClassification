@@ -5,6 +5,7 @@ from procedures.generate_alphapose_skeletons import handle_generate
 from procedures.preprocess_files import handle_preprocess
 from procedures.single_file_classification import handle_classify
 from procedures.single_file_pose import handle_pose_estimation
+from procedures.training import handle_training
 from procedures.visualize_skeleton import handle_visualize
 
 a = """
@@ -81,7 +82,7 @@ def main():
     elif args.function == "preprocess":
         handle_preprocess(args)
     elif args.function == "train":
-        handle_train(args)
+        handle_training(args)
     elif args.function == "eval":
         handle_eval(args)
     elif args.function == "classify":

@@ -158,3 +158,9 @@ def swap_extension(filename, new_ext):
 def prepend_filename(filename, prefix):
     x, y = os.path.split(filename)
     return os.path.join(x, f"{prefix}{y}")
+
+
+def prepend_extension(filename, prefix):
+    root, filename = os.path.split(filename)
+    filename, extension = os.path.splitext(filename)
+    return os.path.join(root, f"{filename}.{prefix}.{extension}", )

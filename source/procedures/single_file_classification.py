@@ -23,10 +23,14 @@ from procedures.config import GeneralConfig
 from procedures.training import load_model
 from procedures.utils.prep import preprocess_per_frame, preprocess_data_rest
 from shared.dataset_statics import adjusted_actions_maps
-from shared.helpers import calculate_interval, run_qsp, fill_frames, swap_extension
+from shared.helpers import calculate_interval, run_qsp, fill_frames, swap_extension, prepend_extension
 from shared.structs import SkeletonData, FrameData
 from shared.visualize_skeleton_file import Visualizer
+import warnings
 
+# Filter out warnings from AlphaPose
+warnings.filterwarnings("ignore")
+DEBUG = False
 
 def window_worker(
         q: Queue, datalen: int, pose_data_queue: Queue, cfg: GeneralConfig
@@ -142,7 +146,7 @@ def single_file_classification(video_file: str, cfg: GeneralConfig, model_path: 
     window_queue, window_thread = run_window_worker(det_loader.length, pose_data_queue, cfg)
 
     # Queue size printer
-    if __debug__:
+    if DEBUG:
         qsp_thread = run_qsp(
             [det_loader.image_queue, det_loader.det_queue, det_loader.pose_queue, pose_data_queue, window_queue],
             ["det", "post", "pose", "pose2", "window"])
@@ -393,12 +397,6 @@ def handle_classify(args: Namespace):
         cfg.interlace = args.interlace
 
     single_file_classification(args.video_file, cfg, args.model, args.save_file, args.method, args.window_save_file)
-
-
-def prepend_extension(filename, prefix):
-    root, filename = os.path.split(filename)
-    filename, extension = os.path.splitext(filename)
-    return os.path.join(root, f"{filename}.{prefix}.{extension}", )
 
 
 if __name__ == "__main__":
