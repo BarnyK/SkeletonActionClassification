@@ -3,18 +3,16 @@ from __future__ import annotations
 import multiprocessing
 import os
 import pickle
-import random
 from argparse import Namespace
 from functools import partial
 from typing import Union
 
-import numpy as np
 from tqdm import tqdm
 
 import shared.dataset_statics
 from pose_estimation import ntu_loader
 from procedures.config import PreprocessConfig, GeneralConfig
-from procedures.utils.prep import preprocess_data_ap, preprocess_data_ntu, preprocess_data_ap_timed
+from procedures.utils.prep import preprocess_data_ap, preprocess_data_ntu
 from shared.dataset_info import name_to_ntu_data
 from shared.helpers import folder_check
 from shared.structs import SkeletonData
@@ -162,4 +160,3 @@ if __name__ == "__main__":
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"],
                      "/tmp", cfg.prep_config)
-

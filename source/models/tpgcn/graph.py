@@ -43,9 +43,9 @@ class Graph:
             elif self.graph == 'mutual-inter':
                 num_node = coco.num_nodes * 2
                 neighbor_link = coco.edges + [(x + coco.num_nodes, y + coco.num_nodes) for x, y in coco.edges]
-                neighbor_link += [(coco.center, coco.center + coco.num_nodes)] # Link between centers
+                neighbor_link += [(coco.center, coco.center + coco.num_nodes)]  # Link between centers
                 neighbor_link += [(9, 10), (9 + coco.num_nodes, 10 + coco.num_nodes),
-                                  (9, 9 + coco.num_nodes), (10, 10 + coco.num_nodes)] # Links between hands
+                                  (9, 9 + coco.num_nodes), (10, 10 + coco.num_nodes)]  # Links between hands
                 parts = coco.parts + [x + coco.num_nodes for x in coco.parts]
                 center = coco.center
             else:

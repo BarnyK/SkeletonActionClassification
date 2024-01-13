@@ -105,8 +105,8 @@ def listdiff(x, y):
 
 
 def queue_size_printer(queues: list[Queue, ...], names):
-    prev = [0, 0, 0, 0,0]
-    maxes = [0, 0, 0, 0,0]
+    prev = [0, 0, 0, 0, 0]
+    maxes = [0, 0, 0, 0, 0]
     while True:
         sizes = [q.qsize() for q in queues]
         if prev != sizes:

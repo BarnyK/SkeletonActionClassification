@@ -167,7 +167,7 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
     @staticmethod
     def compare(instance1: GeneralConfig, instance2: GeneralConfig) -> list[str]:
         ncrit_fields = ["device", "detector_batch_size", "detector_queue_size", "estimation_batch_size",
-                        "estimation_queue_size", "test_batch_size", "eval_interval", "eval_last_n","interlace"]
+                        "estimation_queue_size", "test_batch_size", "eval_interval", "eval_last_n", "interlace"]
         diffs = []
         class_fields = fields(instance1)
         for field_ in class_fields:

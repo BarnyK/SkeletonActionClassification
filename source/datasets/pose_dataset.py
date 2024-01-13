@@ -80,7 +80,7 @@ def create_tpgcn_branches(feature_dictionary: dict, feature_list: list, og_featu
         branch_features = branch_features.transpose(3, 1, 2, 0)  # C, T, V, M
         if branch_features.shape[-1] == 1:
             if copy_pad:
-                branch_features = np.concatenate([branch_features, branch_features],-1)
+                branch_features = np.concatenate([branch_features, branch_features], -1)
             else:
                 # Zero pad
                 padded = np.zeros((C, T, V, 2), dtype=np.float32)

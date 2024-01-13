@@ -1,7 +1,7 @@
 import os
 
 from procedures.config import TrainingConfig, GeneralConfig
-from procedures.evaluate import evaluate_folder, evaluate
+from procedures.evaluate import evaluate_folder
 from procedures.generate_alphapose_skeletons import gen_alphapose_skeletons
 from procedures.preprocess_files import preprocess_files
 from procedures.training import train_network
@@ -155,7 +155,7 @@ if __name__ == "__main__2":
             except DifferentConfigException as ex:
                 print(ex)
 
-if __name__ == "__main__":
+if __name__ == "__main__2":
     import torch
 
     files = ["/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_mutual_xview.train.pkl",
@@ -291,8 +291,8 @@ if __name__ == "__main__2":
     cfg = GeneralConfig.from_yaml_file("./configs/general/ut_test_conf.yaml")
     preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set1_coco",
                       "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ut_set2_coco"],
-                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_ut_test2",cfg.prep_config)
-if __name__ == "__main__":
+                     "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_ut_test2", cfg.prep_config)
+if __name__ == "__main__2":
     config = GeneralConfig.from_yaml_file("configs/general/ut_test_conf.yaml")
     train_network(config)
 
@@ -325,8 +325,7 @@ if __name__ == "__main__":
     config.labeling = "spatial"
     train_network(config)
 
-
-if __name__ == "__main__":
+if __name__ == "__main__2":
     config = GeneralConfig.from_yaml_file("configs/general/ap_mutual_120xset.yaml")
     train_network(config)
     config = GeneralConfig.from_yaml_file("configs/general/ap_2pgcn_mutual_xview.yaml")
@@ -353,9 +352,9 @@ if __name__ == "__main__":
     config.name = config.name + "_copypad"
     config.copy_pad = True
     train_network(config)
-    #raise ValueError
+    # raise ValueError
 
-if __name__ == "__main__":
+if __name__ == "__main__2":
     log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/transforms/"
     ap_config = GeneralConfig.from_yaml_file("configs/general/default_ap_transformed_xview.yaml")
     ap_config.log_folder = log_folder
@@ -371,11 +370,16 @@ if __name__ == "__main__":
     ntu_config.name = "ntu_transformed_120xset"
     train_network(ntu_config)
 
-    print("Ntu trained on ap skeletons")
-    evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
-
-    print("AP trained on ntu skeletons")
-    evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
+    # print("120XSET")
+    # print("AP config")
+    # evaluate(ap_config)
+    # print("AP config on ntu")
+    # evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
+    #
+    # print("NTU config")
+    # evaluate(ntu_config)
+    # print("NTU config on ap")
+    # evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
 
     log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/transforms/"
     ap_config = GeneralConfig.from_yaml_file("configs/general/default_ap_transformed_xsub.yaml")
@@ -392,13 +396,18 @@ if __name__ == "__main__":
     ntu_config.name = "ntu_transformed_120xsub"
     train_network(ntu_config)
 
-    print("Ntu trained on ap skeletons")
-    evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
+    # print("120XSUB")
+    # print("AP config")
+    # evaluate(ap_config)
+    # print("AP config on ntu")
+    # evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
+    #
+    # print("NTU config")
+    # evaluate(ntu_config)
+    # print("NTU config on ap")
+    # evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
 
-    print("AP trained on ntu skeletons")
-    evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
-
-if __name__ == "__main__":
+if __name__ == "__main__2":
     log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/transforms/"
     ap_config = GeneralConfig.from_yaml_file("configs/general/default_ap_transformed_xview.yaml")
     ap_config.log_folder = log_folder
@@ -410,11 +419,16 @@ if __name__ == "__main__":
     ntu_config.name = "ntu_transformed_xview"
     train_network(ntu_config)
 
-    print("Ntu trained on ap skeletons")
-    evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
-
-    print("AP trained on ntu skeletons")
-    evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
+    # print("XVIEW")
+    # print("AP config")
+    # evaluate(ap_config)
+    # print("AP config on ntu")
+    # evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
+    #
+    # print("NTU config")
+    # evaluate(ntu_config)
+    # print("NTU config on ap")
+    # evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
 
     log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/transforms/"
     ap_config = GeneralConfig.from_yaml_file("configs/general/default_ap_transformed_xsub.yaml")
@@ -427,26 +441,27 @@ if __name__ == "__main__":
     ntu_config.name = "ntu_transformed_xsub"
     train_network(ntu_config)
 
-    print("Ntu trained on ap skeletons")
-    evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
+    # print("XSUB")
+    # print("AP config")
+    # evaluate(ap_config)
+    # print("AP config on ntu")
+    # evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
+    #
+    # print("NTU config")
+    # evaluate(ntu_config)
+    # print("NTU config on ap")
+    # evaluate(ntu_config, None, None, ap_config.eval_config.test_file)
 
-    print("AP trained on ntu skeletons")
-    evaluate(ap_config, None, None, ntu_config.eval_config.test_file)
+if __name__ == "__main__2":
+    ap_config = GeneralConfig.from_yaml_file("configs/general/default_ap_xview.yaml")
+    ap_config.log_folder = "/tmp/"
+    ap_config.name = "test123"
+    # train_network(ap_config)
 
-
-
-
-
-
-
-
-if __name__ == "__main__":
+if __name__ == "__main__2":
     evaluate_folder("/home/barny/MasterThesis/Data/logs/feature_test")
 
-
-
-
-if __name__ == "__main__":
+if __name__ == "__main__2":
     import itertools
 
     files = ["/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_xview.train.pkl",
@@ -510,3 +525,65 @@ if __name__ == "__main__":
                 cfg.eval_config.eval_last_n = 10
                 train_network(cfg)
                 torch.cuda.empty_cache()
+
+if __name__ == "__main__":
+    norm_types = ["none", "spine_align", "mean_spine_align", "screen", "relative", "spine", "mean_spine"]
+
+    for i in range(3):
+        for sym in [False, True]:
+            for labeling in ["distance", "spatial"]:
+                for graph_type in ["mutual", "mutual-inter"]:
+                    config = GeneralConfig.from_yaml_file("configs/general/norm_tests/2pgcn_120xsub_spine_align.yaml")
+                    config.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/labeling_types/"
+                    config.name = f"2pgcn_{labeling}_{graph_type}_{str(sym).lower()}_{i}"
+                    config.labeling = labeling
+                    config.graph_type = graph_type
+                    config.symmetry_processing = sym
+                    train_network(config)
+
+    for i in range(1):
+        for norm_type in norm_types:
+            config = GeneralConfig.from_yaml_file("configs/general/norm_tests/st_120xsub_spine_align.yaml")
+            config.name = config.name + f"_{norm_type}_{i}"
+            config.normalization_type = norm_type
+            train_network(config)
+
+        for norm_type in norm_types:
+            config = GeneralConfig.from_yaml_file("configs/general/norm_tests/2pgcn_120xsub_spine_align.yaml")
+            config.name = config.name + f"_{norm_type}_{i}"
+            config.normalization_type = norm_type
+            train_network(config)
+
+# if __name__ == "__main__2":
+#     for sym in [False, True]:
+#         for labeling in ["distance", "spatial"]:
+#             for graph_type in ["mutual", "mutual-inter"]:
+#                 config = GeneralConfig.from_yaml_file("configs/general/norm_tests/2pgcn_120xsub_spine_align.yaml")
+#                 config.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/random/"
+#                 config.name = f"2pgcn_{labeling}_{graph_type}_{str(sym).lower()}"
+#                 config.labeling = labeling
+#                 config.graph_type = graph_type
+#                 config.symmetry_processing = sym
+#                 train_network(config)
+#                 break
+
+if __name__ == "__main__":
+    cfgs = [  # "/home/barny/thesis/source/configs/general/prep_tests/default.yaml",
+        "/home/barny/thesis/source/configs/general/prep_tests/filling_none.yaml",
+        "/home/barny/thesis/source/configs/general/prep_tests/filling_zero.yaml",
+        "/home/barny/thesis/source/configs/general/prep_tests/no_filters.yaml",
+        "/home/barny/thesis/source/configs/general/prep_tests/no_nms.yaml",
+        "/home/barny/thesis/source/configs/general/prep_tests/no_tracking_order.yaml",
+        "/home/barny/thesis/source/configs/general/prep_tests/no_tracking_conf.yaml",
+        "/home/barny/thesis/source/configs/general/prep_tests/no_tracking_size.yaml",
+        # "/home/barny/thesis/source/configs/general/prep_tests/filling_mice.yaml",
+    ]
+    for i in range(3):
+        for cfg_file in cfgs:
+            cfg = GeneralConfig.from_yaml_file(cfg_file)
+            cfg.name = f"{cfg.name}_{i}"
+            try:
+                train_network(cfg)
+            except Exception as ex:
+                print(ex)
+                continue

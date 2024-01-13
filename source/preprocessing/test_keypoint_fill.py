@@ -8,7 +8,6 @@ from preprocessing import skeleton_filters
 from preprocessing.keypoint_fill import keypoint_fill
 from preprocessing.nms import nms
 from preprocessing.tracking import pose_track, select_tracks_by_motion
-from shared import visualize
 from shared.structs import SkeletonData
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))

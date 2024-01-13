@@ -1,5 +1,3 @@
-import torch
-
 from models.stgcpp.stgcn import STGCN
 from models.tpgcn import TPGCN, __structure, __reduction, __attention, AttGCN_Module, Graph
 

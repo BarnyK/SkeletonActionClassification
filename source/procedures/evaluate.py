@@ -16,7 +16,8 @@ from procedures.config import GeneralConfig
 from procedures.training import test_epoch, load_model
 
 
-def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None, out_path: Union[str, None] = None, test_file: str = None):
+def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None, out_path: Union[str, None] = None,
+             test_file: str = None):
     if test_file is None:
         test_file = cfg.eval_config.test_file
     norm_func = create_norm_func(cfg.normalization_type)

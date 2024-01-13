@@ -111,7 +111,8 @@ def preprocess_data_ap_timed(data: SkeletonData, cfg: PreprocessConfig):
     track_time = time.time()
     keypoint_fill(data, cfg.keypoint_fill_type)
     fill_time = time.time()
-    return data, [transform_time-st, filter_time-transform_time, nms_time-filter_time, track_time-nms_time, fill_time-track_time]
+    return data, [transform_time - st, filter_time - transform_time, nms_time - filter_time, track_time - nms_time,
+                  fill_time - track_time]
 
 
 def preprocess_data_ntu(data: SkeletonData, cfg: PreprocessConfig):

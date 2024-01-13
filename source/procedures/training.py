@@ -190,7 +190,7 @@ def train_network(cfg: GeneralConfig):
         existing_cfg = GeneralConfig.from_yaml_file(existing_cfg_path)
         if existing_cfg != cfg:
             diffs = GeneralConfig.compare(existing_cfg, cfg)
-            if len(diffs)>0:
+            if len(diffs) > 0:
                 raise DifferentConfigException(f"Existing config is different to the current one - {', '.join(diffs)}")
         if os.path.exists(os.path.join(cfg.best_model_path)):
             finished = True

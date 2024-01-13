@@ -12,8 +12,8 @@ features:
 interlace: 16
 log_folder: /media/barny/SSD4/MasterThesis/Data/logs/prep_tests/
 model_type: stgcnpp
-name: filling_mice
-normalization_type: spine_align
+name: filling_mice_mean
+normalization_type: mean_spine_align
 pose_config:
   detector_batch_size: 5
   detector_cfg: ./configs/detector/yolov3-spp.cfg

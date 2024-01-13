@@ -234,6 +234,7 @@ def nms(data: SkeletonData, ap: bool):
         single_frame_nms(frame, ap)
         break
 
+
 # Concurrent nms, which is slower than loop version
 def concurrent_nms(data: SkeletonData, ap: bool):
     with concurrent.futures.ThreadPoolExecutor() as executor:
