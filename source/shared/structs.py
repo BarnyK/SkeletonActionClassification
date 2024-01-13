@@ -91,7 +91,7 @@ class SkeletonData:
         return {
             "source": self.source,
             "type": self.type,
-            "dataset_info": self.dataset_info.to_dict(),
+            "dataset_info": self.dataset_info.to_dict() if self.dataset_info else DatasetInfo(),
             "video_file": self.video_file,
             "length": self.length,
             "frames": [fd.to_dict() for fd in self.frames],

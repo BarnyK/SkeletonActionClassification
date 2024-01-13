@@ -105,8 +105,8 @@ def listdiff(x, y):
 
 
 def queue_size_printer(queues: list[Queue, ...], names):
-    prev = [0, 0, 0, 0]
-    maxes = [0, 0, 0, 0]
+    prev = [0, 0, 0, 0,0]
+    maxes = [0, 0, 0, 0,0]
     while True:
         sizes = [q.qsize() for q in queues]
         if prev != sizes:
@@ -152,7 +152,7 @@ def matrix_to_skeleton_body(mat):
 
 def swap_extension(filename, new_ext):
     file_no_ext, _ = os.path.splitext(filename)
-    return f"{filename}.{new_ext}"
+    return f"{file_no_ext}.{new_ext}"
 
 
 def prepend_filename(filename, prefix):
