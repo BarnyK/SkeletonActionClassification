@@ -244,10 +244,6 @@ def visualize_data(data: SkeletonData, wait_key: int = 0):
     cv2.destroyAllWindows()
 
 
-# def visualize(skeleton_data: SkeletonData, video_file: str, wait_key: int = 0, window_name: str = "visualization",
-#               draw_bbox: bool = False, draw_frame_number: bool = False, draw_confidences: bool = False,
-#               skip_frames: bool = False, save_file: str = None, draw_point_number: bool = False,
-#               print_frame_text: bool = False):
 class Visualizer:
     def __init__(self, video_file: str, skeleton_type: str, frame_interval: int, skip_frames: bool,
                  save_file: str):

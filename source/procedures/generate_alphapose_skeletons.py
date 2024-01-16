@@ -93,24 +93,3 @@ def handle_generate(args: Namespace):
         return False
     cfg = GeneralConfig.from_yaml_file(args.config)
     gen_alphapose_skeletons(args.input_folder, args.output_folder, cfg)
-
-
-def testing():
-    import time
-    # UT
-    cfg = GeneralConfig()
-    cfg.pose_config.dataset_name = "ut"
-    input_folder = "/media/barny/SSD4/MasterThesis/Data/ut_sample/"
-    output_folder = f"/tmp/{time.time()}/"
-    os.mkdir(output_folder)
-    gen_alphapose_skeletons(input_folder, output_folder, cfg)
-    print(cfg.to_yaml())
-    # NTU
-    cfg.pose_config.dataset_name = "ntu"
-    input_folder = "/media/barny/SSD4/MasterThesis/Data/ntu_sample/"
-    gen_alphapose_skeletons(input_folder, output_folder, cfg)
-    print(cfg.to_yaml())
-
-
-if __name__ == "__main__":
-    testing()

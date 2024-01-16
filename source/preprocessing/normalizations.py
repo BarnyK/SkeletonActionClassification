@@ -149,6 +149,3 @@ def setup_norm_func(norm_func, state_dict: dict = None, train_file: str = None):
 
 
 norm_types = ["screen", "relative", "spine", "mean_spine", "spine_align", "mean_spine_align", "none"]
-if __name__ == "__main__":
-    for ntype in norm_types:
-        x1 = create_norm_func(ntype)

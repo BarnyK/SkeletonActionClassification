@@ -141,22 +141,3 @@ def handle_preprocess(args: Namespace):
         else:
             print("Some of the paths are invalid")
         return False
-
-
-if __name__ == "__main__":
-    # cfg = GeneralConfig.from_yaml_file("./configs/general/ntu_xview.yaml")
-    # cfg.prep_config.processes = 0
-    # preprocess_files(["/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons"],
-    #                  "/tmp/",
-    #                  cfg.prep_config)
-    # cfg = GeneralConfig.from_yaml_file("./configs/general/prep_tests/default.yaml")
-    # cfg.prep_config.processes = 0
-    # preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco",
-    #                   "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"],
-    #                  "/tmp", cfg.prep_config)
-
-    cfg = GeneralConfig.from_yaml_file("./configs/general/prep_tests/filling_zero.yaml")
-    cfg.prep_config.processes = 0
-    preprocess_files(["/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_120_coco",
-                      "/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco"],
-                     "/tmp", cfg.prep_config)

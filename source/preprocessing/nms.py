@@ -246,20 +246,8 @@ def concurrent_nms(data: SkeletonData, ap: bool):
 
 def test_nms(skeleton_file):
     data = SkeletonData.load(skeleton_file)
-    # visualize(frames, frames.video_file, 1000//30)
-    # nms(data, False)
-    # # visualize(frames, frames.video_file, 1000//30, "The other one")
-
-    data = SkeletonData.load(skeleton_file)
     st = time.time()
     nms(data, True)
     et = time.time()
     print(et - st)
 
-    # visualize(frames, frames.video_file, 1000//30, "Alphapose ppose nms")
-
-
-if __name__ == "__main__":
-    for i in range(50, 61):
-        test_nms(
-            f"/media/barny/SSD4/MasterThesis/Data/alphapose_skeletons/ntu_coco/S009C003P025R001A0{i}.coco17.apskel.pkl")

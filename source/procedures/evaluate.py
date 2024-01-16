@@ -99,16 +99,3 @@ def evaluate_folder(folder_path: str):
             print("Already done")
             continue
         evaluate(cfg, None, file_path)
-
-
-if __name__ == "__main__":
-    evaluate_folder("/home/barny/MasterThesis/Data/logs/feature_test")
-    # cfg = GeneralConfig.from_yaml_file(
-    #     "/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo-boac_ntu_xsub_0/config.yaml")
-    # cfg.device = "cuda"
-    # evaluate(cfg, None, "/tmp/abababa1.npy")
-    #
-    # cfg = GeneralConfig.from_yaml_file(
-    #     "/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo-bo_ntu_xsub_0/config.yaml")
-    # cfg.device = "cuda"
-    # evaluate(cfg, None, "/tmp/abababa2.npy")

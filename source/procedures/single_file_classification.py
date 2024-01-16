@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 import time
+import warnings
 from argparse import Namespace
 from collections import defaultdict
 from copy import deepcopy
@@ -23,14 +24,14 @@ from procedures.config import GeneralConfig
 from procedures.training import load_model
 from procedures.utils.prep import preprocess_per_frame, preprocess_data_rest
 from shared.dataset_statics import adjusted_actions_maps
-from shared.helpers import calculate_interval, run_qsp, fill_frames, swap_extension, prepend_extension
+from shared.helpers import calculate_interval, run_qsp, fill_frames, swap_extension
 from shared.structs import SkeletonData, FrameData
 from shared.visualize_skeleton_file import Visualizer
-import warnings
 
 # Filter out warnings from AlphaPose
 warnings.filterwarnings("ignore")
 DEBUG = False
+
 
 def window_worker(
         q: Queue, datalen: int, pose_data_queue: Queue, cfg: GeneralConfig
@@ -397,59 +398,3 @@ def handle_classify(args: Namespace):
         cfg.interlace = args.interlace
 
     single_file_classification(args.video_file, cfg, args.model, args.save_file, args.method, args.window_save_file)
-
-
-if __name__ == "__main__":
-    config_files = ["/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml",
-                    "/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml"]
-    params = [
-        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 60, 0),
-        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 30, 0),
-        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 30, 10),
-        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 30, 15),
-        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 30, 20),
-        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 60, 15, 0),
-        ("/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml", 30, 30, 0)
-    ]
-
-    params = [
-        ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_bo_ntu120_xset_0/config.yaml", 64, 32, 30),
-        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 60, 0),
-        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 60, 0),
-        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 30, 0),
-        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 30, 10),
-        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 30, 15),
-        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 30, 20),
-        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 60, 15, 0),
-        # ("/media/barny/SSD4/MasterThesis/Data/logs/feature_test/stgcn_jo_ntu_xsub_0/config.yaml", 30, 30, 0)
-    ]
-    res = []
-    for i, (filename, window_length, samples, interlace) in enumerate(params):
-        fpses = []
-        times = []
-        config = GeneralConfig.from_yaml_file(filename)
-        config.interlace = interlace
-        config.window_length = window_length
-        config.samples_per_window = samples
-        # config.pose_config.detector_queue_size = 20
-        for i in range(1):
-            print(config.name, config.window_length, config.samples_per_window, config.interlace, i)
-            st = time.time()
-            input_file = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/ut-interaction_set1/seq3.avi"
-            # input_file = "/media/barny/SSD4/MasterThesis/Data/ut-interaction/seq1.cut.avi"
-            # input_file = "/home/barny/dance_practice.cut.avi"
-            # input_file = "/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb_120/S021C003P055R001A101_rgb.avi"
-            out_filename = prepend_extension(prepend_extension(input_file, config.name),
-                                             f"{config.window_length}.{config.samples_per_window}.{config.interlace}")
-            out = os.path.join("/media/barny/SSD4/MasterThesis/result_videos/", os.path.split(out_filename)[-1])
-            x = single_file_classification(input_file, config, None, None)
-            et = time.time()
-            times.append(et - st)
-            fpses.append(x)
-
-        print(f"Mean exec time: {np.mean(times):.5}")  # 38.792
-        print(f"Mean fps: {np.mean(fpses):.5}")  # 2.1821 # 2.1684
-        res.append(
-            f"{config.name} {config.window_length} {config.samples_per_window} {config.interlace} {np.mean(fpses):.5}")
-    for r in res:
-        print(r)

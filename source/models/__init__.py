@@ -26,7 +26,7 @@ def create_tpgcn(num_clesses: int, branches: int, channels: int, skeleton_type: 
     return model
 
 
-if __name__ == "__main__2":
+if __name__ == "__main__":
     import torch
     import time
 
@@ -46,7 +46,7 @@ if __name__ == "__main__2":
         print(ababa.shape)
         break
 
-if __name__ == "__main__2":
+if __name__ == "__main__":
     import torch
     import time
 

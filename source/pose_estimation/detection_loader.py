@@ -8,9 +8,8 @@ import numpy as np
 import torch
 import torch.multiprocessing as mp
 from alphapose.models import builder
-from alphapose.utils.bbox import _box_to_center_scale, _center_scale_to_box
 from alphapose.utils.presets import SimpleTransform
-from alphapose.utils.transforms import get_affine_transform, im_to_torch
+from alphapose.utils.transforms import im_to_torch
 
 use_mp = False
 if use_mp:
@@ -407,6 +406,7 @@ class DetectionLoader:
         img2[2].add_(-0.480)
 
         return img2, [xmin2, ymin2, xmax2, ymax2]
+
 
 def calc_new_box(xmin, ymin, w, h, aspect):
     if w > aspect * h:

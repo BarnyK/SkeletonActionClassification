@@ -25,7 +25,3 @@ def ensemble_results(files: list[str]):
     labels_results = np.argmax(summed_results, 1)
     top1 = np.mean(labels_results == all_data[0]['labels'])
     print(f"Ensemble accuracy: {top1:17.4}")
-
-
-if __name__ == "__main__":
-    ensemble_results(["/tmp/abababa1.npy", "/tmp/abababa2.npy"])

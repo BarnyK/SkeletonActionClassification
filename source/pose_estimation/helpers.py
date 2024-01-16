@@ -31,7 +31,7 @@ def read_ap_configs(
 ):
     opts = EasyDict()
     opts.device = device
-    opts.sp = True  # single process
+    opts.sp = True  # single process, multiple threads
     opts.tracking = False
     opts.gpus = "0"
     opts.gpus = (

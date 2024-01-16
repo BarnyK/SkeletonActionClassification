@@ -31,9 +31,3 @@ def handle_visualize(args: Namespace):
         print(f"Folder for {args.save_file} does not exist")
         return False
     visualize_skeleton(args.skeleton_file, args.video_file, save_file=args.save_file, draw_bbox=args.draw_bbox)
-
-
-if __name__ == "__main__":
-    visualize_skeleton("/home/barny/MasterThesis/Data/nturgb+d_skeletons/S008C002P030R001A037.skeleton",
-                       "/home/barny/MasterThesis/Data/nturgb+d_rgb/S008C002P030R001A037_rgb.avi")
-    visualize_skeleton("/home/barny/MasterThesis/Data/alphapose_skeletons/ut_set1_coco/0_1_4.coco17.apskel.pkl")

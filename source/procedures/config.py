@@ -166,13 +166,13 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
 
     @staticmethod
     def compare(instance1: GeneralConfig, instance2: GeneralConfig) -> list[str]:
-        ncrit_fields = ["device", "detector_batch_size", "detector_queue_size", "estimation_batch_size",
-                        "estimation_queue_size", "test_batch_size", "eval_interval", "eval_last_n", "interlace"]
+        non_critical_fields = ["device", "detector_batch_size", "detector_queue_size", "estimation_batch_size",
+                               "estimation_queue_size", "test_batch_size", "eval_interval", "eval_last_n", "interlace"]
         diffs = []
         class_fields = fields(instance1)
         for field_ in class_fields:
             field_name = field_.name
-            if field_name in ncrit_fields:
+            if field_name in non_critical_fields:
                 continue
             value1 = getattr(instance1, field_name)
             value2 = getattr(instance2, field_name)
@@ -186,11 +186,3 @@ class GeneralConfig(YAMLWizard, key_transform='SNAKE'):
                     diffs.append(f"{field_name}: {value1} != {value2}")
 
         return diffs
-
-
-if __name__ == "__main__":
-    x = GeneralConfig("test")
-    x = x.from_yaml_file("../configs/general/default.yaml")
-    # x.name = "XDDD"
-    print(x.to_yaml())
-    x.to_yaml_file("../configs/general/default_ap_xview.yaml")
