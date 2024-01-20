@@ -76,7 +76,12 @@ def parse_training_log(filename):
     return train_stats, train_times, eval_stats, eval_times
 
 
-def folder_check(folder: str):
+def folder_check(folder: str) -> bool:
+    """
+    Check if folder exists and creates it if it doesn't
+    :param folder: path to folder
+    :return: True if folder exists or has been created
+    """
     if not os.path.isdir(folder):
         try:
             os.mkdir(folder)

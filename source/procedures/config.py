@@ -14,8 +14,6 @@ from shared.dataset_statics import all_splits
 
 @dataclass
 class EvalConfig(YAMLWizard, key_transform='SNAKE'):
-    output_path: str = ""
-
     test_file: str = ""
     test_batch_size: int = 128
     test_clips_count: int = 8

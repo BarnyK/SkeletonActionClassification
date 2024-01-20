@@ -19,7 +19,7 @@ class TestFeatures(TestCase):
         data = SkeletonData.load(data_path)
         skeleton_filters.remove_bodies_by_box_confidence(data, 0.7)
         skeleton_filters.remove_by_max_possible_pose_confidence(data, 0.5)
-        nms(data, True)
+        nms(data)
         pose_track(data.frames, threshold=90)
         select_tracks_by_motion(data, 2)
         keypoint_fill(data, "interpolation")

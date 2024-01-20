@@ -22,7 +22,7 @@ def preprocess_per_frame(frame: FrameData, gcfg: GeneralConfig):
     if cfg.use_max_pose_conf:
         skeleton_filters.remove_by_max_possible_pose_confidence_frame(frame, cfg.max_pose_conf_threshold)
     if cfg.use_nms:
-        single_frame_nms(frame, True)
+        single_frame_nms(frame)
     if cfg.use_size_selection:
         select_by_size_frame(frame, cfg.max_body_count)
     elif cfg.use_confidence_selection:
@@ -55,7 +55,7 @@ def preprocess_data_ap(data: SkeletonData, cfg: PreprocessConfig) -> SkeletonDat
     if cfg.use_max_pose_conf:
         skeleton_filters.remove_by_max_possible_pose_confidence(data, cfg.max_pose_conf_threshold)
     if cfg.use_nms:
-        nms(data, True)
+        nms(data)
 
     if cfg.use_size_selection:
         select_by_size(data, cfg.max_body_count)
@@ -89,7 +89,7 @@ def preprocess_data_ap_timed(data: SkeletonData, cfg: PreprocessConfig):
         skeleton_filters.remove_by_max_possible_pose_confidence(data, cfg.max_pose_conf_threshold)
     filter_time = time.time()
     if cfg.use_nms:
-        nms(data, True)
+        nms(data)
     nms_time = time.time()
 
     if cfg.use_size_selection:

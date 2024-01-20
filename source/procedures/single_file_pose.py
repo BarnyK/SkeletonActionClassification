@@ -12,7 +12,7 @@ from shared.structs import SkeletonData, FrameData
 from shared.visualize_skeleton_file import visualize
 
 
-def single_file_pose(filename, cfg: GeneralConfig, save_file: str = None):
+def single_file_pose(filename, cfg: GeneralConfig, save_video: str = None, save_skeleton: str = None):
     assert os.path.isfile(filename)
     pose_cfg = cfg.pose_config
 
@@ -58,10 +58,9 @@ def single_file_pose(filename, cfg: GeneralConfig, save_file: str = None):
         frame_interval
     )
     visualize(data, data.video_file, wait_key=1000 // 30,
-              draw_bbox=True, draw_confidences=False, draw_frame_number=False, skip_frames=True, save_file=save_file)
-    if save_file is not None:
-        skeleton_filename = swap_extension(save_file, "apskel.pkl")
-        data.save(skeleton_filename)
+              draw_bbox=True, draw_confidences=False, draw_frame_number=False, skip_frames=True, save_file=save_video)
+    if save_skeleton is not None:
+        data.save(save_skeleton)
     # DEBUG
     # skeleton_filters.remove_bodies_by_box_confidence(data, cfg.prep_config.box_conf_threshold)
     # skeleton_filters.remove_by_max_possible_pose_confidence(data, cfg.prep_config.max_pose_conf_threshold)
@@ -86,11 +85,14 @@ def handle_pose_estimation(args: Namespace):
     if not os.path.isfile(args.video_file):
         print(f"{args.video_file} does not exist")
         return False
-    if args.save_file and not os.path.isdir(os.path.split(args.save_file)[0]):
+    if args.save_video and not os.path.isdir(os.path.split(args.save_file)[0]):
+        print(f"Folder for {args.save_file} does not exist")
+        return False
+    if args.save_skeleton and not os.path.isdir(os.path.split(args.save_file)[0]):
         print(f"Folder for {args.save_file} does not exist")
         return False
     cfg = GeneralConfig.from_yaml_file(args.config)
-    single_file_pose(args.video_file, cfg, args.save_file)
+    single_file_pose(args.video_file, cfg, args.save_video)
 
 
 if __name__ == "__main__":

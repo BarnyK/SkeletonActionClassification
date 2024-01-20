@@ -70,10 +70,11 @@ def main():
     visualize_parser.add_argument("--draw-bbox", action="store_true", help="Whether to draw bounding boxes")
 
     # Single file pose estimation
-    estimator = subparsers.add_parser("estimator", help="Pose estimate video file.")
+    estimator = subparsers.add_parser("esetimation", help="Pose estimate video file.")
     estimator.add_argument("config", help="Config file that will be used")
     estimator.add_argument("video_file", help="Video file that will undergo pose estimation")
-    estimator.add_argument("--save-file", default="", help="Save output video. Will also save the skeleton data.")
+    estimator.add_argument("--save-video", default="", help="Save output video")
+    estimator.add_argument("--save-skeleton", default="", help="Save output skeletons")
 
     args = parser.parse_args()
 

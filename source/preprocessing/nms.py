@@ -209,7 +209,7 @@ def pose_nms_body(
     return res_bboxes, res_bbox_scores, res_pose_preds, res_pose_scores, res_pick_ids
 
 
-def single_frame_nms(frame: FrameData, ap: bool = True):
+def single_frame_nms(frame: FrameData):
     # boxes, boxConf, poseXY, poseConf
     if len(frame.bodies) == 0:
         return
@@ -229,17 +229,16 @@ def single_frame_nms(frame: FrameData, ap: bool = True):
     frame.bodies = new_bodies
 
 
-def nms(data: SkeletonData, ap: bool):
+def nms(data: SkeletonData):
     for frame in data.frames:
-        single_frame_nms(frame, ap)
-        break
+        single_frame_nms(frame)
 
 
 # Concurrent nms, which is slower than loop version
 def concurrent_nms(data: SkeletonData, ap: bool):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         # Use executor to run single_frame_nms for each frame concurrently
-        futures = [executor.submit(single_frame_nms, frame, ap) for frame in data.frames]
+        futures = [executor.submit(single_frame_nms, frame) for frame in data.frames]
         # Wait for all futures to complete
         concurrent.futures.wait(futures)
 
@@ -247,7 +246,7 @@ def concurrent_nms(data: SkeletonData, ap: bool):
 def test_nms(skeleton_file):
     data = SkeletonData.load(skeleton_file)
     st = time.time()
-    nms(data, True)
+    nms(data)
     et = time.time()
     print(et - st)
 
