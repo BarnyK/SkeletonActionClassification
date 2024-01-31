@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from datasets.pose_dataset import PoseDataset
 from datasets.sampler import Sampler
 from datasets.transform_wrappers import calculate_channels
-from models import create_stgcnpp
+from models import create_stgcnpp, create_tpgcn
 from preprocessing.normalizations import create_norm_func, setup_norm_func
 from procedures.config import GeneralConfig
 from procedures.training import test_epoch, load_model
@@ -35,11 +35,14 @@ def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None, out_path: 
     test_loader = DataLoader(test_set, cfg.eval_config.test_batch_size, shuffle=False, num_workers=4, pin_memory=True)
 
     device = torch.device(cfg.device)
-    channels = calculate_channels(cfg.features, 2)
+    channels = calculate_channels(cfg.features, test_set.points[0].shape[-1])
     if cfg.model_type == "stgcnpp":
         model = create_stgcnpp(test_set.num_classes(), channels, cfg.skeleton_type)
+    elif cfg.model_type == "2pgcn":
+        model = create_tpgcn(test_set.num_classes(), len(cfg.features), channels,
+                             cfg.skeleton_type, cfg.labeling, cfg.graph_type)
     else:
-        raise ValueError("2p-gcn not supported yet")
+        raise KeyError(f"model type {cfg.model_type} not supported")
 
     # load
     if not model_path:

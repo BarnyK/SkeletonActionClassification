@@ -1,6 +1,6 @@
 from models.stgcpp.stgcn import STGCN
 from models.tpgcn import TPGCN, __structure, __reduction, __attention, AttGCN_Module, Graph
-
+import torch
 
 def create_stgcnpp(num_classes: int, channels: int, skeleton_type: str) -> STGCN:
     graph_cfg = {'layout': skeleton_type, 'mode': 'spatial'}
@@ -26,38 +26,38 @@ def create_tpgcn(num_clesses: int, branches: int, channels: int, skeleton_type: 
     return model
 
 
-if __name__ == "__main__":
-    import torch
-    import time
-
-    model = create_stgcnpp(120, 3, "coco17")
-
-    device = torch.device("cpu")
-
-    model.to(device)
-    # 5 samples, 2 bodies, 64 time frames, 17 joints, 3 channels
-    xd = torch.rand((5, 2, 64, 17, 3), device=device)
-
-    for i in range(100):
-        st = time.time()
-        ababa = model(xd)
-        et = time.time()
-        print(et - st)
-        print(ababa.shape)
-        break
-
-if __name__ == "__main__":
-    import torch
-    import time
-
-    model = create_tpgcn(120, 4, 3, "coco17", "spatial", "mutual")
-    device = torch.device("cpu")
-
-    model.to(device)
-    # 5 samples, 12 channels, 64 time frames, 17 joints, 3 channels
-    xd = torch.rand((5, 4, 3, 64, 34, 2), device=device)
-
-    for i in range(1):
-        st = time.time()
-        ababa = model(xd)
-        et = time.time()
+# if __name__ == "__main__":
+#     import torch
+#     import time
+#
+#     model = create_stgcnpp(120, 3, "coco17")
+#
+#     device = torch.device("cpu")
+#
+#     model.to(device)
+#     # 5 samples, 2 bodies, 64 time frames, 17 joints, 3 channels
+#     xd = torch.rand((5, 2, 64, 17, 3), device=device)
+#
+#     for i in range(100):
+#         st = time.time()
+#         ababa = model(xd)
+#         et = time.time()
+#         print(et - st)
+#         print(ababa.shape)
+#         break
+#
+# if __name__ == "__main__":
+#     import torch
+#     import time
+#
+#     model = create_tpgcn(120, 4, 3, "coco17", "spatial", "mutual")
+#     device = torch.device("cpu")
+#
+#     model.to(device)
+#     # 5 samples, 12 channels, 64 time frames, 17 joints, 3 channels
+#     xd = torch.rand((5, 4, 3, 64, 34, 2), device=device)
+#
+#     for i in range(1):
+#         st = time.time()
+#         ababa = model(xd)
+#         et = time.time()

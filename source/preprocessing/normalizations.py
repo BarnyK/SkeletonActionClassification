@@ -58,7 +58,7 @@ class ScreenNormalization:
     def __call__(self, mat: np.ndarray, **kwargs):
         return screen_normalization(mat, self.image_shape)
 
-    def load_from_train_file(self, train_file):
+    def load_from_train_file(self, train_file: str):
         with open(train_file, "rb") as f:
             data = pickle.load(f)
         self.image_shape = data.get("im_shape", (1920, 1080))

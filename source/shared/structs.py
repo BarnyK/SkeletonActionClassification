@@ -179,4 +179,5 @@ class SkeletonData:
             frame.bodies = [body for body in frame.bodies if body.tid != tid]
 
     def get_all_bodies_for_tid_with_seq(self, tid: int):
+        """Get all bodies for given tid with their sequence numbers"""
         return [(frame.seqId, body) for frame in self.frames for body in frame.bodies if body.tid == tid]

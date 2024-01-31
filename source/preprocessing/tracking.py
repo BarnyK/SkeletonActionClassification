@@ -180,7 +180,7 @@ def ntu_track_selection(data: SkeletonData, max_bodies: int = 2, length_threshol
     if len(good_tids) <= 1:
         return
 
-    # Wacky stuff with track combinations
+    # Track combinations
     # Combine all tracks into max_bodies number of them
     # Priority by good_tids
     good_tids = [tid_mapping[x] for x in good_tids]

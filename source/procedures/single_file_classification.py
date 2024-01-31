@@ -254,6 +254,7 @@ def single_file_classification(video_file: str, cfg: GeneralConfig, model_path: 
     end_time = time.time()
     fps = len(unique_frames) / (end_time - start_time)
 
+    print("FPS: ", fps)
     print("Average action in the video: ", adjusted_actions_maps[cfg.dataset][mean_class_id])
 
     # Save results using visualizer class
@@ -390,6 +391,18 @@ def handle_classify(args: Namespace):
     if args.window_save_file and not os.path.isdir(os.path.split(args.window_save_file)[0]):
         print(f"Folder for {args.window_save_file} does not exist")
         return False
+    if args.window_length is not None:
+        if args.window_length < 0:
+            print(
+                f"Incorrect window length value.")
+            return False
+        cfg.window_length = args.window_length
+    if args.samples is not None:
+        if args.samples < 0:
+            print(
+                f"Incorrect samples value.")
+            return False
+        cfg.samples_per_window = args.samples
     if args.interlace is not None:
         if args.interlace < 0 or args.interlace >= cfg.samples_per_window:
             print(
