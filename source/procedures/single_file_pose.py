@@ -7,7 +7,7 @@ from tqdm import tqdm
 from pose_estimation import DetectionLoader, init_detector, init_pose_model, read_ap_configs, run_pose_worker
 from procedures.config import GeneralConfig
 from shared.dataset_info import DatasetInfo
-from shared.helpers import calculate_interval, swap_extension
+from shared.helpers import calculate_interval
 from shared.structs import SkeletonData, FrameData
 from shared.visualize_skeleton_file import visualize
 
@@ -93,15 +93,3 @@ def handle_pose_estimation(args: Namespace):
         return False
     cfg = GeneralConfig.from_yaml_file(args.config)
     single_file_pose(args.video_file, cfg, args.save_video)
-
-
-if __name__ == "__main__":
-    config = GeneralConfig.from_yaml_file(
-        "/media/barny/SSD4/MasterThesis/Data/logs/random/2pgcn_mutual120xset_base/config.yaml"
-    )
-    config.samples_per_window = config.window_length
-    input_file = "/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb/S009C003P008R002A060_rgb.avi"
-    input_file = "/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb/S003C002P007R002A060_rgb.avi"
-    input_file = "/media/barny/SSD4/MasterThesis/Data/nturgb+d_rgb/S009C003P008R002A060_rgb.avi"
-    out = os.path.join("/media/barny/SSD4/MasterThesis/result_videos/boxes/", os.path.split(input_file)[-1])
-    single_file_pose(input_file, config, out)

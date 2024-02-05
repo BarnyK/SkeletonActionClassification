@@ -249,4 +249,3 @@ def test_nms(skeleton_file):
     nms(data)
     et = time.time()
     print(et - st)
-

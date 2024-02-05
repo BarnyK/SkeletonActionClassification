@@ -55,13 +55,15 @@ def evaluate(cfg: GeneralConfig, model_path: Union[str, None] = None, out_path: 
     model.to(device)
 
     loss_func = torch.nn.CrossEntropyLoss()
-    (mean_loss,
-     top1_accuracy,
-     top5_accuracy,
-     results,
-     labels,
-     real_labels,
-     names) = test_epoch(model, test_loader, loss_func, device, save_results=True)
+    (
+        mean_loss,
+        top1_accuracy,
+        top5_accuracy,
+        results,
+        labels,
+        real_labels,
+        names
+    ) = test_epoch(model, test_loader, loss_func, device, save_results=True)
 
     texts = ["Mean loss", "Top1 accuracy", "Top5 accuracy"]
     values = [mean_loss, top1_accuracy, top5_accuracy]

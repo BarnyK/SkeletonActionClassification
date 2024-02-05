@@ -21,7 +21,10 @@ class SentinelSkipFrame:
     pass
 
 
-def every_nth_frame(video_capture, n):
+def every_nth_frame(video_capture: cv2.VideoCapture, n: int):
+    """
+    Generator that only returns every nth frame from the VideoCapture
+    """
     frame_number = 0
 
     while True:
@@ -39,7 +42,7 @@ def every_nth_frame(video_capture, n):
 
 class DetectionLoader:
     def __init__(
-            self, input_source, detector, cfg, opt, mode="image", batch_size=1, queue_size=128, frame_interval=1
+            self, input_source, detector, cfg, opt, mode="video", batch_size=1, queue_size=128, frame_interval=1
     ):
         self.cfg = cfg
         self.opt = opt
@@ -48,6 +51,7 @@ class DetectionLoader:
         self.frame_interval = frame_interval
 
         if mode == "image":
+            # Unused mode
             self.img_dir = opt.inputpath
             self.imglist = [
                 os.path.join(self.img_dir, im_name.rstrip("\n").rstrip("\r"))
@@ -380,7 +384,7 @@ class DetectionLoader:
         return self.datalen
 
     def test_transform_mine(self, src, bbox, interp=1):
-        """Crop and reside for tests. Implemented to replace cv2.affineTransform"""
+        """Crop and resize for tests. Implemented to replace cv2.affineTransform"""
         input_size = self._input_size
         inp_h, inp_w = input_size
         xmin, ymin, xmax, ymax = bbox
@@ -400,6 +404,7 @@ class DetectionLoader:
 
         img = cv2.resize(padded_image, (192, 256), interpolation=interp)
 
+        # Image to torch and normalization numbers
         img2 = im_to_torch(img)
         img2[0].add_(-0.406)
         img2[1].add_(-0.457)
@@ -409,6 +414,7 @@ class DetectionLoader:
 
 
 def calc_new_box(xmin, ymin, w, h, aspect):
+    """Calculate new box with additional space. A lot of magic numbers due to optimization"""
     if w > aspect * h:
         return [xmin - 0.125 * w,
                 ymin + 0.5 * h - 0.625 * w / aspect,

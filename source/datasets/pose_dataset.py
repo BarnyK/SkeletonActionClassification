@@ -13,7 +13,10 @@ from preprocessing.normalizations import no_norm
 from shared.helpers import flatten_list
 
 
-def solve_feature_transform_requirements(feature_list):
+def solve_feature_transform_requirements(feature_list: Union[list[str], list[list[str]]]):
+    """
+    Given a list of features it returns the ordered list of required feature transformations
+    """
     required_transforms = set()
     queue = flatten_list(feature_list)[:]
     while queue:
@@ -29,7 +32,7 @@ def solve_feature_transform_requirements(feature_list):
     return required_transforms
 
 
-def transform_to_stgcn_input(feature_dictionary, feature_list):
+def transform_to_stgcn_input(feature_dictionary: dict, feature_list: list):
     features = [feature_dictionary[k] for k in feature_list]
     features = np.concatenate(features, axis=-1)
     # Pad empty dimension
@@ -104,16 +107,6 @@ class PoseDataset(Dataset):
         self.labels = data['action']
         self.points = data['poseXY']
         self.dataset_info = data['dataset_info']
-
-        # Remove mutuals that do not have both bodies
-        # if isinstance(feature_list[0], list):
-        #     for i in range(len(self.points), 0, -1):
-        #         i -= 1
-        #         if self.points[i].shape[0] != 2:
-        #             self.points.pop(i)
-        #             self.labels.pop(i)
-        #             self.dataset_info.pop(i)
-        # print(f"Removed {i}")
 
         self.confidences = data['poseConf']
         self.image_shape = data.get("im_shape", (1920, 1080))

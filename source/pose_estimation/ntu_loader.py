@@ -5,6 +5,7 @@ from shared.structs import SkeletonData, FrameData, Body
 
 
 def read_file(file_path):
+    """Reads a skeleton file in NTU format"""
     namedata = name_to_ntu_data(file_path)
 
     with open(file_path, "r") as fr:

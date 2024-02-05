@@ -9,6 +9,7 @@ from sklearn.utils._testing import ignore_warnings
 
 from shared.structs import SkeletonData, Body
 
+# Required for use of MICE method
 enable_iterative_imputer
 os.environ['NUMEXPR_NUM_THREADS'] = '6'
 os.environ['NUMEXPR_MAX_THREADS'] = '12'

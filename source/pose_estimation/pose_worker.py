@@ -19,6 +19,10 @@ if use_mp:
 
 
 class ResultStore:
+    """
+    Storage for results of pose estimation when using batch filling
+    """
+
     def __init__(self, seq_id, count, boxes, scores, cropped_boxes):
         self.seqId = seq_id
         self.results = []
@@ -47,10 +51,11 @@ class ResultStore:
 
 def pose_worker_batch_filling(pose_model, det_loader: DetectionLoader, pose_queue: Queue, opts: EasyDict,
                               batch_size: int = 5):
-    # Holds a list of tuples with frame_id, tensor
-    data_list = []
-    # Holds a map of frame_seq to its size of inputs
-    results = {}
+    """
+    Worker for pose estimation that uses batching algorithm that collects inputs till the batch size is fulfilled
+    """
+    data_list = []  # Holds a list of tuples with frame_id, tensor
+    results = {}  # Holds a map of frame_seq to its size of inputs
     with torch.no_grad():
         for frame_id in range(det_loader.datalen):
             (inputs, orig_img, boxes, scores, cropped_boxes) = det_loader.read()
@@ -104,6 +109,9 @@ def send_batch(current_batch, opts, pose_model, results):
 def pose_worker(
         pose_model, det_loader: DetectionLoader, pose_queue: Queue, opts: EasyDict, batch_size: int = 5
 ):
+    """
+    Pose estimation worker
+    """
     tq = tqdm(range(det_loader.datalen), dynamic_ncols=True, disable=True)
     for i in tq:
         with torch.no_grad():

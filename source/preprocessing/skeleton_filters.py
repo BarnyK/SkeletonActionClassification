@@ -46,7 +46,7 @@ def remove_by_max_possible_pose_confidence_frame(frame: FrameData, threshold: fl
 def remove_bodies_by_box_confidence(data: SkeletonData, threshold: float = 0.5, max_total: float = 1.0,
                                     max_frames: float = 1.0) -> bool:
     """
-    Remove
+    Remove bodies by confidence of detection
     :param data: SkeletonData
     :param threshold: box confidence threshold
     :param max_total: maximal amount of bodies that should be left

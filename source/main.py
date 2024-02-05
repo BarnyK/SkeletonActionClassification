@@ -526,7 +526,7 @@ if __name__ == "__main__2":
                 train_network(cfg)
                 torch.cuda.empty_cache()
 
-if __name__ == "__main__":
+if __name__ == "__main__2":
     norm_types = ["none", "spine_align", "mean_spine_align", "screen", "relative", "spine", "mean_spine"]
 
     for i in range(3):
@@ -568,22 +568,80 @@ if __name__ == "__main__":
 #                 break
 
 if __name__ == "__main__":
-    cfgs = [  # "/home/barny/thesis/source/configs/general/prep_tests/default.yaml",
-        "/home/barny/thesis/source/configs/general/prep_tests/filling_none.yaml",
-        "/home/barny/thesis/source/configs/general/prep_tests/filling_zero.yaml",
-        "/home/barny/thesis/source/configs/general/prep_tests/no_filters.yaml",
-        "/home/barny/thesis/source/configs/general/prep_tests/no_nms.yaml",
-        "/home/barny/thesis/source/configs/general/prep_tests/no_tracking_order.yaml",
-        "/home/barny/thesis/source/configs/general/prep_tests/no_tracking_conf.yaml",
-        "/home/barny/thesis/source/configs/general/prep_tests/no_tracking_size.yaml",
-        # "/home/barny/thesis/source/configs/general/prep_tests/filling_mice.yaml",
+    cfgs = ["/home/barny/thesis/source/configs/general/prep_tests/2pgcn/default.yaml",
+            "/home/barny/thesis/source/configs/general/prep_tests/2pgcn/filling_none.yaml",
+            "/home/barny/thesis/source/configs/general/prep_tests/2pgcn/filling_zero.yaml",
+            "/home/barny/thesis/source/configs/general/prep_tests/2pgcn/no_filters.yaml",
+            "/home/barny/thesis/source/configs/general/prep_tests/2pgcn/no_nms.yaml",
+            "/home/barny/thesis/source/configs/general/prep_tests/2pgcn/no_tracking_order.yaml",
+            "/home/barny/thesis/source/configs/general/prep_tests/2pgcn/no_tracking_conf.yaml",
+            "/home/barny/thesis/source/configs/general/prep_tests/2pgcn/no_tracking_size.yaml",
+            "/home/barny/thesis/source/configs/general/prep_tests/2pgcn/filling_mice.yaml",
+            ]
+    for i in range(1):
+        for cfg_file in cfgs:
+            cfg = GeneralConfig.from_yaml_file(cfg_file)
+            cfg.name = f"2p_{cfg.name}_{i}"
+            train_network(cfg)
+
+if __name__ == "__main__":
+    cfg = "/home/barny/thesis/source/configs/general/prep_tests/default.yaml"
+    cfg = GeneralConfig.from_yaml_file(cfg)
+    cfg.eval_config.eval_interval = 2
+    cfg.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/random"
+
+    cfg.name = "norm_none_0"
+    cfg.normalization_type = "none"
+    cfg.log_folder = "/media/barny/SSD4/MasterThesis/Data/logs/random"
+    train_network(cfg)
+
+    cfg.name = "norm_spine_align_0"
+    cfg.normalization_type = "spine_align"
+    train_network(cfg)
+
+    cfg.name = "norm_spine_0"
+    cfg.normalization_type = "spine_align"
+    train_network(cfg)
+
+    cfg.name = "norm_screen_0"
+    cfg.normalization_type = "screen"
+    train_network(cfg)
+
+    cfg.name = "norm_relative_0"
+    cfg.normalization_type = "relative"
+    train_network(cfg)
+
+    cfg.name = "norm_screen_1"
+    cfg.normalization_type = "screen"
+    train_network(cfg)
+
+if __name__ == "__main__":
+    evaluate_folder("/home/barny/MasterThesis/Data/logs/ntu_tests")
+
+if __name__ == "__main__":
+    cfgs = ["/home/barny/thesis/source/configs/general/dims/ntu_3d_xsub_2p.yaml",
+            "/home/barny/thesis/source/configs/general/dims/ntu_3d_xview_2p.yaml",
+            "/home/barny/thesis/source/configs/general/dims/ntu_xsub_2p.yaml",
+            "/home/barny/thesis/source/configs/general/dims/ntu_xview_2p.yaml"]
+    for i in range(1):
+        for cfg_file in cfgs:
+            cfg = GeneralConfig.from_yaml_file(cfg_file)
+            cfg.name = f"dim_{cfg.name}_{i}"
+            train_network(cfg)
+
+if __name__ == "__main__":
+    cfgs = [
+        # "/home/barny/thesis/source/configs/general/comp_tests/ntu120_xset.yaml",
+        # "/home/barny/thesis/source/configs/general/comp_tests/ntu120_xsub.yaml",
+        # "/home/barny/thesis/source/configs/general/comp_tests_2p/ntu120_xset.yaml",
+        "/home/barny/thesis/source/configs/general/comp_tests_2p/ntu120_xsub.yaml",
+        # "/home/barny/thesis/source/configs/general/comp_tests_2p/ntu_xsub.yaml",
+        # "/home/barny/thesis/source/configs/general/comp_tests_2p/ntu_xview.yaml",
+        # "/home/barny/thesis/source/configs/general/comp_tests/ntu_xsub.yaml",
+        # "/home/barny/thesis/source/configs/general/comp_tests/ntu_xview.yaml",
     ]
-    for i in range(3):
+    for i in range(2):
         for cfg_file in cfgs:
             cfg = GeneralConfig.from_yaml_file(cfg_file)
             cfg.name = f"{cfg.name}_{i}"
-            try:
-                train_network(cfg)
-            except Exception as ex:
-                print(ex)
-                continue
+            train_network(cfg)

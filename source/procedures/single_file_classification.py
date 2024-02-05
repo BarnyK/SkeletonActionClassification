@@ -113,9 +113,9 @@ def get_per_frame_results(window_results: dict, frame_windows: dict):
             cache[windows] = None
             continue
 
-        stacked_data = torch.stack([windows_data[0], windows_data[0]])
+        stacked_data = torch.stack(windows_data)
         stacked_data = torch.nn.functional.softmax(stacked_data, 1)
-        summed_data = stacked_data.sum(0)
+        summed_data = stacked_data.sum(0) / len(windows_data)
         per_frame_results.append(summed_data)
         cache[windows] = summed_data
 
@@ -240,8 +240,8 @@ def single_file_classification(video_file: str, cfg: GeneralConfig, model_path: 
         close_(all_queues)
         time.sleep(3)
         for name, thread in all_threads.items():
-            if thread:
-                print(name, thread.is_alive())
+            if thread.is_alive():
+                print(f"{name} thread is still alive")
         return
 
     # Add all the data together and produce final mean result

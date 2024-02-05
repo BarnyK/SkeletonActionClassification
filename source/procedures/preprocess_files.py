@@ -78,9 +78,6 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: P
             new_files.append(file)
         files = new_files
 
-    # random.seed(0)
-    # files = random.sample(files, k=5000)
-
     if isinstance(cfg.split_strategy, str):
         cfg.split_strategy = [cfg.split_strategy]
 
@@ -93,13 +90,6 @@ def preprocess_files(input_path: Union[str, list[str]], output_path: str, cfg: P
         results = list(tqdm(pool.imap(partial(preprocess_file, cfg=cfg), files), total=len(files)))
         pool.close()
         pool.join()
-
-    # results = [x for x in results if x[1] is not None]
-    # times_mean = np.array([x[-1] for x in results]).mean(0)
-    # times_var = np.array([x[-1] for x in results]).var(0)
-    # print(", ".join([f"{x:.4}" for x in times_mean]))
-    # print(", ".join([f"{x:.4}" for x in times_var]))
-    # return
 
     for strategy in cfg.split_strategy:
         split_func = shared.dataset_statics.split_map[strategy]

@@ -108,12 +108,3 @@ def from_skeleton_data(data: SkeletonData) -> SkeletonData:
             body.poseConf = func(body.poseConf)
     data.type = "ntu_coco"
     return data
-
-
-if __name__ == "__main__":
-    from pose_estimation.ntu_loader import read_file
-
-    xd = read_file("/media/barny/SSD4/MasterThesis/Data/nturgb+d_skeletons/S001C001P001R001A001.skeleton")
-    pose = xd.frames[0].bodies[0].poseXY
-    newpose = from_ntu(pose)
-    pass

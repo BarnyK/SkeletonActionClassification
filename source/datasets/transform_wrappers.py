@@ -220,17 +220,3 @@ def calculate_channels(features: Union[list[str], list[list[str], ...]], input_c
     for feat in features:
         channel_sum += TransformsDict[feat].calculate_channels(input_chan)
     return channel_sum
-
-
-if __name__ == "__main__":
-    import pickle
-
-    xd = "/media/barny/SSD4/MasterThesis/Data/prepped_data/ap_test1/ntu_xview.train.pkl"
-    with open(xd, "rb") as f:
-        data = pickle.load(f)
-    feature_dict = {"joints": data['poseXY'][0]}
-    an = ToAngles("coco17")
-    anm = ToAnglesMotion("coco17")
-    an(feature_dict)
-    anm(feature_dict)
-    pass

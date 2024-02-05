@@ -184,6 +184,7 @@ def visualize_ntu(skeleton_file: str, video_file: str, wait_key: int = 0):
 
 
 def visualize_data(data: SkeletonData, wait_key: int = 0):
+    """Visualization for SkeletonData without video"""
     all_bodies = [body for frame in data.frames for body in frame.bodies]
     stack = np.stack([body.poseXY for body in all_bodies])
     x_min, x_max = stack[:, :, 0].min(), stack[:, :, 0].max()
