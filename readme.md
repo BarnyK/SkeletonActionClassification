@@ -12,6 +12,21 @@ The projects funcitionalities include:
 - Evaluation of them on defined datasets.
 - Single file classification with sliding window to enable long video support.
 
+# Project structure
+- `/configs` - contains configuration files for the project.
+This included AlphaPose detector and estimator configs, as well as the configs for the project.
+The configs can be placed anywhere
+- `/datasets` - implementation of PyTorches Dataset for loading and serving skeletons during training.
+- `/models` - implementation of action classification models.
+- `/pose_estimation` - all code for pose estimation. 
+This currently includes the AlphaPose pipeline and loader for NTU skeletons.
+- `/preprocessing` - functions for filtering, tracking, and filling of skeleton sequences. 
+Also includes the feature extraction
+- `/procedures` - implementation of functionality that is user-accessible. 
+This includes skeleton generation, preprocessing, training, etc.
+- `/sample_files` - sample skeletons for tests
+- `/shared` - functions and classes shared across the whole projects.
+
 # Sample results
 Sample frame result obtained on NTU RGB+D 120 dataset.
 <img alt="Type on keyboard action detected on NTU RGB+D 120 dataset" src="/.docs/images/sample.1.png" title="Sample 1"/>
@@ -26,6 +41,7 @@ From top to bottom the sequences have: raw pose estimation results, filtered and
 Graph of results obtained on one of the sequences from UT-interaction dataset.
 The graph shows ground truth classes in gray areas together with percentage coverage of them obtained via sliding window aggregation.
 <img alt="Sliding window example" src="/.docs/images/sliding_seq2_31.svg" title="Sliding window example"/>
+
 # Installation
 The projects uses PyTorch as the library for the neural network models and AlphaPose for the pose estimation.
 It was heavily tested using Ubuntu 20.04 and Python version 3.8.
@@ -132,3 +148,9 @@ The above instruction will result in the pose estimation being done on the given
 The results will be saved in the `SkeleontData` format and also applied to the video.
 Both save-video and save-skeleton flags are optional.
 If the former is absent, the video will be previewed to the user.
+
+# TODO
+- [ ] Meaningful unit tests
+- [ ] Fix visualization code repetition
+- [ ] Test for Windows
+- [ ] Add support for HRNet
