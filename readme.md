@@ -14,7 +14,11 @@ The projects funcitionalities include:
 
 # Sample results
 
-![Type on keyboard action detected on NTU RGB+D 120 dataset](https://github.com/BarnyK/mscthesis/blob/master/.docs/images/sample.1.png "Sample 1")
+![Type on keyboard action detected on NTU RGB+D 120 dataset](/.docs/images/sample.1.png "Sample 1")
+Sample frame result obtained on NTU RGB+D 120 dataset.
+
+<img alt="Hand shaking action detected on UT-interaction dataset" src="/.docs/images/sample.2.png" title="Sample 2"/>
+Sample frame result obtained on UT-interaction dataset.
 
 # Installation
 The projects uses PyTorch as the library for the neural network models and AlphaPose for the pose estimation.
