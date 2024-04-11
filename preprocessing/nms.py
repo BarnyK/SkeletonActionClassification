@@ -5,6 +5,11 @@ import numpy as np
 
 from shared.structs import SkeletonData, FrameData, Body
 
+"""
+Code adapted from the AlphaPose repository.
+Changed to match the implementation
+"""
+
 mu = 1.7
 delta1 = 1
 delta2 = 2.65

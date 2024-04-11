@@ -13,16 +13,19 @@ The projects funcitionalities include:
 - Single file classification with sliding window to enable long video support.
 
 # Sample results
-
 Sample frame result obtained on NTU RGB+D 120 dataset.
 <img alt="Type on keyboard action detected on NTU RGB+D 120 dataset" src="/.docs/images/sample.1.png" title="Sample 1"/>
 
 Sample frame result obtained on UT-interaction dataset.
 <img alt="Hand shaking action detected on UT-interaction dataset" src="/.docs/images/sample.2.png" title="Sample 2"/>
 
-Preprocessing steps visualized. From top to bottom the sequences have: raw pose estimation results, filtered and tracked sequences, and filled sequences.
+Preprocessing steps visualized on a sample from NTU RGB+D 120 dataset. 
+From top to bottom the sequences have: raw pose estimation results, filtered and tracked sequences, and filled sequences.
 <img alt="Preprocessing steps visualized" src="/.docs/images/skeleton_prep.1.png" title="Preprocessing"/>
 
+Graph of results obtained on one of the sequences from UT-interaction dataset.
+The graph shows ground truth classes in gray areas together with percentage coverage of them obtained via sliding window aggregation.
+<img alt="Sliding window example" src="/.docs/images/sliding_seq2_31.svg" title="Sliding window example"/>
 # Installation
 The projects uses PyTorch as the library for the neural network models and AlphaPose for the pose estimation.
 It was heavily tested using Ubuntu 20.04 and Python version 3.8.
