@@ -1,0 +1,5 @@
+easydict
+dataclass-wizard
+opencv-python>=4.9.0.80
+scikit-learn>=1.4.2
+tqdm
