@@ -154,3 +154,6 @@ If the former is absent, the video will be previewed to the user.
 - [ ] Fix visualization code repetition
 - [ ] Test for Windows
 - [ ] Add support for HRNet
+
+# Sources
+This project uses models obtained from [Pyskl](https://github.com/kennymckormick/pyskl) and pose estimation is done with [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose) repositories.
