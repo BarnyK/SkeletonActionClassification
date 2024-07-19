@@ -41,6 +41,22 @@ From top to bottom the sequences have: raw pose estimation results, filtered and
 Graph of results obtained on one of the sequences from UT-interaction dataset.
 The graph shows ground truth classes in gray areas together with percentage coverage of them obtained via sliding window aggregation.
 <img alt="Sliding window example" src="/.docs/images/sliding_seq2_31.svg" title="Sliding window example"/>
+# Model Zoo
+Sample models are available on [Google Drive](https://drive.google.com/drive/folders/1_ML8Oka0CmdbqiigL8g9uAnecOcKGP55?usp=drive_link).
+All of them are trained on skeletons obtained via pose estimation.
+For more details check out the config in the model folder.
+
+| Training Set |   Model  | Eval Accuracy |        Note       |  Link  |
+|:------------:|:--------:|:-------------:|:-----------------:|:------:|
+|   NTU XSUB   | ST-GCN++ |     91.26%    |                   | [GDrive](https://drive.google.com/drive/folders/1RHSfW6YSYWQsS4oqwA2xLCDi1_222Dh7?usp=drive_link) |
+|   NTU XVIEW  | ST-GCN++ |     96.69%    |                   | [GDrive](https://drive.google.com/drive/folders/1zqc5vMti_7HwfdrPnPYb3NnCsRH45oll?usp=drive_link) |
+|  NTU120 XSET | ST-GCN++ |     86.69%    |                   | [GDrive](https://drive.google.com/drive/folders/1al-3Xzyr3OzZ5X5F0X3aDprMgozhnA82?usp=drive_link) |
+|  NTU120 XSUB | ST-GCN++ |     83.67%    |                   | [GDrive](https://drive.google.com/drive/folders/16OqzPAi7cvHYF5vuPjKNjBmhE7YJb_5-?usp=drive_link) |
+|   NTU XSUB   |  2P-GCN  |     97.89%    | Interactions only | [GDrive](https://drive.google.com/drive/folders/1Ex2zeca86pSJ_8QtEXXrNdiSBcsiVFKS?usp=drive_link) |
+|   NTU XVIEW  |  2P-GCN  |     99.05%    | Interactions only | [GDrive](https://drive.google.com/drive/folders/1BKHiQDHVoIMXlQXs63LiWOWhjl5WzQl5?usp=drive_link) |
+|  NTU120 XSET |  2P-GCN  |     94.03%    | Interactions only | [GDrive](https://drive.google.com/drive/folders/1o54yxjZrDn_0V7qA0GrBRmQZvnBuRpSV?usp=drive_link) |
+|  NTU120 XSUB |  2P-GCN  |     92.75%    | Interactions only | [GDrive](https://drive.google.com/drive/folders/1NrN3ZRorzY8VDSjhoIu-I_GyjSyApBF2?usp=drive_link) |
+
 
 # Installation
 The projects uses PyTorch as the library for the neural network models and AlphaPose for the pose estimation.
